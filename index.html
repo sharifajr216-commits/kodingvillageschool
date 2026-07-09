@@ -397,8 +397,8 @@
           <button class="tz-pill"><span class="ui-icon-container is-sm ic-muted"><i data-lucide="globe"></i></span> Canada (EST) <span class="ui-icon-container is-sm ic-muted"><i data-lucide="chevron-down"></i></span></button>
         </div>
         <div class="classes-grid" id="classesGrid">
-      <div class="cc" id="cc1"><div class="cc-top"><div class="cc-logo"><span class="ui-icon-container is-lg"><i data-lucide="gamepad-2"></i></span></div><div class="cc-info"><p class="cc-dt">28 juin 26 • 13h00</p><p class="cc-sub">Développement de jeux (Python)</p></div><div class="cc-cd" id="cd1" data-target="2026-06-28T17:00:00Z">…</div></div><div class="cc-bottom"><span class="cc-session"><span class="ui-icon-container is-sm ic-muted"><i data-lucide="folder"></i></span> Session 18</span><button class="btn-outline" id="btn1" onclick="APP.editClass()"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg> Classe d'édition</button></div></div>
-      <div class="cc" id="cc2"><div class="cc-top"><div class="cc-logo"><span class="ui-icon-container is-lg"><i data-lucide="gamepad-2"></i></span></div><div class="cc-info"><p class="cc-dt">04 juil. 26 • 12h00</p><p class="cc-sub">Développement de jeux (Python)</p></div><div class="cc-cd" id="cd2" data-target="2026-07-04T16:00:00Z">…</div></div><div class="cc-bottom"><span class="cc-session"><span class="ui-icon-container is-sm ic-muted"><i data-lucide="folder"></i></span> Session 19</span><button class="btn-outline" id="btn2" onclick="APP.editClass()"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg> Classe d'édition</button></div></div>
+      <div class="cc" id="cc1" data-course="dev-jeux-python" data-demo-offset-min="5"><div class="cc-top"><div class="cc-logo"><span class="ui-icon-container is-lg"><i data-lucide="gamepad-2"></i></span></div><div class="cc-info"><p class="cc-dt">28 juin 26 • 13h00</p><p class="cc-sub">Développement de jeux (Python)</p></div><div class="cc-cd" id="cd1" data-target="2026-06-28T17:00:00Z" data-end="2026-06-28T18:00:00Z">…</div></div><div class="cc-bottom"><span class="cc-session"><span class="ui-icon-container is-sm ic-muted"><i data-lucide="folder"></i></span> Session 18</span><button class="btn-outline" id="btn1" onclick="APP.editClass()"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg> Classe d'édition</button></div></div>
+      <div class="cc" id="cc2" data-course="dev-jeux-python" data-demo-offset-min="8640"><div class="cc-top"><div class="cc-logo"><span class="ui-icon-container is-lg"><i data-lucide="gamepad-2"></i></span></div><div class="cc-info"><p class="cc-dt">04 juil. 26 • 12h00</p><p class="cc-sub">Développement de jeux (Python)</p></div><div class="cc-cd" id="cd2" data-target="2026-07-04T16:00:00Z" data-end="2026-07-04T17:00:00Z">…</div></div><div class="cc-bottom"><span class="cc-session"><span class="ui-icon-container is-sm ic-muted"><i data-lucide="folder"></i></span> Session 19</span><button class="btn-outline" id="btn2" onclick="APP.editClass()"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg> Classe d'édition</button></div></div>
         </div>
         <div class="tile-actions"><button class="btn-outline" onclick="APP.joinClass()" title="Aperçu de la classe en direct (démo)"><span class="ui-icon-container is-sm"><i data-lucide="flask-conical"></i></span> Tester la classe en direct</button><button class="btn-outline" onclick="APP.comingSoon('Tutoriels de cours')">Tutoriels de cours <span class="ui-icon-container is-sm ic-muted"><i data-lucide="arrow-up-right"></i></span></button><button class="btn-outline" onclick="APP.comingSoon('Plannings')">Voir les plannings <span class="ui-icon-container is-sm ic-muted"><i data-lucide="arrow-up-right"></i></span></button></div>
       </div>
@@ -945,8 +945,11 @@
     </div>
     <div class="classroom-body">
       <div class="classroom-video">
-        <div id="zoomSDKContainer" class="zoom-sdk-embed">
-          <!-- Zoom SDK s'injecte ici en production -->
+        <div id="zoomSDKContainer" class="zoom-sdk-embed" data-zoom-mount>
+          <!-- OPTION B — point de montage du Meeting Web SDK (@zoomus/websdk).
+               En Component View, passer cet élément comme conteneur à
+               ZoomMtgEmbedded.createClient().init({ zoomAppRoot: this }).
+               Tant que l'Option A (redirection) est active, ce placeholder reste affiché. -->
           <div class="placeholder" id="zoomPlaceholder">
             <div class="big">👩‍🏫</div>
             <p style="font-size:1.1rem;font-weight:600">Mentor Sarah — En direct</p>
@@ -2706,7 +2709,7 @@ print("Bonne séance de code, Bilal ! 🚀")
         <div class="sbx-widget">
           <div class="sbx-w-title"><span class="ui-icon-container is-sm"><i data-lucide="calendar"></i></span> Prochain cours</div>
           <div class="sbx-next"><div class="sbx-next-ic"><span class="ui-icon-container is-sm"><i data-lucide="gamepad-2"></i></span></div><div><div class="sbx-next-name">Développement de jeux</div><div class="sbx-next-time">28 juin, 13h00</div></div></div>
-          <button class="btn-join-now" onclick="APP.joinClass()"><span class="ui-icon-container is-sm" style="color:#10B981"><i data-lucide="circle"></i></span> Rejoindre</button>
+          <button class="btn-join-now" onclick="APP.joinZoomMeeting('dev-jeux-python')"><span class="ui-icon-container is-sm" style="color:#10B981"><i data-lucide="circle"></i></span> Rejoindre</button>
         </div>
         <div class="sbx-widget sbx-streak">
           <div class="sbx-flame"><span class="ui-icon-container is-sm"><i data-lucide="flame"></i></span></div>
@@ -3825,49 +3828,102 @@ Niveau 3 de développement web|48|fichiers`;
   }
 
   // === COUNTDOWNS ===
+  // Fenêtre d'ouverture du bouton « Rejoindre » : de 10 min avant le début
+  // jusqu'à la fin programmée du cours (exigence de sécurité / horaires).
+  const JOIN_WINDOW_BEFORE_MS = 10 * 60 * 1000;
+
   function startCountdowns() {
+    seedDemoSchedule();
     updateCountdowns();
     countdownTimer = setInterval(updateCountdowns, 1000);
   }
 
   function stopCountdowns() { if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; } }
 
-  function updateCountdowns() {
-    const now = Date.now();
-    document.querySelectorAll('.cc-cd[data-target]').forEach(el => {
-      const target = new Date(el.dataset.target).getTime();
-      const diff = target - now;
+  // Démo : re-date les cartes porteuses de `data-demo-offset-min` par rapport à
+  // MAINTENANT, afin que la fenêtre horaire de 10 min soit toujours démontrable
+  // (une carte « bientôt/en cours », une autre « à venir »). Sans cet attribut,
+  // les cartes gardent leurs vraies dates (production).
+  let _demoSeeded = false;
+  function seedDemoSchedule() {
+    if (_demoSeeded) return;
+    _demoSeeded = true;
+    const MOIS = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+    document.querySelectorAll('.cc[data-demo-offset-min] .cc-cd').forEach(el => {
       const card = el.closest('.cc');
-      const btn = card.querySelector('.cc-bottom button');
-
-      if (diff <= 0) {
-        el.innerHTML = '<span class="cc-live-dot"></span> EN COURS';
-        el.classList.add('live');
-        makeJoinButton(btn);
-      } else if (diff <= 15 * 60 * 1000) {
-        el.textContent = `Dans ${Math.ceil(diff / 60000)} min`;
-        el.classList.add('live');
-        makeJoinButton(btn);
-      } else {
-        const d = Math.floor(diff / 864e5);
-        const h = Math.floor((diff % 864e5) / 36e5);
-        el.innerHTML = d > 0 ? `Commence dans<br>${d} jour${d>1?'s':''}` : `Commence dans<br>${h}h`;
-        el.classList.remove('live');
-        if (btn.classList.contains('btn-join')) {
-          btn.className = 'btn-outline';
-          btn.innerHTML = '<svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg> Classe d\'édition';
-          btn.onclick = editClass;
-        }
+      const off = parseInt(card.dataset.demoOffsetMin, 10);
+      if (isNaN(off)) return;
+      const start = new Date(Date.now() + off * 60000);
+      const end = new Date(start.getTime() + 60 * 60000); // cours d'1 h
+      el.dataset.target = start.toISOString();
+      el.dataset.end = end.toISOString();
+      const dt = card.querySelector('.cc-dt');
+      if (dt) {
+        const hh = String(start.getHours()).padStart(2, '0');
+        const mm = String(start.getMinutes()).padStart(2, '0');
+        dt.textContent = `${start.getDate()} ${MOIS[start.getMonth()]} ${String(start.getFullYear()).slice(2)} • ${hh}h${mm}`;
       }
     });
   }
 
-  function makeJoinButton(btn) {
-    if (!btn.classList.contains('btn-join')) {
-      btn.className = 'btn-join';
-      btn.innerHTML = '<span class="cc-live-dot light"></span> REJOINDRE LA CLASSE EN DIRECT';
-      btn.onclick = joinClass;
-    }
+  function updateCountdowns() {
+    const now = Date.now();
+    document.querySelectorAll('.cc-cd[data-target]').forEach(el => {
+      const card = el.closest('.cc');
+      const btn = card.querySelector('.cc-bottom button');
+      const courseId = card.dataset.course || '';
+      const start = new Date(el.dataset.target).getTime();
+      const end = el.dataset.end ? new Date(el.dataset.end).getTime() : start + 60 * 60 * 1000;
+      const diff = start - now;
+
+      if (now > end) {
+        // Cours terminé → bouton désactivé
+        el.innerHTML = 'Terminé';
+        el.classList.remove('live');
+        makeFinishedButton(btn);
+      } else if (diff <= JOIN_WINDOW_BEFORE_MS) {
+        // Fenêtre active : de 10 min avant jusqu'à la fin
+        el.innerHTML = diff <= 0
+          ? '<span class="cc-live-dot"></span> EN COURS'
+          : `Dans ${Math.ceil(diff / 60000)} min`;
+        el.classList.add('live');
+        makeJoinButton(btn, courseId);
+      } else {
+        // Trop tôt : compte à rebours + bouton d'édition
+        const d = Math.floor(diff / 864e5);
+        const h = Math.floor((diff % 864e5) / 36e5);
+        el.innerHTML = d > 0 ? `Commence dans<br>${d} jour${d>1?'s':''}` : `Commence dans<br>${h}h`;
+        el.classList.remove('live');
+        makeEditButton(btn);
+      }
+    });
+  }
+
+  function makeJoinButton(btn, courseId) {
+    if (btn.dataset.role === 'join') return;
+    btn.dataset.role = 'join';
+    btn.className = 'btn-join';
+    btn.disabled = false;
+    btn.innerHTML = '<span class="cc-live-dot light"></span> REJOINDRE LA CLASSE EN DIRECT';
+    btn.onclick = () => joinZoomMeeting(courseId);
+  }
+
+  function makeEditButton(btn) {
+    if (btn.dataset.role === 'edit') return;
+    btn.dataset.role = 'edit';
+    btn.className = 'btn-outline';
+    btn.disabled = false;
+    btn.innerHTML = '<svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg> Classe d\'édition';
+    btn.onclick = editClass;
+  }
+
+  function makeFinishedButton(btn) {
+    if (btn.dataset.role === 'done') return;
+    btn.dataset.role = 'done';
+    btn.className = 'btn-outline';
+    btn.disabled = true;
+    btn.innerHTML = '<span class="ui-icon-container is-sm"><i data-lucide="check-circle"></i></span> Cours terminé';
+    btn.onclick = null;
   }
 
   function editClass() {
@@ -4063,10 +4119,16 @@ Niveau 3 de développement web|48|fichiers`;
     },
 
     async _generateSignature() {
-      // In production: fetch from your backend /api/zoom/signature
-      // For demo: return a placeholder
-      console.log('[KVS_ZoomManager] Signature would be generated server-side');
-      return 'DEMO_SIGNATURE_' + Date.now();
+      // OPTION B — signature JWT du Meeting SDK générée côté serveur
+      // (/api/zoom/signature signe avec ZOOM_SDK_SECRET, jamais exposé au client).
+      const res = await fetch('/api/zoom/signature', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ meetingNumber: this.config.meetingNumber, role: this.config.role })
+      });
+      if (!res.ok) throw new Error('Signature Meeting SDK indisponible (' + res.status + ').');
+      const { signature } = await res.json();
+      return signature;
     },
 
     _attemptFallback() {
@@ -4253,6 +4315,54 @@ Niveau 3 de développement web|48|fichiers`;
 
   function joinClass() { KVS_ZoomManager.join(); }
   function leaveClass() { KVS_ZoomManager.leave(); }
+
+  // =============================================================
+  //  joinZoomMeeting(courseId) — point d'entrée du bouton élève
+  //  « REJOINDRE LA CLASSE EN DIRECT ».
+  //
+  //  OPTION A (primaire) : interroge le backend Zoom (Server-to-Server
+  //  OAuth), récupère le vrai `join_url` de la réunion planifiée du cours,
+  //  puis redirige proprement vers l'application native Zoom de l'élève.
+  //
+  //  Repli automatique : si le backend n'est pas encore configuré
+  //  (404 = cours non mappé, 501 = clés absentes) ou en cas de coupure
+  //  réseau, on rebascule sur la salle de classe premium démo existante
+  //  (KVS_ZoomManager) — l'expérience n'est jamais cassée.
+  // =============================================================
+  async function joinZoomMeeting(courseId) {
+    toast('Connexion à ta classe Zoom…', 'info', '🎥');
+    try {
+      const res = await fetch(`/api/zoom/meeting?courseId=${encodeURIComponent(courseId || '')}`);
+
+      // Backend absent / non configuré → mode démo
+      if (res.status === 404 || res.status === 501) {
+        console.info('[Zoom] Backend non configuré (' + res.status + ') — salle de classe démo.');
+        return KVS_ZoomManager.join();
+      }
+
+      const data = await res.json().catch(() => ({}));
+
+      // Hors fenêtre horaire (contrôle serveur) ou autre erreur métier
+      if (!res.ok) {
+        toast(data.error || 'Impossible de rejoindre la classe pour le moment.', 'warn', '⚠️');
+        return;
+      }
+
+      // OPTION A — redirection propre vers l'app native Zoom via join_url.
+      // (Point d'accroche OPTION B : pour incruster la vidéo au lieu de
+      //  rediriger, appeler KVS_ZoomManager.joinEmbedded(data) ici.)
+      if (data.join_url) {
+        window.location.href = data.join_url;
+        return;
+      }
+
+      // Réponse sans URL exploitable → démo
+      KVS_ZoomManager.join();
+    } catch (e) {
+      console.warn('[Zoom] Réseau indisponible, bascule démo', e);
+      KVS_ZoomManager.join();
+    }
+  }
 
   function closeCelebration() {
     $('celebrationOverlay').style.display = 'none';
@@ -5192,7 +5302,7 @@ Niveau 3 de développement web|48|fichiers`;
     exSearch, exRecentPrev, exRecentNext, exOpen,
     llmSetModel, llmSend,
     folderOpen, folderBack, folderNew, fileNew, fileOpen,
-    editClass, joinClass, leaveClass, sendChat,
+    editClass, joinClass, joinZoomMeeting, leaveClass, sendChat,
     openBuyCredits, buyCredits, coFmtCard, coFmtExp, coFmtCvc, processPayment,
     openAddClass, addClass,
     openAddScore, addScore, openAddExam, addExam,

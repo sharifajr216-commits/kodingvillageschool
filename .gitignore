@@ -3,3 +3,5 @@ node_modules/
 *.log
 .DS_Store
 .playwright-mcp/
+.env
+.env*.local
