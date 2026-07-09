@@ -1434,10 +1434,10 @@ print("Bonne séance de code, Bilal ! 🚀")
     { n: "Liam O'Connor", sub: 'Web Dev', pct: 47, att: '80%', last: '24-06-2026', trend: '▼' }
   ];
   const teacherClasses = [
-    { t: '10:00', s: 'Bilal Hassan Keita', c: 'Python · Développement de jeux', st: 'live' },
-    { t: '13:00', s: 'Aria Patel', c: 'Web Dev · Flexbox', st: 'soon' },
-    { t: '15:30', s: 'Yuki Tanaka', c: 'Python · Boucles', st: 'soon' },
-    { t: '17:00', s: 'Chloe Smith', c: 'Python · POO', st: 'soon' }
+    { t: '10:00', s: 'Bilal Hassan Keita', c: 'Python · Développement de jeux', st: 'live', course: 'dev-jeux-python' },
+    { t: '13:00', s: 'Aria Patel', c: 'Web Dev · Flexbox', st: 'soon', course: 'web-dev-flexbox' },
+    { t: '15:30', s: 'Yuki Tanaka', c: 'Python · Boucles', st: 'soon', course: 'python-boucles' },
+    { t: '17:00', s: 'Chloe Smith', c: 'Python · POO', st: 'soon', course: 'python-poo' }
   ];
   const teacherMessages = [
     { f: 'Mohamed Keita', r: 'Parent', m: 'Bilal adore les cours, merci !', t: 'il y a 1h', ic: 'users' },
@@ -1482,7 +1482,7 @@ print("Bonne séance de code, Bilal ! 🚀")
           <span class="tch-eyebrow"><span class="tch-live-dot"></span>En ce moment · classe en direct</span>
           <h2 class="tch-focus-title">${live.s}</h2>
           <p class="tch-focus-sub">${live.c} · ${live.t}</p>
-          <button class="tch-focus-btn" onclick="APP.toast('Lancement de la classe Zoom…','ok','🎥')">Rejoindre la classe →</button>
+          <button class="tch-focus-btn" onclick="APP.joinZoomMeeting('${live.course || ''}')">Rejoindre la classe →</button>
           <div class="tch-focus-meta"><span><strong>4</strong> cours aujourd'hui</span><span class="sep">·</span><span><strong>${teacherStudents.length}</strong> élèves actifs</span></div>
         </div>
         <div class="tch-tile tch-kpi">
@@ -1611,7 +1611,7 @@ print("Bonne séance de code, Bilal ! 🚀")
         <div class="tch-grid">
           <section class="card tch-card">
             <h3>Mes classes du jour</h3>
-            ${teacherClasses.map(cl => `<div class="tch-class"><span class="tch-time">${cl.t}</span><div class="tch-class-body"><div class="tch-class-s">${cl.s}</div><div class="tch-class-c">${cl.c}</div></div>${cl.st === 'live' ? `<button class="tch-join" onclick="APP.toast('Lancement de la classe Zoom…','ok','🎥')"><span class="cc-live-dot"></span> Rejoindre</button>` : '<span class="tch-soon">À venir</span>'}</div>`).join('')}
+            ${teacherClasses.map(cl => `<div class="tch-class"><span class="tch-time">${cl.t}</span><div class="tch-class-body"><div class="tch-class-s">${cl.s}</div><div class="tch-class-c">${cl.c}</div></div>${cl.st === 'live' ? `<button class="tch-join" onclick="APP.joinZoomMeeting('${cl.course || ''}')"><span class="cc-live-dot"></span> Rejoindre</button>` : '<span class="tch-soon">À venir</span>'}</div>`).join('')}
           </section>
           <section class="card tch-card">
             <h3>Messages récents</h3>
