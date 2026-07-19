@@ -1017,7 +1017,7 @@
 <!-- ============================================================
      MOBILE BOTTOM NAV
      ============================================================ -->
-<div class="mobile-nav" id="mobileNav">
+<div class="mobile-nav" id="mobileNav" style="display:none">
   <div class="mobile-nav-inner">
     <button class="mob-link active" onclick="APP.goDashboard();APP.mobNav(this,'home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Accueil</button>
     <button class="mob-link" onclick="APP.goResources();APP.mobNav(this,'resources')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Cours</button>
@@ -1244,11 +1244,22 @@ print("Bonne séance de code, Bilal ! 🚀")
   const show = (id) => { const el = $(id); const flex = FLEX_VIEWS.includes(id); el.style.display = flex ? 'flex' : 'block'; el.classList.add(flex ? 'flex-active' : 'active'); };
   const hide = (id) => { const el = $(id); el.style.display = 'none'; el.classList.remove('active','flex-active'); };
 
+  // === NAV MOBILE (barre du bas) ===
+  // Réservée aux vues applicatives ET aux utilisateurs authentifiés — jamais sur la
+  // landing publique (qui garde son propre menu : le hamburger .burger → .lp-nav).
+  const NAV_VIEWS = new Set(['viewDashboard','viewSandbox','viewResources','viewCommunity','viewParents','viewReferral','viewProfile','viewLoop']);
+  const isAuthenticated = () => !!currentUser;
+  function _syncMobileNav(target) {
+    const visible = isAuthenticated() && NAV_VIEWS.has(target);
+    // '' → laisse le CSS décider (visible en mobile, masquée en desktop) ; 'none' → masquée partout.
+    $('mobileNav').style.display = visible ? '' : 'none';
+  }
+
   // === VIEW ROUTER ===
   function switchView(target) {
     ['viewLanding','viewDashboard','viewSandbox','viewResources','viewCommunity','viewParents','viewReferral','viewProfile','viewLoop','viewTeacher','viewBooking'].forEach(v => hide(v));
     show(target);
-    $('mobileNav').style.display = (target === 'viewLanding' || target === 'viewTeacher' || target === 'viewBooking') ? 'none' : '';
+    _syncMobileNav(target);
     window.scrollTo({ top: 0, behavior: 'smooth' });
     if (target === 'viewDashboard') startCountdowns();
     else stopCountdowns();
@@ -5286,6 +5297,8 @@ Niveau 3 de développement web|48|fichiers`;
   _handleStripeReturn();
   // Traite un éventuel lien de parrainage (?ref=…)
   _handleReferralLanding();
+  // Au chargement on est sur la landing publique (non authentifié) → barre du bas masquée.
+  _syncMobileNav('viewLanding');
 
   // === PUBLIC API ===
   return {
