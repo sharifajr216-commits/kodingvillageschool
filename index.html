@@ -1307,11 +1307,7 @@ print("Bonne séance de code, Bilal ! 🚀")
       <div class="login-wrap">
         <div class="logo"><div class="logo-m">${SVG_LOGO}</div><span class="logo-n">KodingvillageSchool</span></div>
         <h2 class="modal-title">Bienvenue 👋</h2>
-        <p class="modal-sub">Connecte-toi ou crée ton compte pour continuer</p>
-      </div>
-      <div class="role-tabs">
-        <button class="role-tab active" data-auth="signin" onclick="APP.authTab('signin')">Se connecter</button>
-        <button class="role-tab" data-auth="signup" onclick="APP.authTab('signup')">S'inscrire</button>
+        <p class="modal-sub">Connecte-toi à ton espace membre</p>
       </div>
       <div id="loginBody"></div>
     `);
@@ -1319,46 +1315,24 @@ print("Bonne séance de code, Bilal ! 🚀")
   }
 
   function authTab(mode) {
-    document.querySelectorAll('.role-tab').forEach(t => t.classList.toggle('active', t.dataset.auth === mode));
+    // École privée : l'auto-inscription est désactivée. Seul le formulaire de CONNEXION
+    // est rendu — quel que soit `mode` (les anciens appels authTab('signup') retombent ici).
     const body = $('loginBody');
-    if (mode === 'signup') {
-      body.innerHTML = `
-        <form class="auth-form" onsubmit="return APP.doSignUp(event)" autocomplete="on">
-          <div class="form-row">
-            <div class="form-g"><label for="suFirst">Prénom</label><input id="suFirst" type="text" autocomplete="given-name" required placeholder="Mohamed"></div>
-            <div class="form-g"><label for="suLast">Nom</label><input id="suLast" type="text" autocomplete="family-name" required placeholder="Keita"></div>
-          </div>
-          <div class="form-g"><label for="suEmail">Courriel</label><input id="suEmail" type="email" autocomplete="email" required placeholder="vous@exemple.com"></div>
-          <div class="form-g"><label for="suPass">Mot de passe</label><input id="suPass" type="password" autocomplete="new-password" minlength="6" required placeholder="6 caractères minimum"></div>
-          <div class="form-g"><label for="suPass2">Confirmer le mot de passe</label><input id="suPass2" type="password" autocomplete="new-password" required placeholder="Retape ton mot de passe"></div>
-          <p class="auth-error" id="authError" style="display:none"></p>
-          <button type="submit" class="btn-submit">Créer mon compte →</button>
-        </form>`;
-    } else {
-      body.innerHTML = `
+    body.innerHTML = `
         <form class="auth-form" onsubmit="return APP.doSignIn(event)" autocomplete="on">
           <div class="form-g"><label for="liEmail">E-mail</label><input id="liEmail" type="email" autocomplete="username" required placeholder="vous@exemple.com"></div>
           <div class="form-g"><label for="liPass">Mot de passe</label><input id="liPass" type="password" autocomplete="current-password" required placeholder="••••••••"></div>
           <p class="auth-error" id="authError" style="display:none"></p>
           <button type="submit" class="btn-submit">Se connecter →</button>
         </form>`;
-    }
   }
 
+  // École privée : l'auto-inscription est DÉSACTIVÉE. Les comptes élèves sont créés
+  // exclusivement par l'administration. Cette fonction est conservée (toujours exportée /
+  // référencée) mais neutralisée : elle n'enregistre plus aucun compte.
   function doSignUp(e) {
     if (e) e.preventDefault();
-    const first = $('suFirst').value.trim(), last = $('suLast').value.trim();
-    const email = $('suEmail').value.trim().toLowerCase(), p = $('suPass').value, p2 = $('suPass2').value;
-    if (!first || !last || !email || !p) { _authErr('⚠️ Merci de remplir tous les champs.'); return false; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { _authErr('⚠️ Adresse e-mail invalide.'); return false; }
-    if (p.length < 6) { _authErr('⚠️ Le mot de passe doit contenir au moins 6 caractères.'); return false; }
-    if (p !== p2) { _authErr('⚠️ Les mots de passe ne correspondent pas.'); return false; }
-    const users = _getUsers();
-    if (users.some(u => u.email === email)) { _authErr('⚠️ Un compte existe déjà avec cet e-mail — connecte-toi plutôt.'); return false; }
-    users.push({ firstName: first, lastName: last, email, password: p, createdAt: new Date().toISOString() });
-    _saveUsers(users);
-    _consumePendingRef(first, email);     // si l'inscription provient d'un lien de parrainage → récompense le parrain
-    _enterApp({ firstName: first, lastName: last, email }, true);
+    _authErr('🔒 Les inscriptions sont fermées. Les comptes sont créés par l’administration de KodingvillageSchool.');
     return false;
   }
 
@@ -1392,9 +1366,9 @@ print("Bonne séance de code, Bilal ! 🚀")
     if (!ref) return;
     try { localStorage.setItem('kvs_pending_ref', ref); } catch (_) {}
     try { history.replaceState({}, '', location.pathname.replace(/\/signup\/?$/, '/')); } catch (_) {}
-    toast('Bienvenue 👋 Un parent t’a invité(e) — crée ton compte gratuit pour démarrer !', 'ok', '🎁');
+    toast('Bienvenue 👋 Connecte-toi à ton espace membre KodingvillageSchool.', 'ok', '🎓');
     openLogin();
-    authTab('signup');
+    authTab('signin');
   }
 
   function doSignIn(e) {
