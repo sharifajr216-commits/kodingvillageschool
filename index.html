@@ -342,6 +342,52 @@
 </div>
 
 <!-- ============================================================
+     VIEW — ADMIN (gestion des comptes élèves — accès réservé)
+     ============================================================ -->
+<div class="view" id="viewAdmin" style="display:none">
+  <header class="lp-header booking-header">
+    <div class="wrap">
+      <a href="#" class="logo" onclick="APP.adminLogout();return false"><div class="logo-m"><svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M24 8 4 18l20 10 20-10z" fill="#FFC233"/><path d="M13 23v9c0 3 5 6 11 6s11-3 11-6v-9l-11 5.5z" fill="#4F46E5"/><path d="M44 18v15" stroke="#10B981" stroke-width="2.5" stroke-linecap="round"/><circle cx="44" cy="35" r="3" fill="#10B981"/></svg></div><span class="logo-n">KodingvillageSchool · Admin</span></a>
+      <button class="btn-ghost" onclick="APP.adminLogout()"><span class="ui-icon-container is-sm"><i data-lucide="log-out"></i></span> Déconnexion</button>
+    </div>
+  </header>
+
+  <section class="booking-wrap adm-wrap">
+    <div class="booking-card adm-card">
+      <div class="booking-head">
+        <div class="booking-step-pill">Espace administration</div>
+        <h1>Comptes élèves</h1>
+        <p>Crée les comptes manuellement, puis déclenche l'envoi des accès (≈ 15 min avant la session).</p>
+      </div>
+
+      <form class="booking-form" id="admCreateForm" onsubmit="return APP.adminCreate(event)" novalidate>
+        <div class="bk-grid">
+          <div class="bk-field"><label for="admFirst">Prénom *</label><input id="admFirst" type="text" required placeholder="Bilal"></div>
+          <div class="bk-field"><label for="admLast">Nom *</label><input id="admLast" type="text" required placeholder="Keita"></div>
+          <div class="bk-field"><label for="admEmail">E-mail de l'élève *</label><input id="admEmail" type="email" required placeholder="bilal@email.com"></div>
+          <div class="bk-field"><label for="admSlot">Créneau de la session</label><input id="admSlot" type="text" placeholder="Lun 17:00"></div>
+        </div>
+        <p class="bk-error" id="admError" style="display:none"></p>
+        <button type="submit" class="btn btn-trial">Créer le compte <span class="ui-icon-container is-sm"><i data-lucide="user-plus"></i></span></button>
+      </form>
+
+      <div class="adm-cred" id="admCred" style="display:none"></div>
+
+      <div class="adm-table-head">
+        <h2>Élèves (<span id="admCount">0</span>)</h2>
+        <button class="btn-ghost" onclick="APP.adminRefresh()"><span class="ui-icon-container is-sm"><i data-lucide="refresh-cw"></i></span> Rafraîchir</button>
+      </div>
+      <div class="adm-table-wrap">
+        <table class="adm-table">
+          <thead><tr><th>Élève</th><th>E-mail</th><th>Session</th><th>Accès</th><th>Actions</th></tr></thead>
+          <tbody id="admTbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ============================================================
      VIEW — TEACHER DASHBOARD (simulated)
      ============================================================ -->
 <div class="view" id="viewTeacher" style="display:none">
@@ -1257,7 +1303,7 @@ print("Bonne séance de code, Bilal ! 🚀")
 
   // === VIEW ROUTER ===
   function switchView(target) {
-    ['viewLanding','viewDashboard','viewSandbox','viewResources','viewCommunity','viewParents','viewReferral','viewProfile','viewLoop','viewTeacher','viewBooking'].forEach(v => hide(v));
+    ['viewLanding','viewDashboard','viewSandbox','viewResources','viewCommunity','viewParents','viewReferral','viewProfile','viewLoop','viewTeacher','viewBooking','viewAdmin'].forEach(v => hide(v));
     show(target);
     _syncMobileNav(target);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1273,6 +1319,7 @@ print("Bonne séance de code, Bilal ! 🚀")
                      target === 'viewLoop' ? 'Boucle — Kodingvillageschool' :
                      target === 'viewTeacher' ? 'Espace Enseignant — KodingvillageSchool' :
                      target === 'viewBooking' ? 'Booking Confirmation — KodingvillageSchool' :
+                     target === 'viewAdmin' ? 'Administration — KodingvillageSchool' :
                      'KodingvillageSchool — 1:1 Live Learning';
   }
 
@@ -1371,14 +1418,57 @@ print("Bonne séance de code, Bilal ! 🚀")
     authTab('signin');
   }
 
-  function doSignIn(e) {
+  // Connexion : d'abord le back-end serveur (/api/auth), avec repli localStorage si le
+  // back-end est indisponible (dev local sans serverless) ou pas encore configuré.
+  async function doSignIn(e) {
     if (e) e.preventDefault();
     const email = $('liEmail').value.trim().toLowerCase(), p = $('liPass').value;
     if (!email || !p) { _authErr('⚠️ Saisis ton e-mail et ton mot de passe.'); return false; }
-    const user = _getUsers().find(u => u.email === email && u.password === p);
-    if (!user) { _authErr('⚠️ E-mail ou mot de passe incorrect.'); return false; }
-    _enterApp(user, false);
+    const btn = document.querySelector('#loginBody .btn-submit');
+    const oldLabel = btn ? btn.innerHTML : '';
+    if (btn) { btn.disabled = true; btn.innerHTML = 'Connexion…'; }
+    let fallback = false;
+    try {
+      const res = await fetch('/api/auth', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'login', email, password: p })
+      });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data && data.ok && data.token) {              // authentifié par le serveur
+        if (btn) { btn.disabled = false; btn.innerHTML = oldLabel; }
+        _enterAppFromServer(data, email);
+        return false;
+      }
+      if (res.status === 401) {                                   // back-end joignable, identifiants refusés
+        if (btn) { btn.disabled = false; btn.innerHTML = oldLabel; }
+        _authErr('⚠️ E-mail ou mot de passe incorrect.');
+        return false;
+      }
+      // 404 / 5xx / not_configured / réponse non-JSON → back-end indisponible → repli localStorage
+      fallback = true;
+    } catch (_) { fallback = true; }                               // réseau indisponible
+    if (btn) { btn.disabled = false; btn.innerHTML = oldLabel; }
+
+    if (fallback) {
+      // Repli local (démo) : base localStorage historique — utile en dev / avant config back-end.
+      const user = _getUsers().find(u => u.email === email && u.password === p);
+      if (!user) { _authErr('⚠️ E-mail ou mot de passe incorrect.'); return false; }
+      _enterApp(user, false);
+    }
     return false;
+  }
+
+  // Entrée dans l'app depuis une réponse serveur authentifiée (jeton signé) : route selon le rôle.
+  function _enterAppFromServer(data, email) {
+    if (data.role === 'admin') {
+      _setAdminToken(data.token);
+      closeModal();
+      goAdmin();
+      toast('Bienvenue, admin 🔐', 'ok', '🔐');
+      return;
+    }
+    try { sessionStorage.setItem('kvs_token', data.token); } catch (_) {}
+    _enterApp({ firstName: data.firstName || '', lastName: data.lastName || '', email }, false);
   }
 
   function _enterApp(user, isNew) {
@@ -1410,7 +1500,100 @@ print("Bonne séance de code, Bilal ! 🚀")
     `);
   }
 
-  function logout() { closeModal(); currentUser = null; _clearSession(); switchView('viewLanding'); }
+  function logout() { closeModal(); currentUser = null; _clearSession(); try { sessionStorage.removeItem('kvs_token'); } catch (_) {} switchView('viewLanding'); }
+
+  // === ADMIN — gestion des comptes élèves (front) ===
+  // Le jeton admin est obtenu à la connexion (Phase 4 : /api/auth → role 'admin').
+  // Toutes les actions passent par /api/admin avec ce jeton en en-tête Authorization.
+  let adminToken = null;
+  try { adminToken = sessionStorage.getItem('kvs_admin_token'); } catch (_) {}
+  function _setAdminToken(t) { adminToken = t || null; try { t ? sessionStorage.setItem('kvs_admin_token', t) : sessionStorage.removeItem('kvs_admin_token'); } catch (_) {} }
+
+  async function _adminApi(action, payload) {
+    try {
+      const res = await fetch('/api/admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (adminToken || '') },
+        body: JSON.stringify(Object.assign({ action }, payload || {}))
+      });
+      const data = await res.json().catch(() => ({}));
+      return { status: res.status, data };
+    } catch (_) { return { status: 0, data: {} }; }
+  }
+
+  const _admEsc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  function _admErr(msg) { const e = $('admError'); if (e) { e.textContent = msg || ''; e.style.display = msg ? 'block' : 'none'; } }
+
+  function goAdmin() { switchView('viewAdmin'); adminRefresh(); }
+  function adminLogout() { _setAdminToken(null); switchView('viewLanding'); }
+
+  async function adminCreate(e) {
+    if (e) e.preventDefault();
+    _admErr('');
+    const firstName = $('admFirst').value.trim(), lastName = $('admLast').value.trim();
+    const email = $('admEmail').value.trim().toLowerCase(), slot = $('admSlot').value.trim();
+    if (!firstName || !lastName || !email) { _admErr('⚠️ Prénom, nom et e-mail sont obligatoires.'); return false; }
+    const { status, data } = await _adminApi('create', { firstName, lastName, email, slot });
+    if (status === 401) { _admErr('🔒 Session admin expirée — reconnecte-toi.'); return false; }
+    if (status === 409) { _admErr('⚠️ Un compte existe déjà avec cet e-mail.'); return false; }
+    if (!data.ok) { _admErr('⚠️ Création impossible (' + (data.error || 'erreur') + ').'); return false; }
+    _admShowCred(`Compte créé pour <strong>${_admEsc(email)}</strong>.`, data.tempPassword);
+    $('admCreateForm').reset();
+    adminRefresh();
+    return false;
+  }
+
+  function _admShowCred(prefixHtml, tempPassword) {
+    const box = $('admCred');
+    box.innerHTML = `${prefixHtml}<br>Mot de passe temporaire : <code id="admTempPwd">${_admEsc(tempPassword)}</code> <button class="btn-ghost adm-copy" onclick="APP.adminCopyPwd()">Copier</button><br><span class="adm-cred-hint">⚠️ Note-le : il ne sera plus réaffiché. L'élève le recevra à l'envoi des accès.</span>`;
+    box.style.display = 'block';
+  }
+  function adminCopyPwd() {
+    const el = $('admTempPwd'); if (!el) return;
+    try { navigator.clipboard.writeText(el.textContent).then(() => toast('Mot de passe copié 📋', 'ok', '📋')); } catch (_) {}
+  }
+
+  let _admRefreshSeq = 0;
+  async function adminRefresh() {
+    const seq = ++_admRefreshSeq;
+    const { data } = await _adminApi('list');
+    if (seq !== _admRefreshSeq) return; // une requête plus récente a pris la main → on ignore ce résultat périmé
+    const rows = (data && data.students) || [];
+    $('admCount').textContent = rows.length;
+    $('admTbody').innerHTML = rows.map(s => {
+      const em = _admEsc(s.email);
+      const badge = s.credsSentAt ? '<span class="adm-badge ok">Envoyés</span>' : '<span class="adm-badge no">Non envoyés</span>';
+      return `<tr>
+        <td>${_admEsc(s.firstName)} ${_admEsc(s.lastName)}</td>
+        <td>${em}</td>
+        <td>${_admEsc(s.slot) || '—'}</td>
+        <td>${badge}</td>
+        <td class="adm-actions">
+          <button class="btn-ghost adm-send" onclick="APP.adminSend('${em}')">Envoyer les accès</button>
+          <button class="btn-ghost" onclick="APP.adminReset('${em}')">Réinit.</button>
+          <button class="btn-ghost adm-del" onclick="APP.adminDelete('${em}')">Suppr.</button>
+        </td></tr>`;
+    }).join('') || '<tr><td colspan="5" class="adm-empty">Aucun élève pour l\'instant.</td></tr>';
+  }
+
+  async function adminSend(email) {
+    const { data } = await _adminApi('send', { email });
+    if (data.ok) { toast('Accès envoyés à ' + email + ' 📩', 'ok', '📩'); adminRefresh(); }
+    else if (data.error === 'send_failed') { toast('Envoi échoué (Resend) — vérifie la clé et le domaine.', 'err', '⚠️'); }
+    else if (data.error === 'no_temp_password') { toast('Réinitialise le mot de passe avant de renvoyer.', 'err', '⚠️'); }
+    else { toast('Envoi impossible.', 'err', '⚠️'); }
+  }
+  async function adminReset(email) {
+    const { data } = await _adminApi('reset', { email });
+    if (data.ok) { _admShowCred(`Nouveau mot de passe pour <strong>${_admEsc(email)}</strong>.`, data.tempPassword); adminRefresh(); }
+    else { toast('Réinitialisation impossible.', 'err', '⚠️'); }
+  }
+  async function adminDelete(email) {
+    if (!window.confirm('Supprimer définitivement le compte de ' + email + ' ?')) return;
+    const { data } = await _adminApi('delete', { email });
+    if (data.ok) { toast('Compte supprimé.', 'ok', '🗑️'); adminRefresh(); }
+    else { toast('Suppression impossible.', 'err', '⚠️'); }
+  }
 
   // === TEACHER DASHBOARD (complete, simulated) ===
   const teacherStudents = [
@@ -5272,6 +5455,7 @@ Niveau 3 de développement web|48|fichiers`;
     openLogin, login: loginAndPreload, logout, confirmLogout, modal, closeModal,
     authTab, doSignIn, doSignUp, lpGo, navCourses, lpCourse, bookSlot, joinCommunity, gsSlot, enrollNow, faqToggle, backToLanding, submitBooking, teacherTab, teacherSortBy, toggleTheme, goTeacher,
     sbActive, mobNav, goSandbox, goDashboard,
+    goAdmin, adminCreate, adminRefresh, adminSend, adminReset, adminDelete, adminCopyPwd, adminLogout,
     goResources, resSelect, resTab, resSearch,
     goCommunity, comSubjectTab, comFilter, comClearFilters, comLike, comUpvote, comShareEvent, comSharePost,
     goParents, goReferral, refSubmit, refRedeem, refCopy, refShare, refHowItWorks, refRequestUpdate,
