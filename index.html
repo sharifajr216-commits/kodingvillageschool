@@ -1684,10 +1684,9 @@ print("Bonne séance de code, Bilal ! 🚀")
     lpGo('getStarted');
   }
 
-  // Web3Forms — colle ci-dessous la clé d'accès reçue par email après inscription
-  // gratuite sur https://web3forms.com (compte lié à contact@kodingvillageschool.com).
-  // Tant que la clé n'est pas renseignée, le formulaire fonctionne en mode démo (local uniquement).
-  const WEB3FORMS_ACCESS_KEY = 'PASTE_YOUR_WEB3FORMS_ACCESS_KEY_HERE';
+  // La réservation est envoyée via le proxy serverless /api/booking, qui garde la clé
+  // e-mail (RESEND_API_KEY) CÔTÉ SERVEUR — jamais exposée dans cette page.
+  // Sans runtime serverless (dev local) ou sans clé configurée, on reste en mode démo.
 
   async function submitBooking(e) {
     if (e) e.preventDefault();
@@ -1717,45 +1716,39 @@ print("Bonne séance de code, Bilal ! 🚀")
       localStorage.setItem('kvs_bookings', JSON.stringify(bookings));
     } catch (_) { /* storage unavailable — non blocking */ }
 
-    // envoi réel par email (Web3Forms)
+    // Envoi sécurisé via le proxy serverless /api/booking.
+    // La clé Web3Forms reste côté serveur : elle n'apparaît jamais dans cette page.
     const btn = document.querySelector('.bk-submit');
     const oldLabel = btn ? btn.innerHTML : '';
-    const keySet = WEB3FORMS_ACCESS_KEY && !WEB3FORMS_ACCESS_KEY.startsWith('PASTE');
-    if (keySet) {
-      if (btn) { btn.disabled = true; btn.innerHTML = 'Sending… ⏳'; }
-      // honeypot anti-spam : si rempli, on considère que c'est un bot
-      if ($('bkBotcheck') && $('bkBotcheck').checked) { return false; }
-      try {
-        const res = await fetch('https://api.web3forms.com/submit', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify({
-            access_key: WEB3FORMS_ACCESS_KEY,
-            subject: `Nouvelle inscription essai — ${fields.course} (${fields.childFirst} ${fields.childLast})`,
-            from_name: 'KodingvillageSchool · Réservation',
-            // `email` + `name` : champs détectés par Web3Forms pour l'accusé de réception
-            // automatique envoyé au parent (autoresponder à activer dans le dashboard).
-            name: `${fields.parentFirst} ${fields.parentLast}`,
-            email: fields.email,
-            replyto: fields.email,
-            'Parent': `${fields.parentFirst} ${fields.parentLast}`,
-            'Enfant': `${fields.childFirst} ${fields.childLast}`,
-            'Pronom de l’enfant': fields.pronoun,
-            'Téléphone': fullPhone,
-            'Cours sélectionné': fields.course,
-            'Date & heure': fields.slot
-          })
-        });
-        const data = await res.json();
-        if (!data.success) throw new Error(data.message || 'Web3Forms error');
-      } catch (sendErr) {
-        if (btn) { btn.disabled = false; btn.innerHTML = oldLabel; }
-        err.textContent = '⚠️ L’envoi a échoué. Vérifie ta connexion et réessaie, ou écris-nous à contact@kodingvillageschool.com.';
-        err.style.display = 'block';
-        return false;
+    if (btn) { btn.disabled = true; btn.innerHTML = 'Sending… ⏳'; }
+    try {
+      const res = await fetch('/api/booking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({
+          ...fields,
+          phone: fullPhone,
+          // honeypot anti-spam : vrai si un bot a coché le champ invisible
+          botcheck: !!($('bkBotcheck') && $('bkBotcheck').checked)
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 404) {
+        // Pas de runtime serverless (ex. serveur statique en local) → mode démo, non bloquant.
+        console.info('[booking] /api/booking indisponible (dev local) — enregistré en local uniquement.');
+      } else if (data && data.error === 'not_configured') {
+        // RESEND_API_KEY absente sur Vercel → mode démo, non bloquant.
+        console.warn('[booking] RESEND_API_KEY non définie côté serveur — aucun e-mail envoyé.');
+      } else if (!res.ok || !data.success) {
+        throw new Error((data && data.message) || 'send_failed');
       }
+    } catch (sendErr) {
       if (btn) { btn.disabled = false; btn.innerHTML = oldLabel; }
+      err.textContent = '⚠️ L’envoi a échoué. Vérifie ta connexion et réessaie, ou écris-nous à contact@kodingvillageschool.com.';
+      err.style.display = 'block';
+      return false;
     }
+    if (btn) { btn.disabled = false; btn.innerHTML = oldLabel; }
 
     // success
     $('bkSuccessMsg').innerHTML = `Merci <strong>${fields.parentFirst}</strong> ! Le cours d'essai GRATUIT de <strong>${fields.course}</strong> pour <strong>${fields.childFirst}</strong> est réservé pour <strong>${fields.slot}</strong>.<br>Un mentor KodingvillageSchool vous contactera très vite à l'adresse <strong>${fields.email}</strong>. 📩`;
