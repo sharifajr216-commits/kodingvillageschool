@@ -20,6 +20,7 @@
 //   502 { ok:false, error:'send_failed', message } → Resend a refusé / réseau
 
 const B = require('./_brand');
+const A = require('./_auth');
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const TO_EMAIL = process.env.BOOKING_TO_EMAIL || B.CONTACT_EMAIL;
@@ -146,6 +147,27 @@ module.exports = async (req, res) => {
   } catch (e) {
     // On journalise mais on ne bloque pas : le lead principal est déjà parti.
     console.warn('[booking] accusé de réception au parent non envoyé:', e.message);
+  }
+
+  // 3) Persistance du prospect en KV (best-effort) : c'est ce qui alimente la
+  //    liste « Inscriptions d'essai » de l'espace admin. Aucun identifiant n'est
+  //    généré ni envoyé ici — l'admin le fera manuellement depuis /api/admin.
+  //    N'échoue JAMAIS la requête : le lead a déjà été envoyé par e-mail.
+  if (A.kvConfigured()) {
+    try {
+      await A.putLead({
+        parentFirst: f.parentFirst, parentLast: f.parentLast,
+        childFirst: f.childFirst, childLast: f.childLast,
+        gender: f.gender, age: f.age,
+        email: A.normEmail(f.email), phone: fullPhone,
+        country: f.country, timezone: f.timezone,
+        course: f.course, slot: f.slot, slotIso: f.slotIso,
+        status: 'new', createdAt: new Date().toISOString(),
+        convertedAt: null, studentEmail: null
+      });
+    } catch (e) {
+      console.warn('[booking] prospect non enregistré en KV:', e.message);
+    }
   }
 
   res.status(200).json({ ok: true, success: true });

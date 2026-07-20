@@ -10,6 +10,11 @@
 // POST { action:'reset',  email }                            → { ok, tempPassword }
 // POST { action:'delete', email }                            → { ok }
 //
+// Prospects d'essai (leads, reçus via api/booking) :
+// POST { action:'leads.list' }                               → { ok, leads:[...] }
+// POST { action:'leads.convert', id }                        → { ok, email, tempPassword, sentAt }  (crée le compte + envoie les accès)
+// POST { action:'leads.delete',  id }                        → { ok }
+//
 // Séances de cours (socle des rappels automatiques — voir api/reminders.js) :
 // POST { action:'session.create', courseId, courseLabel, startsAt, durationMin, students:[email] }
 //                                                            → { ok, session }
@@ -49,6 +54,36 @@ async function resendSend(payload) {
   const d = await r.json().catch(() => ({}));
   if (!r.ok || !d.id) throw new Error((d && d.message) || `Resend HTTP ${r.status}`);
   return d.id;
+}
+
+// Envoie l'e-mail d'accès (identifiant + mot de passe temporaire) à un élève.
+// Partagé par l'action `send` et par la conversion d'un prospect (`leads.convert`).
+async function sendCredsEmail(user) {
+  return resendSend({
+    from: `KodingvillageSchool <${FROM_EMAIL}>`,
+    to: [user.email],
+    reply_to: A.ADMIN_EMAIL || undefined,
+    subject: 'Tes accès à ton espace KodingvillageSchool 🎓',
+    html: `
+      <p style="font-family:Arial,sans-serif;font-size:15px">Bonjour ${esc(user.firstName)},</p>
+      <p style="font-family:Arial,sans-serif;font-size:15px">Voici tes accès personnels à ton espace élève${user.slot ? ` (session du <b>${esc(user.slot)}</b>)` : ''} :</p>
+      <table cellpadding="6" style="font-family:Arial,sans-serif;font-size:14px;border-collapse:collapse">
+        <tr><td><b>Adresse</b></td><td><a href="${esc(PUBLIC_URL)}">${esc(PUBLIC_URL)}</a></td></tr>
+        <tr><td><b>Identifiant</b></td><td>${esc(user.email)}</td></tr>
+        <tr><td><b>Mot de passe</b></td><td><code>${esc(user.tempPassword)}</code></td></tr>
+      </table>
+      <p style="font-family:Arial,sans-serif;font-size:13px;color:#666">Connecte-toi et garde ces identifiants confidentiels.</p>
+      ${B.emailFooter()}`
+  });
+}
+
+// Message d'erreur explicite quand l'expéditeur est encore l'adresse de test Resend.
+function sendFailedMessage(e) {
+  return B.usingTestSender()
+    ? "Envoi refusé : l'expéditeur est encore l'adresse de test Resend (onboarding@resend.dev), "
+      + "qui ne peut écrire qu'au propriétaire du compte Resend. Vérifie ton domaine dans Resend, "
+      + "puis définis BOOKING_FROM_EMAIL. — Détail : " + String(e.message || 'Resend error')
+    : String(e.message || 'Resend error');
 }
 
 // Exige un jeton admin valide (en-tête Authorization ou body.token)
@@ -126,37 +161,78 @@ module.exports = async (req, res) => {
       if (!user.tempPassword) { res.status(400).json({ ok: false, error: 'no_temp_password', message: 'Réinitialise le mot de passe avant de (r)envoyer.' }); return; }
       if (!RESEND_API_KEY) { res.status(500).json({ ok: false, error: 'not_configured' }); return; }
       try {
-        await resendSend({
-          from: `KodingvillageSchool <${FROM_EMAIL}>`,
-          to: [email],
-          reply_to: A.ADMIN_EMAIL || undefined,
-          subject: 'Tes accès à ton espace KodingvillageSchool 🎓',
-          html: `
-            <p style="font-family:Arial,sans-serif;font-size:15px">Bonjour ${esc(user.firstName)},</p>
-            <p style="font-family:Arial,sans-serif;font-size:15px">Voici tes accès personnels à ton espace élève${user.slot ? ` (session du <b>${esc(user.slot)}</b>)` : ''} :</p>
-            <table cellpadding="6" style="font-family:Arial,sans-serif;font-size:14px;border-collapse:collapse">
-              <tr><td><b>Adresse</b></td><td><a href="${esc(PUBLIC_URL)}">${esc(PUBLIC_URL)}</a></td></tr>
-              <tr><td><b>Identifiant</b></td><td>${esc(email)}</td></tr>
-              <tr><td><b>Mot de passe</b></td><td><code>${esc(user.tempPassword)}</code></td></tr>
-            </table>
-            <p style="font-family:Arial,sans-serif;font-size:13px;color:#666">Connecte-toi et garde ces identifiants confidentiels.</p>
-            ${B.emailFooter()}`
-        });
+        await sendCredsEmail(user);
       } catch (e) {
         // Cause n°1 des échecs : l'expéditeur est encore l'adresse de test Resend,
         // qui ne délivre qu'au propriétaire du compte. Le message brut de Resend
         // ne le dit pas clairement — on l'explicite pour éviter de chercher ailleurs.
-        const message = B.usingTestSender()
-          ? "Envoi refusé : l'expéditeur est encore l'adresse de test Resend (onboarding@resend.dev), "
-            + "qui ne peut écrire qu'au propriétaire du compte Resend. Vérifie ton domaine dans Resend, "
-            + "puis définis BOOKING_FROM_EMAIL. — Détail : " + String(e.message || 'Resend error')
-          : String(e.message || 'Resend error');
-        res.status(502).json({ ok: false, error: 'send_failed', message });
+        res.status(502).json({ ok: false, error: 'send_failed', message: sendFailedMessage(e) });
         return;
       }
       user.credsSentAt = new Date().toISOString();
       await A.putUser(user);
       res.status(200).json({ ok: true, sentAt: user.credsSentAt });
+      return;
+    }
+
+    // ---- Prospects d'essai (leads) : reçus via api/booking, convertis à la main ----
+
+    if (body.action === 'leads.list') {
+      const leads = await A.listLeads();
+      // Plus récents en premier.
+      leads.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+      res.status(200).json({ ok: true, leads });
+      return;
+    }
+
+    if (body.action === 'leads.delete') {
+      await A.deleteLead(clean(body.id, 60));
+      res.status(200).json({ ok: true });
+      return;
+    }
+
+    // Conversion : crée le compte élève à partir du prospect, PUIS envoie les accès.
+    // Un seul geste admin = « générer et envoyer les identifiants ».
+    if (body.action === 'leads.convert') {
+      const lead = await A.getLead(clean(body.id, 60));
+      if (!lead) { res.status(404).json({ ok: false, error: 'not_found' }); return; }
+      const email = A.normEmail(lead.email);
+      if (!isEmail(email)) { res.status(400).json({ ok: false, error: 'invalid', message: 'E-mail du prospect invalide.' }); return; }
+      // Compte déjà existant → on ne réécrase pas : l'admin le gère dans le tableau élèves.
+      if (await A.getUser(email)) {
+        res.status(409).json({ ok: false, error: 'exists', message: 'Un compte existe déjà pour cet e-mail — gère-le dans le tableau des élèves.' });
+        return;
+      }
+      if (!RESEND_API_KEY) { res.status(500).json({ ok: false, error: 'not_configured' }); return; }
+
+      const tempPassword = genTempPassword();
+      const user = {
+        firstName: clean(lead.childFirst, 60) || clean(lead.parentFirst, 60),
+        lastName: clean(lead.childLast, 60) || clean(lead.parentLast, 60),
+        email, phone: clean(lead.phone, 40), slot: clean(lead.slot, 80),
+        passHash: A.hashPassword(tempPassword), tempPassword,
+        createdAt: new Date().toISOString(), credsSentAt: null
+      };
+      await A.putUser(user);
+
+      // Envoi des accès. Si Resend refuse, le compte reste créé et le mot de passe
+      // temporaire est renvoyé à l'admin pour transmission manuelle → on ne perd rien.
+      try {
+        await sendCredsEmail(user);
+      } catch (e) {
+        res.status(502).json({ ok: false, error: 'send_failed', email, tempPassword, message: sendFailedMessage(e) });
+        return;
+      }
+      user.credsSentAt = new Date().toISOString();
+      await A.putUser(user);
+
+      // Le prospect est marqué converti (conservé pour l'historique).
+      lead.status = 'converted';
+      lead.convertedAt = user.credsSentAt;
+      lead.studentEmail = email;
+      await A.putLead(lead);
+
+      res.status(200).json({ ok: true, email, tempPassword, sentAt: user.credsSentAt });
       return;
     }
 

@@ -98,6 +98,38 @@ async function deleteUser(email) {
   await kv(['SREM', 'users:index', email]);
 }
 
+// ---- Prospects d'essai (leads) en KV ----
+// Un lead = une réservation d'essai reçue via api/booking. Il est STOCKÉ ici pour
+// que l'admin puisse le voir et, quand il le décide, générer + envoyer les
+// identifiants (conversion en compte élève). Aucun envoi automatique.
+// Schéma : `lead:<id>` → JSON ; `leads:index` → SET des ids.
+function genLeadId() {
+  return `${nowSec()}-${crypto.randomBytes(4).toString('hex')}`;
+}
+async function putLead(lead) {
+  const id = String(lead.id || genLeadId());
+  const rec = Object.assign({}, lead, { id });
+  await kv(['SET', `lead:${id}`, JSON.stringify(rec)]);
+  await kv(['SADD', 'leads:index', id]);
+  return rec;
+}
+async function getLead(id) {
+  const raw = await kv(['GET', `lead:${String(id)}`]);
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch (_) { return null; }
+}
+async function listLeads() {
+  const ids = (await kv(['SMEMBERS', 'leads:index'])) || [];
+  const out = [];
+  for (const id of ids) { const l = await getLead(id); if (l) out.push(l); }
+  return out;
+}
+async function deleteLead(id) {
+  id = String(id);
+  await kv(['DEL', `lead:${id}`]);
+  await kv(['SREM', 'leads:index', id]);
+}
+
 // ---- Admin (identifiants via env, jamais en KV) ----
 const isAdminCredentials = (email, password) =>
   !!ADMIN_EMAIL && normEmail(email) === ADMIN_EMAIL && verifyPassword(password, ADMIN_PASSWORD_HASH);
@@ -106,5 +138,6 @@ module.exports = {
   kv, kvConfigured, configured,
   hashPassword, verifyPassword, signToken, verifyToken,
   getUser, putUser, listUsers, deleteUser,
+  putLead, getLead, listLeads, deleteLead,
   normEmail, nowSec, ADMIN_EMAIL, isAdminCredentials
 };
