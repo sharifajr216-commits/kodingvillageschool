@@ -5249,14 +5249,31 @@ Laboratoire de Codage Vibe|8|fichiers`;
     `, true);
   }
 
-  // Au clic sur « Acheter » : tente le vrai paiement Stripe (Checkout hébergé) ; si le
-  // backend n'est pas disponible (clés absentes / non déployé), repli sur le panneau démo.
-  const USE_REAL_STRIPE = true;                               // false = forcer le mode démo simulé
+  // Au clic sur « Acheter » : redirection vers Stripe Checkout (paiement hébergé).
+  //
+  // ⚠️ AUCUN REPLI. Un crédit ne peut être accordé QUE sur confirmation de Stripe.
+  //    Le panneau de démonstration qui existait ici créditait le compte après un
+  //    simple formulaire de carte factice : dès que Stripe était indisponible ou
+  //    non configuré, n'importe qui obtenait ses sessions gratuitement.
+  //    En cas d'échec, on bloque et on l'annonce — jamais de crédit de complaisance.
   const STRIPE_CHECKOUT_ENDPOINT = '/api/create-checkout-session';
   const STRIPE_VERIFY_ENDPOINT = '/api/verify-session';
 
+  function _paiementIndisponible(detail) {
+    modal('Paiement indisponible', `
+      <div class="co-error-box">
+        <div class="co-error-ic"><span class="ui-icon-container is-lg"><i data-lucide="triangle-alert"></i></span></div>
+        <p class="co-error-msg">Impossible de démarrer le paiement pour le moment.</p>
+        <p class="co-error-sub">Aucun montant n’a été débité et aucun crédit n’a été ajouté.
+           Réessaie dans quelques instants ou écris-nous à
+           <a href="mailto:info@kodingvillageschool.com">info@kodingvillageschool.com</a>.</p>
+        ${detail ? `<p class="co-error-code">Référence technique : ${_admEsc(detail)}</p>` : ''}
+        <button class="btn btn-trial" onclick="APP.closeModal()">Fermer</button>
+      </div>
+    `);
+  }
+
   async function buyCredits(n) {
-    if (!USE_REAL_STRIPE) { simulateCheckout(n); return; }
     modal('', `<div class="co-processing"><div class="co-spinner"></div><h3>Connexion à Stripe…</h3><p>Vous allez être redirigé vers la page de paiement sécurisée.</p></div>`);
     try {
       const r = await fetch(STRIPE_CHECKOUT_ENDPOINT, {
@@ -5264,12 +5281,12 @@ Laboratoire de Codage Vibe|8|fichiers`;
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ plan: n })
       });
-      if (!r.ok) throw new Error('http ' + r.status);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
       const d = await r.json();
-      if (!d.url) throw new Error('no url');
-      window.location.href = d.url;                           // <span class="ui-icon-container is-sm"><i data-lucide="arrow-right"></i></span> page de paiement Stripe Checkout
+      if (!d.url) throw new Error('réponse sans URL de paiement');
+      window.location.href = d.url;                           // → page de paiement Stripe Checkout
     } catch (e) {
-      simulateCheckout(n);                                    // backend indisponible <span class="ui-icon-container is-sm"><i data-lucide="arrow-right"></i></span> démo
+      _paiementIndisponible(e && e.message);
     }
   }
 
@@ -5282,15 +5299,22 @@ Laboratoire de Codage Vibe|8|fichiers`;
     if (pay === 'cancel') { clean(); toast('Paiement annulé — aucun montant n’a été débité.', 'info', 'ℹ️'); return; }
     if (pay !== 'success') return;
     const sid = q.get('session_id');
-    const planFromUrl = parseInt(q.get('plan'), 10);
     clean();
+
+    // ⚠️ Le nombre de sessions créditées vient EXCLUSIVEMENT de la réponse serveur,
+    //    qui interroge Stripe. Le paramètre `plan` de l'URL est délibérément ignoré :
+    //    il est contrôlé par le visiteur. Un repli l'utilisait en cas d'erreur réseau,
+    //    ce qui suffisait à obtenir 40 sessions en ouvrant simplement
+    //    /?payment=success&plan=40 — exactement ce que verify-session doit empêcher.
     fetch(STRIPE_VERIFY_ENDPOINT + '?session_id=' + encodeURIComponent(sid || ''))
       .then(r => r.json())
       .then(d => {
         if (d && d.paid && d.sessions) { _creditPurchase(d.sessions); }
-        else { toast('Paiement non confirmé. Contactez le support si un montant a été débité.', 'error', '⚠️'); }
+        else { toast('Paiement non confirmé. Contacte-nous si un montant a été débité.', 'err', '⚠️'); }
       })
-      .catch(() => { if (planFromUrl) _creditPurchase(planFromUrl); }); // repli (ex: démo locale)
+      .catch(() => {
+        toast('Vérification du paiement impossible. Tes crédits seront ajoutés dès confirmation — contacte-nous si besoin.', 'err', '⚠️');
+      });
   }
 
   function _creditPurchase(n) {
@@ -5308,84 +5332,6 @@ Laboratoire de Codage Vibe|8|fichiers`;
     launchConfetti();
   }
 
-  function simulateCheckout(n) {
-    const plan = CREDIT_PLANS[n] || CREDIT_PLANS[10];
-    modal('Paiement sécurisé <span class="ui-icon-container is-sm"><i data-lucide="lock"></i></span>', `
-      <div class="co-summary">
-        <div class="co-sum-head">Récapitulatif de la commande</div>
-        <div class="co-sum-row"><span>Forfait choisi</span><strong>Forfait ${plan.sessions} session${plan.sessions>1?"s":""} (${plan.duree})</strong></div>
-        <div class="co-sum-row"><span>Crédits de cours</span><strong>+${plan.sessions} cours</strong></div>
-        <div class="co-sum-row"><span>Prix par session</span><strong>${prixParSession(plan)}</strong></div>
-        <div class="co-sum-row co-total"><span>Total à payer</span><strong>${plan.price} ${DEVISE} ${DEVISE_CODE}</strong></div>
-      </div>
-      <form class="co-form" id="coForm" onsubmit="return APP.processPayment(event, ${n})" autocomplete="on">
-        <h4 class="co-h">Informations de facturation</h4>
-        <div class="form-g"><label for="coName">Nom complet du titulaire</label><input id="coName" type="text" autocomplete="name" required placeholder="Marie Dupont"></div>
-        <div class="co-row">
-          <div class="form-g"><label for="coEmail">Adresse e-mail</label><input id="coEmail" type="email" autocomplete="email" required placeholder="marie.dupont@email.com"></div>
-          <div class="form-g"><label for="coPhone">Numéro de téléphone</label><input id="coPhone" type="tel" autocomplete="tel" required placeholder="+33 6 12 34 56 78"></div>
-        </div>
-        <h4 class="co-h">Informations de carte bancaire</h4>
-        <div class="form-g co-card-field">
-          <label for="coCard">Numéro de carte</label>
-          <input id="coCard" type="text" inputmode="numeric" autocomplete="cc-number" maxlength="19" required placeholder="1234 1234 1234 1234" oninput="APP.coFmtCard(this)">
-          <span class="co-card-brand">💳</span>
-        </div>
-        <div class="co-row">
-          <div class="form-g"><label for="coExp">Date d'expiration</label><input id="coExp" type="text" inputmode="numeric" autocomplete="cc-exp" maxlength="5" required placeholder="MM/AA" oninput="APP.coFmtExp(this)"></div>
-          <div class="form-g"><label for="coCvc">Code de sécurité (CVC)</label><input id="coCvc" type="text" inputmode="numeric" autocomplete="cc-csc" maxlength="4" required placeholder="123" oninput="APP.coFmtCvc(this)"></div>
-        </div>
-        <p class="co-error" id="coError" style="display:none"></p>
-        <button type="submit" class="btn-submit co-pay"><span class="ui-icon-container is-sm"><i data-lucide="lock"></i></span> Valider le paiement ${plan.price} ${DEVISE}</button>
-        <p class="co-secure"><span class="ui-icon-container is-sm"><i data-lucide="lock"></i></span> Paiement chiffré de bout en bout. Vos données bancaires ne sont pas conservées.</p>
-      </form>
-    `, true);
-  }
-
-  function coFmtCard(el) { const v = el.value.replace(/\D/g, '').slice(0, 16); el.value = v.replace(/(.{4})(?=.)/g, '$1 '); }
-  function coFmtExp(el) { let v = el.value.replace(/\D/g, '').slice(0, 4); if (v.length >= 3) v = v.slice(0, 2) + '/' + v.slice(2); el.value = v; }
-  function coFmtCvc(el) { el.value = el.value.replace(/\D/g, '').slice(0, 4); }
-
-  function processPayment(e, n) {
-    if (e) e.preventDefault();
-    const err = $('coError');
-    const fail = (m) => { err.textContent = '⚠️ ' + m; err.style.display = 'block'; return false; };
-    const name = $('coName').value.trim(), email = $('coEmail').value.trim(), phone = $('coPhone').value.trim();
-    const card = $('coCard').value.replace(/\s/g, ''), exp = $('coExp').value.trim(), cvc = $('coCvc').value.trim();
-    if (!name || !email || !phone) return fail('Merci de renseigner vos informations de facturation.');
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail('Adresse e-mail invalide.');
-    if (!/^[0-9 ()+\-]{6,}$/.test(phone)) return fail('Numéro de téléphone invalide.');
-    if (card.length !== 16) return fail('Le numéro de carte doit comporter 16 chiffres.');
-    const m = exp.match(/^(\d{2})\/(\d{2})$/);
-    if (!m) return fail('Date d’expiration invalide (format MM/AA).');
-    const mm = +m[1], yy = +m[2];
-    if (mm < 1 || mm > 12) return fail('Le mois d’expiration doit être compris entre 01 et 12.');
-    const now = new Date(), curYY = now.getFullYear() % 100, curMM = now.getMonth() + 1;
-    if (yy < curYY || (yy === curYY && mm < curMM)) return fail('Cette carte a expiré.');
-    if (cvc.length < 3) return fail('Le code de sécurité (CVC) doit comporter 3 chiffres.');
-    err.style.display = 'none';
-
-    // Traitement sécurisé (spinner 2 s)
-    const box = document.querySelector('#modalOverlay .modal-box');
-    if (box) box.innerHTML = `<div class="co-processing"><div class="co-spinner"></div><h3>Traitement sécurisé en cours…</h3><p>Merci de patienter, nous validons votre paiement en toute sécurité.</p></div>`;
-    setTimeout(() => {
-      credits += n;
-      _saveCredits();
-      updateCreditsUI();
-      const b = document.querySelector('#modalOverlay .modal-box');
-      if (b) b.innerHTML = `
-        <button class="modal-close" onclick="APP.closeModal()">✕</button>
-        <div class="co-success">
-          <div class="co-success-ic">✅</div>
-          <h2>Merci pour votre achat !</h2>
-          <p>Vos crédits de cours ont été ajoutés à votre compte.</p>
-          <div class="co-success-balance">Nouveau solde : <strong>${credits} crédits de cours</strong></div>
-          <button class="btn-submit" onclick="APP.closeModal()">Parfait ! <span class="ui-icon-container is-sm"><i data-lucide="rocket"></i></span></button>
-        </div>`;
-      launchConfetti();
-    }, 2000);
-    return false;
-  }
 
   // Série : 7 cases neutres tant qu'aucun cours n'a été suivi. Les cases se
   // rempliront quand la présence aux séances sera remontée par le serveur.
@@ -6134,7 +6080,7 @@ Laboratoire de Codage Vibe|8|fichiers`;
     llmSetModel, llmSend,
     folderOpen, folderBack, folderNew, fileNew, fileOpen,
     editClass, joinClass, joinZoomMeeting, leaveClass, sendChat,
-    openBuyCredits, buyCredits, coFmtCard, coFmtExp, coFmtCvc, processPayment,
+    openBuyCredits, buyCredits,
     openAddClass, addClass,
     openAddScore, addScore, openAddExam, addExam,
     openAddGoal, openAddProject,

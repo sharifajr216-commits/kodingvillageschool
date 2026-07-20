@@ -2243,6 +2243,15 @@ img{max-width:100%;display:block}
 .co-error{color:#dc2626;font-size:.84rem;font-weight:600;background:#fef2f2;border:1.5px solid #fecaca;border-radius:var(--r-md);padding:9px 12px;margin:0 0 14px}
 .co-pay{width:100%;margin-top:6px;font-size:1rem}
 .co-secure{font-size:.74rem;color:var(--t3);text-align:center;margin-top:12px}
+/* Échec de démarrage du paiement : on informe clairement qu'aucun crédit
+   n'a été accordé — ce panneau remplace l'ancien formulaire de démonstration. */
+.co-error-box{text-align:center;padding:22px 10px 8px}
+.co-error-ic{color:#dc2626;margin-bottom:12px}
+.co-error-msg{font-size:1.02rem;font-weight:800;color:var(--t1);margin-bottom:10px}
+.co-error-sub{font-size:.88rem;color:var(--t2);line-height:1.6;max-width:44ch;margin:0 auto 8px}
+.co-error-sub a{color:var(--indigo);font-weight:600}
+.co-error-code{font-size:.72rem;color:var(--t3);font-family:'JetBrains Mono',monospace;margin-bottom:16px}
+.co-error-box .btn{margin-top:6px}
 .co-processing{text-align:center;padding:44px 10px}
 .co-processing h3{font-size:1.15rem;font-weight:800;margin:18px 0 6px}
 .co-processing p{font-size:.88rem;color:var(--t2)}
