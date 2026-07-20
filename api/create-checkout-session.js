@@ -5,10 +5,18 @@
 // Les montants/forfaits sont définis ICI (côté serveur) — jamais envoyés par le client —
 // pour empêcher toute manipulation du prix depuis le navigateur.
 
+// Devise Stripe (code ISO minuscule). Facturation en DOLLARS AMÉRICAINS.
+// Surchargeable par la variable d'environnement STRIPE_CURRENCY ; c'est le SEUL
+// endroit à changer côté serveur.
+const CURRENCY = process.env.STRIPE_CURRENCY || 'usd';
+
+// ⚠️ Montants en CENTIMES (USD). Doivent rester alignés avec CREDIT_PLANS dans
+// index.html — mais c'est CE fichier qui fait foi sur ce qui est débité.
 const PLANS = {
-  '10': { sessions: 10, amount: 8900,  label: 'Forfait 10 sessions' },  // montants en centimes (EUR)
-  '20': { sessions: 20, amount: 15900, label: 'Forfait 20 sessions' },
-  '50': { sessions: 50, amount: 34900, label: 'Forfait 50 sessions' }
+  '1':  { sessions: 1,  amount: 2200,  label: 'Session à l’unité' },       //  22 $ → 22 $/session
+  '10': { sessions: 10, amount: 22000, label: 'Forfait 10 sessions' },     // 220 $ → 22 $/session
+  '20': { sessions: 20, amount: 44000, label: 'Forfait 20 sessions' },     // 440 $ → 22 $/session
+  '40': { sessions: 40, amount: 80000, label: 'Forfait 40 sessions' }      // 800 $ → 20 $/session
 };
 
 module.exports = async (req, res) => {
@@ -39,10 +47,10 @@ module.exports = async (req, res) => {
   params.append('mode', 'payment');
   params.append('locale', 'fr');
   params.append('line_items[0][quantity]', '1');
-  params.append('line_items[0][price_data][currency]', 'eur');
+  params.append('line_items[0][price_data][currency]', CURRENCY);
   params.append('line_items[0][price_data][unit_amount]', String(plan.amount));
   params.append('line_items[0][price_data][product_data][name]', `${plan.label} — KodingvillageSchool`);
-  params.append('line_items[0][price_data][product_data][description]', `${plan.sessions} crédits de cours 1:1`);
+  params.append('line_items[0][price_data][product_data][description]', `${plan.sessions} session${plan.sessions > 1 ? 's' : ''} de 1h30 en cours particulier 1:1`);
   params.append('metadata[plan]', planId);
   params.append('metadata[sessions]', String(plan.sessions));
   params.append('success_url', `${origin}/?payment=success&plan=${planId}&session_id={CHECKOUT_SESSION_ID}`);

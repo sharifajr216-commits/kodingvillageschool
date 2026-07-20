@@ -204,6 +204,19 @@ img{max-width:100%;display:block}
 
 /* Pricing cards */
 .pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:16px}
+/* Grille des forfaits de crédits : 4 offres. En dessous de 900 px la modale
+   n'a plus la largeur pour 4 colonnes → 2 puis 1. */
+.pricing-grid-4{grid-template-columns:repeat(4,1fr);gap:12px;align-items:stretch}
+/* Colonne flex + marge auto sur le bouton : les « Acheter » s'alignent en bas
+   même quand les listes d'avantages n'ont pas le même nombre de lignes. */
+.pricing-grid-4 .price-card{padding:18px 14px;display:flex;flex-direction:column}
+.pricing-grid-4 .price-card ul{flex:1}
+.pricing-grid-4 .price-card .btn{margin-top:auto}
+.pricing-grid-4 .price-card .amount{font-size:1.6rem}
+.pricing-grid-4 .price-card .sessions{font-size:.98rem}
+.pricing-grid-4 .price-card ul{font-size:.76rem}
+@media(max-width:900px){.pricing-grid-4{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:520px){.pricing-grid-4{grid-template-columns:1fr}}
 .price-card{border:2px solid var(--border);border-radius:var(--r-lg);padding:22px;text-align:center;transition:all var(--dur) var(--ease);position:relative;overflow:hidden}
 .price-card:hover{border-color:var(--indigo);transform:translateY(-4px);box-shadow:var(--sh-md)}
 .price-card.popular{border-color:var(--indigo);background:var(--indigo-l)}
@@ -1985,9 +1998,17 @@ img{max-width:100%;display:block}
 .bk-field input,.bk-field select{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:var(--r-md);font-size:.9rem;font-family:inherit;background:var(--bg);color:var(--t1);transition:border-color var(--dur) var(--ease),box-shadow var(--dur) var(--ease)}
 .bk-field input:focus,.bk-field select:focus{outline:none;border-color:var(--indigo);box-shadow:0 0 0 3px var(--indigo-l)}
 .bk-field input[readonly]{background:var(--surface-2,#f1f5f9);color:var(--t2);font-weight:600;cursor:not-allowed}
-.bk-phone-row{display:flex;gap:8px}
+.bk-phone-row{display:flex;gap:8px;align-items:stretch}
 .bk-phone-row select{flex:0 0 100px}
 .bk-phone-row input{flex:1}
+/* Indicatif déduit du pays : présenté comme une étiquette, pas comme un champ,
+   pour qu'il soit clair qu'il n'est pas modifiable. */
+.bk-dial{flex:0 0 auto;display:flex;align-items:center;gap:5px;padding:0 13px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r-md);font-size:.9rem;font-weight:700;color:var(--t2);white-space:nowrap}
+
+/* Étape 1 : deux sélecteurs empilés (pays puis cours) */
+.gs-select-2{margin-top:10px}
+.gs-tz{margin-top:10px;font-size:.72rem;color:var(--t3);line-height:1.5}
+.gs-noslot{grid-column:1 / -1;font-size:.82rem;color:var(--t3);line-height:1.6;text-align:left}
 .bk-error{color:#dc2626;font-size:.86rem;font-weight:600;margin-top:16px;background:#fef2f2;border:1.5px solid #fecaca;border-radius:var(--r-md);padding:10px 14px}
 .bk-submit{width:100%;justify-content:center;margin-top:22px}
 .bk-fineprint{font-size:.78rem;color:var(--t3);text-align:center;margin-top:14px;line-height:1.5}

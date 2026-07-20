@@ -66,16 +66,36 @@ module.exports = async (req, res) => {
   const f = {
     parentFirst: clean(body.parentFirst, 60), parentLast: clean(body.parentLast, 60),
     childFirst: clean(body.childFirst, 60),   childLast: clean(body.childLast, 60),
-    pronoun: clean(body.pronoun, 40),         email: clean(body.email, 120),
+    gender: clean(body.gender, 40),           age: clean(body.age, 3),
+    email: clean(body.email, 120),
+    country: clean(body.country, 60),         countryCode: clean(body.countryCode, 4),
+    timezone: clean(body.timezone, 60),
     phone: clean(body.phone, 40),             course: clean(body.course, 80),
-    slot: clean(body.slot, 80)
+    slot: clean(body.slot, 80),               slotIso: clean(body.slotIso, 40)
   };
 
-  const required = ['parentFirst', 'parentLast', 'childFirst', 'childLast', 'pronoun', 'email', 'phone'];
+  const required = ['parentFirst', 'parentLast', 'childFirst', 'childLast', 'gender', 'age', 'country', 'email', 'phone'];
   if (required.some(k => !f[k]) || !isEmail(f.email)) {
     res.status(400).json({ ok: false, error: 'invalid', message: 'Champs obligatoires manquants ou e-mail invalide.' });
     return;
   }
+
+  // L'âge conditionne le cours proposé : on le valide au lieu de faire confiance au client.
+  const age = parseInt(f.age, 10);
+  if (!(age >= 5 && age <= 18)) {
+    res.status(400).json({ ok: false, error: 'invalid', message: "Âge de l'enfant invalide (5 à 18 ans)." });
+    return;
+  }
+
+  // L'indicatif est déduit du pays côté serveur : un client trafiqué ne peut pas
+  // envoyer un couple pays/indicatif incohérent.
+  const DIAL = {
+    CA: '+1', GN: '+224', FR: '+33', BE: '+32', CH: '+41', US: '+1', GB: '+44',
+    MA: '+212', DZ: '+213', TN: '+216', SN: '+221', CI: '+225', ML: '+223',
+    CM: '+237', IN: '+91', AE: '+971'
+  };
+  const dial = DIAL[f.countryCode] || clean(body.phoneCode, 6);
+  const fullPhone = `${dial} ${f.phone}`.trim();
 
   // 1) E-mail principal : le lead envoyé à l'école (obligatoire — son échec = échec global).
   const leadHtml = `
@@ -83,11 +103,14 @@ module.exports = async (req, res) => {
     <table cellpadding="6" style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:14px">
       <tr><td><b>Parent</b></td><td>${esc(f.parentFirst)} ${esc(f.parentLast)}</td></tr>
       <tr><td><b>Enfant</b></td><td>${esc(f.childFirst)} ${esc(f.childLast)}</td></tr>
-      <tr><td><b>Pronom de l'enfant</b></td><td>${esc(f.pronoun)}</td></tr>
+      <tr><td><b>Âge</b></td><td>${esc(f.age)} ans</td></tr>
+      <tr><td><b>Genre</b></td><td>${esc(f.gender)}</td></tr>
+      <tr><td><b>Pays</b></td><td>${esc(f.country)}${f.timezone ? ` (${esc(f.timezone)})` : ''}</td></tr>
       <tr><td><b>E-mail</b></td><td>${esc(f.email)}</td></tr>
-      <tr><td><b>Téléphone</b></td><td>${esc(f.phone)}</td></tr>
+      <tr><td><b>Téléphone</b></td><td>${esc(fullPhone)}</td></tr>
       <tr><td><b>Cours</b></td><td>${esc(f.course)}</td></tr>
-      <tr><td><b>Date &amp; heure</b></td><td>${esc(f.slot)}</td></tr>
+      <tr><td><b>Créneau (heure de l'élève)</b></td><td>${esc(f.slot)}</td></tr>
+      ${f.slotIso ? `<tr><td><b>Créneau (UTC)</b></td><td>${esc(f.slotIso)}</td></tr>` : ''}
     </table>`;
 
   try {

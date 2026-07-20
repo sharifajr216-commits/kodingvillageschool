@@ -151,19 +151,16 @@
     <div class="lp-sec-head center"><h2>Démarrer est super simple</h2><p>Trois étapes simples vers le premier cours gratuit de votre enfant.</p></div>
     <div class="gs-grid">
       <div class="gs-step">
-        <div class="gs-num">1</div><h4>Choisir le cours</h4>
-        <select id="gsCourse" class="gs-select">
+        <div class="gs-num">1</div><h4>Votre pays et le cours</h4>
+        <select id="gsCountry" class="gs-select" aria-label="Pays de résidence" onchange="APP.gsCountryChange()"></select>
+        <select id="gsCourse" class="gs-select gs-select-2">
           <option>Python</option><option>Scratch</option>
         </select>
       </div>
       <div class="gs-step">
         <div class="gs-num">2</div><h4>Réserver le cours d'essai GRATUIT</h4>
-        <div class="gs-slots">
-          <button class="gs-slot active" onclick="APP.gsSlot(this)">Lun · 17:00</button>
-          <button class="gs-slot" onclick="APP.gsSlot(this)">Mer · 18:00</button>
-          <button class="gs-slot" onclick="APP.gsSlot(this)">Ven · 16:30</button>
-          <button class="gs-slot" onclick="APP.gsSlot(this)">Sam · 10:00</button>
-        </div>
+        <div class="gs-slots" id="gsSlots"></div>
+        <p class="gs-tz" id="gsTz"></p>
       </div>
       <div class="gs-step">
         <div class="gs-num">3</div><h4>S'inscrire au cours</h4>
@@ -278,37 +275,39 @@
             <input id="bkChildLast" type="text" required placeholder="Dupont">
           </div>
           <div class="bk-field">
-            <label for="bkChildPronoun">Pronom de l'enfant *</label>
-            <select id="bkChildPronoun" required>
+            <label for="bkChildGender">Genre de l'enfant *</label>
+            <select id="bkChildGender" required>
               <option value="">Sélectionner…</option>
-              <option value="Il / Lui">Il / Lui</option>
-              <option value="Elle / Elle">Elle / Elle</option>
-              <option value="Iel / Iel">Iel / Iel</option>
-              <option value="Préfère ne pas préciser">Préfère ne pas préciser</option>
+              <option value="Garçon">Garçon</option>
+              <option value="Fille">Fille</option>
+              <option value="Autre">Autre</option>
+              <option value="Préfère ne pas dire">Préfère ne pas dire</option>
+            </select>
+          </div>
+          <div class="bk-field">
+            <label for="bkChildAge">Âge de l'enfant *</label>
+            <select id="bkChildAge" required>
+              <option value="">Sélectionner…</option>
             </select>
           </div>
           <div class="bk-field">
             <label for="bkEmail">Adresse e-mail *</label>
             <input id="bkEmail" type="email" autocomplete="email" required placeholder="marie.dupont@email.com">
           </div>
+          <div class="bk-field">
+            <label for="bkCountry">Pays de résidence *</label>
+            <select id="bkCountry" required onchange="APP.bkCountryChange()"></select>
+          </div>
           <div class="bk-field bk-phone">
-            <label>Numéro de téléphone *</label>
+            <label for="bkPhone">Numéro de téléphone *</label>
             <div class="bk-phone-row">
-              <select id="bkPhoneCode" required aria-label="Indicatif pays">
-                <option value="+1">🇺🇸 +1</option>
-                <option value="+33">🇫🇷 +33</option>
-                <option value="+44">🇬🇧 +44</option>
-                <option value="+32">🇧🇪 +32</option>
-                <option value="+41">🇨🇭 +41</option>
-                <option value="+212">🇲🇦 +212</option>
-                <option value="+213">🇩🇿 +213</option>
-                <option value="+221">🇸🇳 +221</option>
-                <option value="+225">🇨🇮 +225</option>
-                <option value="+91">🇮🇳 +91</option>
-                <option value="+971">🇦🇪 +971</option>
-              </select>
+              <!-- Indicatif déduit du pays, non modifiable : il ne peut donc pas
+                   contredire le pays choisi. Transmis via bkPhoneCode. -->
+              <span class="bk-dial" id="bkDial" aria-hidden="true">—</span>
+              <input type="hidden" id="bkPhoneCode" value="">
               <input id="bkPhone" type="tel" autocomplete="tel" required placeholder="6 12 34 56 78" inputmode="tel">
             </div>
+            <span class="bk-hint" id="bkPhoneHint">L'indicatif suit votre pays de résidence.</span>
           </div>
           <div class="bk-field">
             <label for="bkCourse">Cours sélectionné</label>
@@ -1984,7 +1983,13 @@ print("Bonne séance de code, Bilal ! 🚀")
     toast('Ouverture de la conversation WhatsApp 💬', 'ok', '💬');
     window.open(WHATSAPP_LINK, '_blank', 'noopener');
   }
-  function gsSlot(btn) { document.querySelectorAll('.gs-slot').forEach(s => s.classList.remove('active')); btn.classList.add('active'); }
+  function gsSlot(btn) {
+    document.querySelectorAll('.gs-slot').forEach(s => s.classList.remove('active'));
+    btn.classList.add('active');
+    const iso = btn.dataset.iso;
+    const pays = paysParCode($('gsCountry') ? $('gsCountry').value : null);
+    gsSlotChoisi = creneauxPour(pays).find(c => c.iso === iso) || null;
+  }
 
   // === FAQ ACCORDION ===
   function faqToggle(btn) {
@@ -2004,10 +2009,202 @@ print("Bonne séance de code, Bilal ! 🚀")
   }
 
   // === BOOKING CONFIRMATION FLOW ===
+  // ============================================================
+  //  PAYS, FUSEAUX ET CRÉNEAUX
+  // ============================================================
+  // Référentiel unique : la landing et le formulaire s'en servent tous les deux.
+  // `tz` liste les fuseaux du pays, du plus courant au moins courant. Pour les
+  // pays qui en couvrent plusieurs (Canada, États-Unis), on retient celui du
+  // navigateur s'il correspond — sinon le premier.
+  const COUNTRIES = [
+    { code: 'CA', nom: 'Canada',          drapeau: '🇨🇦', dial: '+1',   tz: ['America/Toronto','America/Vancouver','America/Edmonton','America/Winnipeg','America/Halifax','America/St_Johns'] },
+    { code: 'GN', nom: 'Guinée',          drapeau: '🇬🇳', dial: '+224', tz: ['Africa/Conakry'] },
+    { code: 'FR', nom: 'France',          drapeau: '🇫🇷', dial: '+33',  tz: ['Europe/Paris'] },
+    { code: 'BE', nom: 'Belgique',        drapeau: '🇧🇪', dial: '+32',  tz: ['Europe/Brussels'] },
+    { code: 'CH', nom: 'Suisse',          drapeau: '🇨🇭', dial: '+41',  tz: ['Europe/Zurich'] },
+    { code: 'US', nom: 'États-Unis',      drapeau: '🇺🇸', dial: '+1',   tz: ['America/New_York','America/Chicago','America/Denver','America/Los_Angeles'] },
+    { code: 'GB', nom: 'Royaume-Uni',     drapeau: '🇬🇧', dial: '+44',  tz: ['Europe/London'] },
+    { code: 'MA', nom: 'Maroc',           drapeau: '🇲🇦', dial: '+212', tz: ['Africa/Casablanca'] },
+    { code: 'DZ', nom: 'Algérie',         drapeau: '🇩🇿', dial: '+213', tz: ['Africa/Algiers'] },
+    { code: 'TN', nom: 'Tunisie',         drapeau: '🇹🇳', dial: '+216', tz: ['Africa/Tunis'] },
+    { code: 'SN', nom: 'Sénégal',         drapeau: '🇸🇳', dial: '+221', tz: ['Africa/Dakar'] },
+    { code: 'CI', nom: "Côte d'Ivoire",   drapeau: '🇨🇮', dial: '+225', tz: ['Africa/Abidjan'] },
+    { code: 'ML', nom: 'Mali',            drapeau: '🇲🇱', dial: '+223', tz: ['Africa/Bamako'] },
+    { code: 'CM', nom: 'Cameroun',        drapeau: '🇨🇲', dial: '+237', tz: ['Africa/Douala'] },
+    { code: 'IN', nom: 'Inde',            drapeau: '🇮🇳', dial: '+91',  tz: ['Asia/Kolkata'] },
+    { code: 'AE', nom: 'Émirats arabes unis', drapeau: '🇦🇪', dial: '+971', tz: ['Asia/Dubai'] }
+  ];
+  const paysParCode = c => COUNTRIES.find(p => p.code === c) || null;
+
+  // Créneaux tels que l'école les ouvre, exprimés dans SON fuseau.
+  // Ils sont ensuite convertis dans le fuseau de l'élève.
+  const SCHOOL_TZ = 'America/Vancouver';
+  // Deux familles de créneaux, pour couvrir les deux bassins de clientèle.
+  // Les heures ci-dessous sont EN HEURE DE VANCOUVER ; les équivalences
+  // indiquées valent été comme hiver (vérifiées aux deux bascules d'heure d'été).
+  //
+  //   • Fin d'après-midi Vancouver  → soirée en Amérique du Nord
+  //   • Milieu de matinée Vancouver → soirée en Europe et en Afrique de l'Ouest
+  //     (10h00-11h00 ici = 19h-20h à Paris, 17h-19h à Conakry/Dakar/Abidjan)
+  const SCHOOL_SLOTS = [
+    { dow: 1, h: 17, m: 0 },   // lun. 17h00 → 20h00 Toronto
+    { dow: 2, h: 10, m: 0 },   // mar. 10h00 → 19h00 Paris · 17h/18h Conakry
+    { dow: 3, h: 18, m: 0 },   // mer. 18h00 → 21h00 Toronto
+    { dow: 4, h: 10, m: 30 },  // jeu. 10h30 → 19h30 Paris · 17h30/18h30 Conakry
+    { dow: 5, h: 16, m: 30 },  // ven. 16h30 → 19h30 Toronto
+    { dow: 6, h: 10, m: 0 },   // sam. 10h00 → 19h00 Paris · 13h00 Toronto
+    { dow: 6, h: 11, m: 0 }    // sam. 11h00 → 20h00 Paris · 18h/19h Conakry
+  ];
+  // Plage horaire raisonnable pour un enfant, dans SON fuseau : au-delà, le
+  // créneau est masqué plutôt que proposé à 3 h du matin.
+  const HEURE_MIN = 7, HEURE_MAX = 21;
+
+  const _JOURS = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
+
+  // Décompose un instant UTC dans un fuseau donné.
+  function _tzParts(utcMs, tz) {
+    const f = new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', weekday: 'short', hour12: false
+    });
+    const p = {};
+    for (const { type, value } of f.formatToParts(new Date(utcMs))) p[type] = value;
+    return {
+      y: +p.year, mo: +p.month, d: +p.day,
+      h: +(p.hour === '24' ? '0' : p.hour), mi: +p.minute,
+      dow: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(p.weekday)
+    };
+  }
+
+  // Heure murale (y/mo/d h:mi) dans `tz` → instant UTC.
+  // Deux itérations suffisent à converger, y compris aux bascules d'heure d'été.
+  function _zonedToUtc(y, mo, d, h, mi, tz) {
+    let utc = Date.UTC(y, mo - 1, d, h, mi);
+    for (let i = 0; i < 3; i++) {
+      const p = _tzParts(utc, tz);
+      const ecart = Date.UTC(p.y, p.mo - 1, p.d, p.h, p.mi) - utc;
+      utc = Date.UTC(y, mo - 1, d, h, mi) - ecart;
+    }
+    return utc;
+  }
+
+  // Prochaine occurrence d'un créneau (jour + heure école) après `depuis`.
+  function _prochaineOccurrence(slot, depuis) {
+    for (let i = 0; i < 14; i++) {
+      const p = _tzParts(depuis + i * 864e5, SCHOOL_TZ);
+      if (p.dow !== slot.dow) continue;
+      const utc = _zonedToUtc(p.y, p.mo, p.d, slot.h, slot.m, SCHOOL_TZ);
+      if (utc > depuis) return utc;
+    }
+    return null;
+  }
+
+  // Fuseau retenu pour un pays : celui du navigateur s'il appartient au pays.
+  function fuseauDuPays(pays) {
+    if (!pays) return SCHOOL_TZ;
+    let local = '';
+    try { local = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (_) {}
+    return pays.tz.includes(local) ? local : pays.tz[0];
+  }
+
+  // Créneaux convertis dans le fuseau de l'élève, ceux hors plage étant écartés.
+  function creneauxPour(pays) {
+    const tz = fuseauDuPays(pays);
+    const maintenant = Date.now();
+    const sortie = [];
+    for (const s of SCHOOL_SLOTS) {
+      const utc = _prochaineOccurrence(s, maintenant);
+      if (utc == null) continue;
+      const p = _tzParts(utc, tz);
+      const hors = p.h < HEURE_MIN || p.h > HEURE_MAX;
+      sortie.push({
+        utc, tz, hors,
+        label: `${_JOURS[p.dow]} · ${String(p.h).padStart(2, '0')}:${String(p.mi).padStart(2, '0')}`,
+        iso: new Date(utc).toISOString()
+      });
+    }
+    return sortie.sort((a, b) => a.utc - b.utc);
+  }
+
+  let gsSlotChoisi = null;
+
+  function _optionsPays(selectionne) {
+    return COUNTRIES.map(p =>
+      `<option value="${p.code}"${p.code === selectionne ? ' selected' : ''}>${p.drapeau} ${_admEsc(p.nom)}</option>`
+    ).join('');
+  }
+
+  // Pré-sélection : pays dont un fuseau correspond à celui du navigateur.
+  function _paysParDefaut() {
+    let local = '';
+    try { local = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (_) {}
+    const trouve = COUNTRIES.find(p => p.tz.includes(local));
+    return trouve ? trouve.code : 'CA';
+  }
+
+  function initPaysEtCreneaux() {
+    const defaut = _paysParDefaut();
+    const gsc = $('gsCountry');
+    if (gsc && !gsc.options.length) { gsc.innerHTML = _optionsPays(defaut); }
+    const bkc = $('bkCountry');
+    if (bkc && !bkc.options.length) { bkc.innerHTML = _optionsPays(defaut); }
+    // Âges proposés : 5 à 18 ans.
+    const age = $('bkChildAge');
+    if (age && age.options.length <= 1) {
+      age.innerHTML = '<option value="">Sélectionner…</option>' +
+        Array.from({ length: 14 }, (_, i) => i + 5).map(a => `<option value="${a}">${a} ans</option>`).join('');
+    }
+    renderGsSlots();
+    bkCountryChange();
+  }
+
+  function renderGsSlots() {
+    const zone = $('gsSlots'); if (!zone) return;
+    const pays = paysParCode($('gsCountry') ? $('gsCountry').value : null);
+    const creneaux = creneauxPour(pays);
+    const dispos = creneaux.filter(c => !c.hors);
+    const masques = creneaux.length - dispos.length;
+
+    if (!dispos.length) {
+      zone.innerHTML = `<p class="gs-noslot">Aucun créneau ne tombe à une heure raisonnable chez vous. Un mentor vous proposera un horaire sur mesure.</p>`;
+      gsSlotChoisi = null;
+    } else {
+      // Conserve la sélection si le créneau existe toujours après changement de pays.
+      if (!dispos.some(c => gsSlotChoisi && c.iso === gsSlotChoisi.iso)) gsSlotChoisi = dispos[0];
+      zone.innerHTML = dispos.map(c =>
+        `<button type="button" class="gs-slot${c.iso === gsSlotChoisi.iso ? ' active' : ''}" data-iso="${c.iso}" onclick="APP.gsSlot(this)">${_admEsc(c.label)}</button>`
+      ).join('');
+    }
+
+    const tzEl = $('gsTz');
+    if (tzEl) {
+      const tz = fuseauDuPays(pays);
+      tzEl.textContent = `Heures affichées dans votre fuseau (${tz})`
+        + (masques ? ` · ${masques} créneau${masques > 1 ? 'x' : ''} masqué${masques > 1 ? 's' : ''} (trop tôt ou trop tard chez vous)` : '');
+    }
+  }
+
+  function gsCountryChange() {
+    renderGsSlots();
+    // Le formulaire suit le pays choisi en amont.
+    const bkc = $('bkCountry'), gsc = $('gsCountry');
+    if (bkc && gsc) { bkc.value = gsc.value; bkCountryChange(); }
+  }
+
+  // Indicatif strictement dérivé du pays — l'utilisateur ne peut pas le contredire.
+  function bkCountryChange() {
+    const pays = paysParCode($('bkCountry') ? $('bkCountry').value : null);
+    const dial = $('bkDial'), code = $('bkPhoneCode');
+    if (dial) dial.textContent = pays ? `${pays.drapeau} ${pays.dial}` : '—';
+    if (code) code.value = pays ? pays.dial : '';
+  }
+
   function enrollNow() {
     const course = $('gsCourse') ? $('gsCourse').value : 'Python';
-    const slot = document.querySelector('.gs-slot.active');
-    const when = slot ? slot.textContent.trim() : 'Lun · 17:00';
+    const when = gsSlotChoisi ? gsSlotChoisi.label : '';
+    // Aligne le pays du formulaire sur celui choisi à l'étape 1.
+    const gsc = $('gsCountry'), bkc = $('bkCountry');
+    if (gsc && bkc) { bkc.value = gsc.value; bkCountryChange(); }
     // pre-fill the booking page
     $('bkCourseLabel').textContent = course;
     $('bkSlotLabel').textContent = when;
@@ -2032,22 +2229,34 @@ print("Bonne séance de code, Bilal ! 🚀")
   async function submitBooking(e) {
     if (e) e.preventDefault();
     const get = id => ($(id) ? $(id).value.trim() : '');
+    const paysSel = paysParCode(get('bkCountry'));
     const fields = {
       parentFirst: get('bkParentFirst'), parentLast: get('bkParentLast'),
       childFirst: get('bkChildFirst'), childLast: get('bkChildLast'),
-      pronoun: get('bkChildPronoun'), email: get('bkEmail'),
-      phoneCode: get('bkPhoneCode'), phone: get('bkPhone'),
-      course: get('bkCourse'), slot: get('bkSlot')
+      gender: get('bkChildGender'), age: get('bkChildAge'),
+      email: get('bkEmail'),
+      country: paysSel ? paysSel.nom : '', countryCode: paysSel ? paysSel.code : '',
+      // Indicatif recalculé depuis le pays au moment de l'envoi : même si le
+      // champ caché était trafiqué, il ne peut pas contredire le pays.
+      phoneCode: paysSel ? paysSel.dial : '', phone: get('bkPhone'),
+      timezone: fuseauDuPays(paysSel),
+      course: get('bkCourse'), slot: get('bkSlot'),
+      slotIso: gsSlotChoisi ? gsSlotChoisi.iso : ''
     };
     const err = $('bkError');
+    const echec = (msg, id) => { err.textContent = msg; err.style.display = 'block'; if (id && $(id)) $(id).focus(); return false; };
     // validation
-    const required = ['parentFirst','parentLast','childFirst','childLast','pronoun','email','phone'];
-    const missing = required.some(k => !fields[k]);
-    if (missing) { err.textContent = '⚠️ Merci de remplir tous les champs obligatoires.'; err.style.display = 'block'; return false; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email)) { err.textContent = '⚠️ Merci de saisir une adresse e-mail valide.'; err.style.display = 'block'; $('bkEmail').focus(); return false; }
-    if (!/^[0-9 ()\-]{6,}$/.test(fields.phone)) { err.textContent = '⚠️ Merci de saisir un numéro de téléphone valide.'; err.style.display = 'block'; $('bkPhone').focus(); return false; }
+    const required = ['parentFirst','parentLast','childFirst','childLast','gender','age','country','email','phone'];
+    if (required.some(k => !fields[k])) return echec('⚠️ Merci de remplir tous les champs obligatoires.');
+    const age = parseInt(fields.age, 10);
+    if (!(age >= 5 && age <= 18)) return echec('⚠️ L’âge de l’enfant doit être compris entre 5 et 18 ans.', 'bkChildAge');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email)) return echec('⚠️ Merci de saisir une adresse e-mail valide.', 'bkEmail');
+    if (!/^[0-9 ()\-.]{6,}$/.test(fields.phone)) return echec('⚠️ Merci de saisir un numéro de téléphone valide.', 'bkPhone');
     err.style.display = 'none';
 
+    // Numéro complet pour l'affichage/l'archivage local uniquement.
+    // À l'envoi, `phone` reste le numéro NATIONAL : c'est le serveur qui
+    // recompose avec l'indicatif déduit du pays (sinon on préfixerait deux fois).
     const fullPhone = fields.phoneCode + ' ' + fields.phone;
 
     // persist (sauvegarde locale, survit aux rechargements)
@@ -2067,8 +2276,7 @@ print("Bonne séance de code, Bilal ! 🚀")
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({
-          ...fields,
-          phone: fullPhone,
+          ...fields,   // `phone` = numéro national ; le serveur préfixe l'indicatif
           // honeypot anti-spam : vrai si un bot a coché le champ invisible
           botcheck: !!($('bkBotcheck') && $('bkBotcheck').checked)
         })
@@ -4975,41 +5183,59 @@ Scratch avec l'IA - Game Lab|8|fichiers`;
   }
 
   // === BUY CREDITS ===
-  function openBuyCredits() {
-    modal('Acheter des crédits de cours', `
-      <p class="modal-sub">Choisissez le forfait qui convient à votre enfant.</p>
-      <div class="pricing-grid">
-        <div class="price-card">
-          <div class="sessions">10 Sessions</div>
-          <div class="amount">89 €</div>
-          <div class="per">8,90 € / session</div>
-          <ul><li>Cours 1:1 en direct</li><li>Mentor dédié</li><li>Valable 3 mois</li></ul>
-          <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="APP.buyCredits(10)">Acheter <span class="ui-icon-container is-sm"><i data-lucide="arrow-right"></i></span></button>
-        </div>
-        <div class="price-card popular" style="padding-top:36px">
-          <div class="sessions">20 Sessions</div>
-          <div class="amount">159 €</div>
-          <div class="per">7,95 € / session</div>
-          <ul><li>Tout du forfait 10</li><li>Accès ressources premium</li><li>Valable 6 mois</li></ul>
-          <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="APP.buyCredits(20)">Acheter <span class="ui-icon-container is-sm"><i data-lucide="arrow-right"></i></span></button>
-        </div>
-        <div class="price-card">
-          <div class="sessions">50 Sessions</div>
-          <div class="amount">349 €</div>
-          <div class="per">6,98 € / session</div>
-          <ul><li>Tout du forfait 20</li><li>Support prioritaire</li><li>Valable 12 mois</li></ul>
-          <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="APP.buyCredits(50)">Acheter <span class="ui-icon-container is-sm"><i data-lucide="arrow-right"></i></span></button>
-        </div>
-      </div>
-    `, true);
+  // === PAIEMENT — FORFAITS DE CRÉDITS ===
+  //
+  // ⚠️ Ces montants doivent rester IDENTIQUES à ceux de api/create-checkout-session.js,
+  //    qui fait seul autorité sur ce qui est réellement débité. Ceux-ci ne servent
+  //    qu'à l'affichage et au panneau de démonstration.
+  //
+  // Le prix par session est CALCULÉ (jamais saisi à la main) : impossible qu'il
+  // se désynchronise du montant total.
+  // Facturation en dollars américains (USD) — cf. CURRENCY dans api/create-checkout-session.js.
+  const DEVISE = '$';
+  const DEVISE_CODE = 'USD';
+  const CREDIT_PLANS = {
+    1:  { sessions: 1,  price: 22,  duree: '1h30', validite: '1 mois' },
+    10: { sessions: 10, price: 220, duree: '1h30', validite: '6 mois' },
+    20: { sessions: 20, price: 440, duree: '1h30', validite: '9 mois' },
+    40: { sessions: 40, price: 800, duree: '1h30', validite: '12 mois' }
+  };
+
+  // Prix unitaire arrondi au cent, sans décimale inutile (24 $ plutôt que 24,00 $).
+  function prixParSession(plan) {
+    const u = plan.price / plan.sessions;
+    const txt = Number.isInteger(u) ? String(u) : u.toFixed(2).replace('.', ',');
+    return `${txt} ${DEVISE} / session`;
   }
 
-  // === PAIEMENT — FORFAITS DE CRÉDITS ===
-  const CREDIT_PLANS = {
-    10: { sessions: 10, price: 89 },
-    20: { sessions: 20, price: 159 },
-    50: { sessions: 50, price: 349 }
+  // Avantages par forfait — cumulatifs, cohérents avec le volume.
+  const CREDIT_AVANTAGES = {
+    1:  ['Cours 1:1 en direct de 1h30', 'Mentor dédié', 'Sans engagement'],
+    10: ['Cours 1:1 en direct de 1h30', 'Mentor dédié attitré', 'Suivi de progression', 'Valable 6 mois'],
+    20: ['Tout du forfait 10 sessions', 'Accès aux ressources premium', 'Bilan pédagogique à mi-parcours', 'Valable 9 mois'],
+    40: ['Tout du forfait 20 sessions', 'Support prioritaire', 'Projet final encadré', 'Valable 12 mois']
   };
+
+  function openBuyCredits() {
+    const ordre = [1, 10, 20, 40];
+    const cartes = ordre.map(n => {
+      const plan = CREDIT_PLANS[n];
+      const populaire = n === 20;   // meilleur rapport volume/prix hors gros forfait
+      const avantages = (CREDIT_AVANTAGES[n] || []).map(a => `<li>${a}</li>`).join('');
+      return `<div class="price-card${populaire ? ' popular' : ''}"${populaire ? ' style="padding-top:36px"' : ''}>
+          <div class="sessions">${plan.sessions} Session${plan.sessions > 1 ? 's' : ''}</div>
+          <div class="amount">${plan.price} ${DEVISE}</div>
+          <div class="per">${prixParSession(plan)}</div>
+          <ul>${avantages}</ul>
+          <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="APP.buyCredits(${n})">Acheter <span class="ui-icon-container is-sm"><i data-lucide="arrow-right"></i></span></button>
+        </div>`;
+    }).join('');
+
+    modal('Acheter des crédits de cours', `
+      <p class="modal-sub">Choisissez le forfait qui convient à votre enfant. Chaque session dure 1h30, en cours particulier. Tarifs en dollars américains (${DEVISE_CODE}).</p>
+      <div class="pricing-grid pricing-grid-4">${cartes}</div>
+    `, true);
+  }
 
   // Au clic sur « Acheter » : tente le vrai paiement Stripe (Checkout hébergé) ; si le
   // backend n'est pas disponible (clés absentes / non déployé), repli sur le panneau démo.
@@ -5075,9 +5301,10 @@ Scratch avec l'IA - Game Lab|8|fichiers`;
     modal('Paiement sécurisé <span class="ui-icon-container is-sm"><i data-lucide="lock"></i></span>', `
       <div class="co-summary">
         <div class="co-sum-head">Récapitulatif de la commande</div>
-        <div class="co-sum-row"><span>Forfait choisi</span><strong>Forfait ${plan.sessions} sessions</strong></div>
+        <div class="co-sum-row"><span>Forfait choisi</span><strong>Forfait ${plan.sessions} session${plan.sessions>1?"s":""} (${plan.duree})</strong></div>
         <div class="co-sum-row"><span>Crédits de cours</span><strong>+${plan.sessions} cours</strong></div>
-        <div class="co-sum-row co-total"><span>Total à payer</span><strong>${plan.price} €</strong></div>
+        <div class="co-sum-row"><span>Prix par session</span><strong>${prixParSession(plan)}</strong></div>
+        <div class="co-sum-row co-total"><span>Total à payer</span><strong>${plan.price} ${DEVISE} ${DEVISE_CODE}</strong></div>
       </div>
       <form class="co-form" id="coForm" onsubmit="return APP.processPayment(event, ${n})" autocomplete="on">
         <h4 class="co-h">Informations de facturation</h4>
@@ -5097,7 +5324,7 @@ Scratch avec l'IA - Game Lab|8|fichiers`;
           <div class="form-g"><label for="coCvc">Code de sécurité (CVC)</label><input id="coCvc" type="text" inputmode="numeric" autocomplete="cc-csc" maxlength="4" required placeholder="123" oninput="APP.coFmtCvc(this)"></div>
         </div>
         <p class="co-error" id="coError" style="display:none"></p>
-        <button type="submit" class="btn-submit co-pay"><span class="ui-icon-container is-sm"><i data-lucide="lock"></i></span> Valider le paiement ${plan.price} €</button>
+        <button type="submit" class="btn-submit co-pay"><span class="ui-icon-container is-sm"><i data-lucide="lock"></i></span> Valider le paiement ${plan.price} ${DEVISE}</button>
         <p class="co-secure"><span class="ui-icon-container is-sm"><i data-lucide="lock"></i></span> Paiement chiffré de bout en bout. Vos données bancaires ne sont pas conservées.</p>
       </form>
     `, true);
@@ -5841,6 +6068,8 @@ Scratch avec l'IA - Game Lab|8|fichiers`;
   _initIcons();
   // Paint the canonical avatar/name into the shell on first load
   syncProfileUI();
+  // Pays, âges et créneaux localisés (landing + formulaire de réservation)
+  initPaysEtCreneaux();
   _initFootGrades();
   // Affiche le solde de crédits persistant (localStorage) dès le chargement
   updateCreditsUI();
@@ -5854,7 +6083,7 @@ Scratch avec l'IA - Game Lab|8|fichiers`;
   // === PUBLIC API ===
   return {
     openLogin, login: loginAndPreload, logout, confirmLogout, modal, closeModal,
-    authTab, doSignIn, doSignUp, lpGo, navCourses, lpCourse, bookSlot, joinCommunity, gsSlot, enrollNow, faqToggle, backToLanding, submitBooking, teacherTab, teacherSortBy, toggleTheme, goTeacher,
+    authTab, doSignIn, doSignUp, lpGo, navCourses, lpCourse, bookSlot, joinCommunity, gsSlot, gsCountryChange, bkCountryChange, enrollNow, faqToggle, backToLanding, submitBooking, teacherTab, teacherSortBy, toggleTheme, goTeacher,
     sbActive, mobNav, goSandbox, goDashboard,
     goAdmin, adminCreate, adminRefresh, adminSend, adminReset, adminDelete, adminCopyPwd, adminLogout,
     adminSessionCreate, adminSessionsRefresh, adminSessionDelete,
