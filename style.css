@@ -372,12 +372,21 @@ img{max-width:100%;display:block}
 .streak-header h3{font-size:1.05rem;font-weight:700}
 .py-pill{display:inline-flex;align-items:center;gap:4px;padding:4px 12px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r-full);font-size:.75rem;font-weight:600}
 .streak-sub{font-size:.82rem;color:var(--t3);margin-bottom:14px}
-.streak-days{display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap}
-.streak-day{width:32px;height:32px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.7rem;color:var(--t3)}
+.streak-days{display:grid;grid-template-columns:repeat(7,1fr);align-items:center;justify-items:center;gap:6px;margin-bottom:8px}
+.streak-day{width:100%;max-width:32px;aspect-ratio:1;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.7rem;color:var(--t3)}
 .streak-day.done{border-color:var(--emerald);color:var(--emerald)}
 .streak-day.missed{border-color:var(--red);color:var(--red)}
 .streak-day.gift{border-color:var(--orange);color:var(--orange);font-size:.9rem}
 .streak-labels{display:flex;gap:12px;font-size:.72rem;color:var(--t3);margin-bottom:18px}
+/* Cases de série non encore acquises : la grille reste visible sans rien
+   affirmer sur la progression de l'élève. */
+.streak-days{margin-bottom:18px}
+/* Compteur d'événements à zéro : gris neutre au lieu de la pastille orange
+   d'alerte, qui attirait l'œil sur une absence d'information. */
+.ev-count[data-zero="1"]{background:var(--surface-hover);color:var(--t3)}
+/* État vide générique des tuiles du tableau de bord */
+.tile-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:22px 12px;text-align:center;color:var(--t3)}
+.tile-empty p{font-size:.82rem;line-height:1.55;margin:0;max-width:30ch}
 .credits-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid var(--border-light)}
 .credits-row .lbl{display:flex;align-items:center;gap:6px;font-size:.88rem;font-weight:600}
 .credits-note{font-size:.72rem;color:var(--t3);margin-top:8px;font-style:italic}

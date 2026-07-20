@@ -466,14 +466,15 @@
     <header class="dash-id">
       <div class="dash-id-main">
         <p class="greet">Content de te revoir,</p>
-        <div class="name-row"><span class="av" id="dashAvatar"></span><h1 id="dashName">Bilal Hassan Keita !</h1></div>
+        <div class="name-row"><span class="av" id="dashAvatar"></span><h1 id="dashName">—</h1></div>
       </div>
       <div class="dash-id-stats">
-        <span class="stat"><strong id="pointsDisplay">70</strong> points</span>
+        <span class="stat"><strong id="pointsDisplay">0</strong> points</span>
         <span class="stat-sep" aria-hidden="true">·</span>
-        <span class="stat">Classement <strong>#93</strong></span>
+        <!-- Classement affiché seulement quand l'élève a des points (voir updatePointsUI) -->
+        <span class="stat">Classement <strong id="rankDisplay">—</strong></span>
         <span class="stat-sep" aria-hidden="true">·</span>
-        <span class="stat"><strong id="creditsDisplay">31</strong> crédits</span>
+        <span class="stat"><strong id="creditsDisplay">0</strong> crédits</span>
         <button class="btn-sm indigo" onclick="APP.openBuyCredits()">+ Acheter des crédits</button>
       </div>
     </header>
@@ -493,11 +494,11 @@
       <!-- Revenez -->
       <div class="tile tile-comeback"><h3 style="font-size:1.05rem;font-weight:700;margin-bottom:14px">Revenez</h3><div class="comeback-item"><div class="comeback-tag"><span class="ui-icon-container is-sm"><i data-lucide="graduation-cap"></i></span> Accompagné par l'enseignant</div><p class="comeback-name">Travailler avec Turtle</p><p class="comeback-sub">Objet : <strong style="color:var(--indigo)">Python</strong></p><button class="btn-resume" onclick="APP.modal('Reprendre l’apprentissage','<p style=&quot;color:var(--t2);font-size:.9rem&quot;>Le module Turtle reprendra à la leçon 4. Préparez votre environnement Python !</p><button class=&quot;btn btn-primary&quot; style=&quot;margin-top:16px&quot; onclick=&quot;APP.closeModal()&quot;>Compris !</button>')"><span class="ui-icon-container is-sm"><i data-lucide="play"></i></span> Reprendre l’apprentissage</button><p class="comeback-hw"><span class="ui-icon-container is-sm"><i data-lucide="clipboard-list"></i></span> 5 devoirs en attente</p></div></div>
       <!-- Série + crédits -->
-      <div class="tile tile-streak"><div class="streak-header"><h3>Ta série est terminée</h3><div class="py-pill"><span class="ui-icon-container is-sm"><i data-lucide="code-2"></i></span> Python <span class="ui-icon-container is-sm ic-muted"><i data-lucide="chevron-right"></i></span></div></div><p class="streak-sub">La prochaine série commence le 28 juin ! <span class="ui-icon-container is-sm" style="color:var(--orange)"><i data-lucide="gift"></i></span></p><div class="streak-days"><div class="streak-day missed"><span class="ui-icon-container is-sm"><i data-lucide="x"></i></span></div><div class="streak-day done"><span class="ui-icon-container is-sm"><i data-lucide="check"></i></span></div><div class="streak-day done"><span class="ui-icon-container is-sm"><i data-lucide="check"></i></span></div><div class="streak-day done"><span class="ui-icon-container is-sm"><i data-lucide="check"></i></span></div><div class="streak-day done"><span class="ui-icon-container is-sm"><i data-lucide="check"></i></span></div><div class="streak-day done"><span class="ui-icon-container is-sm"><i data-lucide="check"></i></span></div><div class="streak-day done"><span class="ui-icon-container is-sm"><i data-lucide="check"></i></span></div><div class="streak-day done"><span class="ui-icon-container is-sm"><i data-lucide="check"></i></span></div><div class="streak-day done"><span class="ui-icon-container is-sm"><i data-lucide="check"></i></span></div><div class="streak-day gift"><span class="ui-icon-container is-sm"><i data-lucide="gift"></i></span></div></div><div class="streak-labels"><span>27 juin</span><span>28 juin</span></div><div class="credits-row"><div class="lbl"><span class="ui-icon-container is-sm"><i data-lucide="ticket"></i></span> <strong id="creditsDisplay2">31</strong> crédits restants</div><button class="btn-sm green" onclick="APP.openBuyCredits()"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg> Acheter des crédits</button></div><div class="credits-row"><div class="lbl"><span class="ui-icon-container is-sm"><i data-lucide="house"></i></span> <strong>0</strong> Pass Club</div><button class="btn-sm indigo" onclick="APP.openAddClass()"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Ajouter une classe</button></div><p class="credits-note">Note : Les crédits sont au niveau du compte et utilisables par tous les étudiants</p></div>
+      <div class="tile tile-streak"><div class="streak-header"><h3>Ta série d'apprentissage</h3></div><p class="streak-sub">Assiste à ton premier cours pour lancer ta série <span class="ui-icon-container is-sm" style="color:var(--orange)"><i data-lucide="flame"></i></span></p><div class="streak-days" id="streakDays"></div><div class="credits-row"><div class="lbl"><span class="ui-icon-container is-sm"><i data-lucide="ticket"></i></span> <strong id="creditsDisplay2">0</strong> crédits restants</div><button class="btn-sm green" onclick="APP.openBuyCredits()"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg> Acheter des crédits</button></div><p class="credits-note">Les crédits sont rattachés au compte et utilisables par tous les élèves qui y sont liés.</p></div>
       <!-- Zone de plaisir -->
       <div class="tile fun-zone"><div class="fun-header"><h3>Zone de plaisir</h3><div class="fun-nav"><span id="funIdx">1/3</span><button onclick="APP.funPrev()">‹</button><button onclick="APP.funNext()">›</button></div></div><div class="fun-card" id="funCard"><div class="fun-card-title"><span class="fun-icon" id="funIcon"><span class="ui-icon-container"><i data-lucide="languages"></i></span></span><span id="funTitle">Apprentissage des langues</span></div><p class="fun-card-sub" id="funSub">Découvrez une nouvelle langue !</p><div class="fun-card-stats" id="funStats"><span class="ui-icon-container is-sm"><i data-lucide="flag"></i></span> 90 sujets • <span class="ui-icon-container is-sm"><i data-lucide="layers"></i></span> 1800 cartes</div><button class="btn-play" onclick="APP.openQuiz()"><span class="ui-icon-container is-sm"><i data-lucide="play"></i></span> Jeu</button></div></div>
       <!-- Événements -->
-      <div class="tile tile-events"><div class="events-header"><h3>Événements</h3><span class="ev-count">2</span><span class="ev-pass">0 Pass Club</span></div><div class="event-item"><span style="font-weight:600;flex:1">Savoir ce qu'est l'IA et comment…</span></div><div class="event-item"><span class="ev-date"><span class="ui-icon-container is-sm ic-muted"><i data-lucide="calendar"></i></span> 29/06/26</span><span class="ev-time"><span class="ui-icon-container is-sm"><i data-lucide="clock"></i></span> 05h30</span></div><div class="event-item"><span style="font-weight:600;flex:1">Savoir ce qu'est l'IA…</span></div><div class="event-item"><span class="ev-date"><span class="ui-icon-container is-sm ic-muted"><i data-lucide="calendar"></i></span> 29/06/26</span><span class="ev-time"><span class="ui-icon-container is-sm"><i data-lucide="clock"></i></span> 05h30</span></div></div>
+      <div class="tile tile-events"><div class="events-header"><h3>Événements</h3><span class="ev-count" id="evCount">0</span></div><div class="tile-empty" id="eventsEmpty"><span class="ui-icon-container is-lg ic-muted"><i data-lucide="calendar-off"></i></span><p>Aucun événement programmé pour le moment.</p></div></div>
       <!-- Résultats -->
       <div class="tile tile-grades"><div class="grades-header"><h3>Résultats scolaires</h3></div><div id="gradesContainer"><div class="grade-empty"><p>Aucun score ajouté</p><button class="btn-sm indigo" onclick="APP.openAddScore()"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Ajouter le score</button></div><div class="grade-empty"><p>Pas d'examen à venir</p><button class="btn-sm indigo" onclick="APP.openAddExam()"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Ajouter l'examen</button></div></div></div>
       <!-- Parrainage (accent) -->
@@ -1123,8 +1124,11 @@ const APP = (() => {
   'use strict';
 
   // === STATE ===
-  let points = 70;
-  function _loadCredits() { try { const v = localStorage.getItem('kvs_credits'); return v !== null ? parseInt(v, 10) : 31; } catch (_) { return 31; } }
+  // Valeurs de départ à ZÉRO : un compte neuf n'a ni points, ni crédits, ni
+  // classement. Afficher 70 points et 31 crédits d'office revenait à inventer
+  // une progression que l'élève n'a pas.
+  let points = 0;
+  function _loadCredits() { try { const v = localStorage.getItem('kvs_credits'); return v !== null ? parseInt(v, 10) : 0; } catch (_) { return 0; } }
   function _saveCredits() { try { localStorage.setItem('kvs_credits', String(credits)); } catch (_) {} }
   let credits = _loadCredits();
   let countdownTimer = null;
@@ -5198,8 +5202,8 @@ Scratch avec l'IA - Game Lab|8|fichiers`;
   const DEVISE_CODE = 'USD';
   const CREDIT_PLANS = {
     1:  { sessions: 1,  price: 22,  duree: '1h30', validite: '1 mois' },
-    10: { sessions: 10, price: 220, duree: '1h30', validite: '6 mois' },
-    20: { sessions: 20, price: 440, duree: '1h30', validite: '9 mois' },
+    10: { sessions: 10, price: 215, duree: '1h30', validite: '6 mois' },
+    20: { sessions: 20, price: 420, duree: '1h30', validite: '9 mois' },
     40: { sessions: 40, price: 800, duree: '1h30', validite: '12 mois' }
   };
 
@@ -5377,6 +5381,18 @@ Scratch avec l'IA - Game Lab|8|fichiers`;
     return false;
   }
 
+  // Série : 7 cases neutres tant qu'aucun cours n'a été suivi. Les cases se
+  // rempliront quand la présence aux séances sera remontée par le serveur.
+  function renderStreakDays(joursFaits = 0) {
+    const el = $('streakDays'); if (!el) return;
+    el.innerHTML = Array.from({ length: 7 }, (_, i) =>
+      i < joursFaits
+        ? '<div class="streak-day done"><span class="ui-icon-container is-sm"><i data-lucide="check"></i></span></div>'
+        : '<div class="streak-day"></div>'
+    ).join('');
+    refreshIcons();
+  }
+
   function updateCreditsUI() {
     document.querySelectorAll('#creditsDisplay,#creditsDisplay2').forEach(el => el.textContent = credits);
     // Real-time sync: refresh the Parents wallet balance if that view is open
@@ -5385,6 +5401,10 @@ Scratch avec l'IA - Game Lab|8|fichiers`;
 
   function updatePointsUI() {
     document.querySelectorAll('#pointsDisplay').forEach(el => el.textContent = points);
+    // Le classement n'a de sens qu'une fois des points marqués : afficher
+    // « #93 » sur un compte à 0 point serait un chiffre inventé.
+    const r = $('rankDisplay');
+    if (r) r.textContent = points > 0 ? '#' + Math.max(1, 100 - Math.floor(points / 10)) : '—';
     // Real-time sync: if the Community view is open, reflect the new points immediately
     if ($('viewCommunity') && $('viewCommunity').classList.contains('flex-active')) {
       renderComProfile();
@@ -5588,7 +5608,7 @@ Scratch avec l'IA - Game Lab|8|fichiers`;
   function showQuizResult() {
     const earned = window._quizScore * 5;
     points += earned;
-    $('pointsDisplay').textContent = points;
+    updatePointsUI();
 
     modal('<span class="ui-icon-container is-sm"><i data-lucide="gamepad-2"></i></span> Quiz terminé !', `
       <div class="quiz-result">
@@ -6072,6 +6092,11 @@ Scratch avec l'IA - Game Lab|8|fichiers`;
   syncProfileUI();
   // Pays, âges et créneaux localisés (landing + formulaire de réservation)
   initPaysEtCreneaux();
+  // États initiaux du tableau de bord (série vide, classement masqué à 0 point)
+  renderStreakDays(0);
+  updatePointsUI();
+  // Pastille « événements » en gris tant qu'il n'y en a aucun
+  (() => { const c = $('evCount'); if (c) c.dataset.zero = c.textContent.trim() === '0' ? '1' : '0'; })();
   _initFootGrades();
   // Affiche le solde de crédits persistant (localStorage) dès le chargement
   updateCreditsUI();
