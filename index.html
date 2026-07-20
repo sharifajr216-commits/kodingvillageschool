@@ -396,6 +396,7 @@
               <option value="python-poo|Python · POO">Python · POO</option>
               <option value="dev-jeux-python|Développement de jeux (Python)">Développement de jeux (Python)</option>
               <option value="scratch|Scratch">Scratch</option>
+              <option value="vibe-coding|Laboratoire de Codage Vibe">Laboratoire de Codage Vibe</option>
             </select>
           </div>
           <div class="bk-field">
@@ -3946,7 +3947,8 @@ Niveau de Scratch 1|48|fichiers
 Niveau Scratch 2|48|fichiers
 Niveau Scratch 3|48|fichiers
 Scratch avec l'IA - Fondations|8|fichiers
-Scratch avec l'IA - Game Lab|8|fichiers`;
+Scratch avec l'IA - Game Lab|8|fichiers
+Laboratoire de Codage Vibe|8|fichiers`;
 
   const coursesData = COURSES_RAW.trim().split('\n').map(l => { const p = l.split('|'); return { name: p[0], count: +p[1], unit: p[2] }; });
   let contentFilterVal = '';
@@ -3985,7 +3987,7 @@ Scratch avec l'IA - Game Lab|8|fichiers`;
 
   // Modules dont le contenu est réellement branché sur /api/content.
   // Les autres restent en attente de téléversement (voir api/_content.js).
-  const MODULES_BRANCHES = { 'Python Niveau 1': 'python-niveau-1' };
+  const MODULES_BRANCHES = { 'Laboratoire de Codage Vibe': 'vibe-coding' };
 
   function _courseAccordion(c, open) {
     const moduleId = MODULES_BRANCHES[c.name] || '';
@@ -4526,7 +4528,7 @@ Scratch avec l'IA - Game Lab|8|fichiers`;
 
   const COURSE_ICONS = {
     'python-boucles': 'code-2', 'python-fonctions': 'code-2', 'python-poo': 'code-2',
-    'dev-jeux-python': 'gamepad-2', 'scratch': 'cat'
+    'dev-jeux-python': 'gamepad-2', 'scratch': 'cat', 'vibe-coding': 'sparkles'
   };
   const _MOIS = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
 
