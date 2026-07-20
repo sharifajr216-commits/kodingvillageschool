@@ -89,10 +89,11 @@ module.exports = async (req, res) => {
 
   // L'indicatif est déduit du pays côté serveur : un client trafiqué ne peut pas
   // envoyer un couple pays/indicatif incohérent.
+  // Doit rester aligné sur COUNTRIES dans index.html.
   const DIAL = {
     CA: '+1', GN: '+224', FR: '+33', BE: '+32', CH: '+41', US: '+1', GB: '+44',
     MA: '+212', DZ: '+213', TN: '+216', SN: '+221', CI: '+225', ML: '+223',
-    CM: '+237', IN: '+91', AE: '+971'
+    CM: '+237'
   };
   const dial = DIAL[f.countryCode] || clean(body.phoneCode, 6);
   const fullPhone = `${dial} ${f.phone}`.trim();

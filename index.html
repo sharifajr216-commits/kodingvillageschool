@@ -2030,9 +2030,11 @@ print("Bonne séance de code, Bilal ! 🚀")
     { code: 'SN', nom: 'Sénégal',         drapeau: '🇸🇳', dial: '+221', tz: ['Africa/Dakar'] },
     { code: 'CI', nom: "Côte d'Ivoire",   drapeau: '🇨🇮', dial: '+225', tz: ['Africa/Abidjan'] },
     { code: 'ML', nom: 'Mali',            drapeau: '🇲🇱', dial: '+223', tz: ['Africa/Bamako'] },
-    { code: 'CM', nom: 'Cameroun',        drapeau: '🇨🇲', dial: '+237', tz: ['Africa/Douala'] },
-    { code: 'IN', nom: 'Inde',            drapeau: '🇮🇳', dial: '+91',  tz: ['Asia/Kolkata'] },
-    { code: 'AE', nom: 'Émirats arabes unis', drapeau: '🇦🇪', dial: '+971', tz: ['Asia/Dubai'] }
+    { code: 'CM', nom: 'Cameroun',        drapeau: '🇨🇲', dial: '+237', tz: ['Africa/Douala'] }
+    // Inde et Émirats retirés : avec les créneaux actuels (soirée nord-américaine
+    // et matinée Vancouver), aucun horaire ne tombe à une heure décente là-bas.
+    // Les proposer n'aboutissait qu'à un tunnel vide. À réintroduire si des
+    // créneaux tôt le matin heure de Vancouver sont ouverts un jour.
   ];
   const paysParCode = c => COUNTRIES.find(p => p.code === c) || null;
 
