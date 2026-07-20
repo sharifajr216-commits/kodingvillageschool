@@ -47,6 +47,7 @@
           <div class="lp-drop-menu" id="navCoursesMenu">
             <a href="#" onclick="APP.lpCourse('Python');return false"><span class="ui-icon-container is-sm"><i data-lucide="code-2"></i></span> Python</a>
             <a href="#" onclick="APP.lpCourse('Scratch');return false"><span class="ui-icon-container is-sm"><i data-lucide="cat"></i></span> Scratch</a>
+            <a href="#" onclick="APP.lpCourse('Laboratoire de Codage Vibe');return false"><span class="ui-icon-container is-sm"><i data-lucide="sparkles"></i></span> Laboratoire de Codage Vibe</a>
           </div>
         </div>
         <a href="#" onclick="APP.lpGo('summer');return false">Camp d'été <span class="badge-sm-pill" style="background:var(--indigo);color:#fff">Nouveau</span></a>
@@ -154,7 +155,9 @@
         <div class="gs-num">1</div><h4>Votre pays et le cours</h4>
         <select id="gsCountry" class="gs-select" aria-label="Pays de résidence" onchange="APP.gsCountryChange()"></select>
         <select id="gsCourse" class="gs-select gs-select-2">
-          <option>Python</option><option>Scratch</option>
+          <!-- Les libellés doivent correspondre EXACTEMENT à ceux du menu et du
+               pied de page : lpCourse() présélectionne l'option par son nom. -->
+          <option>Python</option><option>Scratch</option><option>Laboratoire de Codage Vibe</option>
         </select>
       </div>
       <div class="gs-step">
@@ -221,6 +224,7 @@
         <h5>Cours</h5>
         <a href="#" onclick="APP.lpCourse('Python');return false">Python</a>
         <a href="#" onclick="APP.lpCourse('Scratch');return false">Scratch</a>
+        <a href="#" onclick="APP.lpCourse('Laboratoire de Codage Vibe');return false">Laboratoire de Codage Vibe</a>
       </div>
       <div class="foot-col">
         <h5>Par niveau</h5>
