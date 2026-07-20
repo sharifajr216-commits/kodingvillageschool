@@ -1,0 +1,79 @@
+# Déclencheur externe des rappels de cours (plan Vercel Hobby).
+# Le cron Vercel est limité à 1 exécution/jour en Hobby — insuffisant pour un
+# rappel « 1 h avant ». GitHub Actions appelle donc /api/reminders toutes les 10 min.
+#
+# ─── CONFIGURATION (une seule fois) ────────────────────────────────────────────
+# Dépôt GitHub → Settings → Secrets and variables → Actions → New repository secret
+#   CRON_SECRET  = la même valeur que la variable CRON_SECRET sur Vercel
+#   SITE_URL     = https://kodingvillageschool.com   (sans slash final)
+#
+# ─── VÉRIFIER QUE ÇA TOURNE ────────────────────────────────────────────────────
+# Onglet « Actions » du dépôt → « Rappels de cours ». Le bouton « Run workflow »
+# permet un déclenchement manuel immédiat pour tester.
+#
+# ─── DEUX LIMITES À CONNAÎTRE ──────────────────────────────────────────────────
+# 1. Les crons GitHub Actions sont « best effort » : un retard de 5 à 20 min est
+#    courant aux heures de pointe. C'est SANS CONSÉQUENCE ici — /api/reminders
+#    rattrape toute séance démarrant dans les 60 prochaines minutes et non encore
+#    rappelée. Un retard décale le rappel, il ne le perd pas.
+# 2. GitHub DÉSACTIVE les workflows planifiés d'un dépôt sans activité pendant
+#    60 jours. Si les rappels s'arrêtent sans raison, vérifier ce point en premier
+#    (un commit, ou « Enable workflow » dans l'onglet Actions, le réactive).
+
+name: Rappels de cours
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'   # toutes les 10 minutes (UTC)
+  workflow_dispatch:          # déclenchement manuel depuis l'onglet Actions
+
+# Deux exécutions simultanées enverraient potentiellement des doublons.
+concurrency:
+  group: reminders
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Appeler /api/reminders
+        env:
+          SITE_URL: ${{ secrets.SITE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${SITE_URL:-}" ] || [ -z "${CRON_SECRET:-}" ]; then
+            echo "::error::Secrets manquants — définis SITE_URL et CRON_SECRET dans Settings → Secrets → Actions."
+            exit 1
+          fi
+
+          # --fail-with-body : code de sortie non nul sur erreur HTTP, tout en
+          # conservant le corps de la réponse pour le diagnostic.
+          # --max-time : évite qu'un serveur muet bloque le job 5 min.
+          http_code=$(curl -sS --max-time 60 \
+            -o response.json -w '%{http_code}' \
+            -X POST "${SITE_URL%/}/api/reminders" \
+            -H "Authorization: Bearer ${CRON_SECRET}")
+
+          echo "HTTP $http_code"
+          cat response.json || true
+          echo ""
+
+          case "$http_code" in
+            200) echo "::notice::Rappels traités." ;;
+            401) echo "::error::401 — le secret CRON_SECRET de GitHub ne correspond pas à celui de Vercel."; exit 1 ;;
+            500) echo "::error::500 — variable manquante côté Vercel (CRON_SECRET, RESEND_API_KEY ou KV)."; exit 1 ;;
+            *)   echo "::error::Réponse inattendue ($http_code)."; exit 1 ;;
+          esac
+
+      - name: Résumé
+        if: always()
+        run: |
+          if [ -f response.json ]; then
+            echo "### Rappels de cours" >> "$GITHUB_STEP_SUMMARY"
+            echo '```json' >> "$GITHUB_STEP_SUMMARY"
+            cat response.json >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          fi

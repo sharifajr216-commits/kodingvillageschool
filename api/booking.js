@@ -6,7 +6,7 @@
 //
 // Variables d'environnement (Vercel → Settings → Environment Variables, + .env en local) :
 //   RESEND_API_KEY      (obligatoire)  clé « re_… » créée sur https://resend.com/api-keys
-//   BOOKING_TO_EMAIL    (optionnel)    boîte qui reçoit les leads. Défaut : contact@kodingvillageschool.com
+//   BOOKING_TO_EMAIL    (optionnel)    boîte qui reçoit les leads. Défaut : info@kodingvillageschool.com
 //   BOOKING_FROM_EMAIL  (optionnel)    expéditeur. DOIT être sur un domaine vérifié dans Resend.
 //                                      Défaut : onboarding@resend.dev (test — n'envoie qu'à ta propre adresse Resend).
 //
@@ -19,8 +19,10 @@
 //   500 { ok:false, error:'not_configured' }       → RESEND_API_KEY absente côté serveur
 //   502 { ok:false, error:'send_failed', message } → Resend a refusé / réseau
 
+const B = require('./_brand');
+
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const TO_EMAIL = process.env.BOOKING_TO_EMAIL || 'contact@kodingvillageschool.com';
+const TO_EMAIL = process.env.BOOKING_TO_EMAIL || B.CONTACT_EMAIL;
 const FROM_EMAIL = process.env.BOOKING_FROM_EMAIL || 'onboarding@resend.dev';
 
 const clean = (s, max = 200) => String(s == null ? '' : s).trim().slice(0, max);
@@ -115,7 +117,7 @@ module.exports = async (req, res) => {
           Le cours d'essai <b>GRATUIT</b> de <b>${esc(f.course)}</b> pour <b>${esc(f.childFirst)}</b>
           est bien réservé pour <b>${esc(f.slot)}</b>. Un mentor KodingvillageSchool te contactera très vite. 📩
         </p>
-        <p style="font-family:Arial,sans-serif;font-size:13px;color:#666">— L'équipe KodingvillageSchool</p>`
+        ${B.emailFooter()}`
     });
   } catch (e) {
     // On journalise mais on ne bloque pas : le lead principal est déjà parti.

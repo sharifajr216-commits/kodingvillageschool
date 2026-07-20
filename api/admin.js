@@ -4,20 +4,28 @@
 //
 // En-tête : Authorization: Bearer <token admin>   (ou body.token en repli)
 //
-// POST { action:'create', firstName, lastName, email, slot } → { ok, email, tempPassword }
+// POST { action:'create', firstName, lastName, email, phone, slot } → { ok, email, tempPassword }
 // POST { action:'list' }                                     → { ok, students:[...] }   (sans secrets)
 // POST { action:'send',   email }                            → { ok, sentAt }           (envoie l'e-mail)
 // POST { action:'reset',  email }                            → { ok, tempPassword }
 // POST { action:'delete', email }                            → { ok }
 //
+// Séances de cours (socle des rappels automatiques — voir api/reminders.js) :
+// POST { action:'session.create', courseId, courseLabel, startsAt, durationMin, students:[email] }
+//                                                            → { ok, session }
+// POST { action:'session.list' }                             → { ok, sessions:[...] }   (à venir)
+// POST { action:'session.delete', id }                       → { ok }
+//
 // Codes : 401 non-admin · 400 invalide · 404 introuvable · 409 existe déjà · 502 envoi échoué
 
 const crypto = require('crypto');
 const A = require('./_auth');
+const B = require('./_brand');
+const S = require('./_schedule');
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM_EMAIL = process.env.BOOKING_FROM_EMAIL || 'onboarding@resend.dev';
-const PUBLIC_URL = process.env.PUBLIC_URL || 'https://kodingvillageschool.com';
+const PUBLIC_URL = B.PUBLIC_URL;
 
 const clean = (s, max = 120) => String(s == null ? '' : s).trim().slice(0, max);
 const isEmail = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
@@ -67,7 +75,7 @@ module.exports = async (req, res) => {
       const users = await A.listUsers();
       const students = users.map(u => ({
         firstName: u.firstName || '', lastName: u.lastName || '', email: u.email,
-        slot: u.slot || '', createdAt: u.createdAt || null,
+        phone: u.phone || '', slot: u.slot || '', createdAt: u.createdAt || null,
         credsSentAt: u.credsSentAt || null, hasCreds: !!u.tempPassword
       }));
       res.status(200).json({ ok: true, students });
@@ -77,11 +85,13 @@ module.exports = async (req, res) => {
     if (body.action === 'create') {
       const firstName = clean(body.firstName, 60), lastName = clean(body.lastName, 60);
       const email = A.normEmail(body.email), slot = clean(body.slot, 80);
+      // Téléphone facultatif — requis uniquement pour les rappels WhatsApp.
+      const phone = clean(body.phone, 40);
       if (!firstName || !lastName || !isEmail(email)) { res.status(400).json({ ok: false, error: 'invalid' }); return; }
       if (await A.getUser(email)) { res.status(409).json({ ok: false, error: 'exists' }); return; }
       const tempPassword = genTempPassword();
       await A.putUser({
-        firstName, lastName, email, slot,
+        firstName, lastName, email, phone, slot,
         passHash: A.hashPassword(tempPassword), tempPassword,
         createdAt: new Date().toISOString(), credsSentAt: null
       });
@@ -129,7 +139,8 @@ module.exports = async (req, res) => {
               <tr><td><b>Identifiant</b></td><td>${esc(email)}</td></tr>
               <tr><td><b>Mot de passe</b></td><td><code>${esc(user.tempPassword)}</code></td></tr>
             </table>
-            <p style="font-family:Arial,sans-serif;font-size:13px;color:#666">Connecte-toi et garde ces identifiants confidentiels. — L'équipe KodingvillageSchool</p>`
+            <p style="font-family:Arial,sans-serif;font-size:13px;color:#666">Connecte-toi et garde ces identifiants confidentiels.</p>
+            ${B.emailFooter()}`
         });
       } catch (e) {
         res.status(502).json({ ok: false, error: 'send_failed', message: String(e.message || 'Resend error') });
@@ -138,6 +149,46 @@ module.exports = async (req, res) => {
       user.credsSentAt = new Date().toISOString();
       await A.putUser(user);
       res.status(200).json({ ok: true, sentAt: user.credsSentAt });
+      return;
+    }
+
+    // ---- Séances de cours (alimentent les rappels de api/reminders.js) ----
+
+    if (body.action === 'session.create') {
+      const startsAt = clean(body.startsAt, 40);
+      if (S.parseWhen(startsAt) === null) {
+        res.status(400).json({ ok: false, error: 'invalid', message: 'startsAt doit être une date ISO 8601 (ex: 2026-07-20T17:00:00Z).' });
+        return;
+      }
+      const students = Array.isArray(body.students) ? body.students.map(A.normEmail).filter(isEmail) : [];
+      if (!students.length) {
+        res.status(400).json({ ok: false, error: 'invalid', message: 'Au moins un élève inscrit est requis.' });
+        return;
+      }
+      // Refuse les élèves inconnus : sans compte, le rappel n'aurait ni nom ni téléphone.
+      for (const e of students) {
+        if (!(await A.getUser(e))) {
+          res.status(400).json({ ok: false, error: 'unknown_student', message: `Aucun compte pour ${e}.` });
+          return;
+        }
+      }
+      const session = await S.createSession({
+        courseId: clean(body.courseId, 60),
+        courseLabel: clean(body.courseLabel, 120),
+        startsAt, durationMin: body.durationMin, students
+      });
+      res.status(200).json({ ok: true, session });
+      return;
+    }
+
+    if (body.action === 'session.list') {
+      res.status(200).json({ ok: true, sessions: await S.upcomingSessions(100) });
+      return;
+    }
+
+    if (body.action === 'session.delete') {
+      await S.deleteSession(clean(body.id, 40));
+      res.status(200).json({ ok: true });
       return;
     }
 
