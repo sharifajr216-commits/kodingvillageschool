@@ -20,8 +20,8 @@
 //   1. Dédoublonner : « Chapter N-LC (1).pdf » est identique à « Chapter N-LC.pdf »
 //   2. Vercel → Storage → Blob → créer un store, copier BLOB_READ_WRITE_TOKEN
 //   3. Téléverser en respectant EXACTEMENT ces chemins :
-//        cours/python-niveau-1/chapitre-1.pdf   ← Chapter 1-LC.pdf
-//        cours/python-niveau-1/chapitre-2.pdf   ← Chapter 2-LC.pdf
+//        cours/vibe-coding/chapitre-1.pdf   ← Chapter 1-LC.pdf
+//        cours/vibe-coding/chapitre-2.pdf   ← Chapter 2-LC.pdf
 //        … jusqu'à chapitre-8.pdf
 //      (glisser-déposer dans l'interface Blob, ou via `npx vercel blob put`)
 
@@ -36,19 +36,27 @@ const blobConfigured = () => !!BLOB_TOKEN;
 // ── Catalogue ───────────────────────────────────────────────────────────────
 // `courseIds` fait le lien avec les séances planifiées (api/_schedule.js) :
 // c'est ce qui détermine si un élève a accès au module.
+//
+// ⚠️ Titres RÉELS, extraits des PDF eux-mêmes (les polices sont sous-ensemblées
+//    avec un décalage de +29 sur les codes de caractères ; une fois décodées, les
+//    pages de garde donnent les titres ci-dessous). Ils remplacent des intitulés
+//    « Python » qui avaient été supposés à tort : ces supports ne traitent PAS de
+//    Python mais de création assistée par IA (« vibe coding », outils no-code).
+//    Seul le chapitre 3 est déduit du corps du document, sa couverture étant
+//    une image sans texte.
 const MODULES = {
-  'python-niveau-1': {
-    label: 'Python Niveau 1',
-    courseIds: ['python-boucles', 'python-fonctions', 'python-poo', 'dev-jeux-python'],
+  'vibe-coding': {
+    label: 'Laboratoire de Codage Vibe',
+    courseIds: ['vibe-coding'],
     chapters: [
-      { n: 1, title: 'Introduction à la programmation' },
-      { n: 2, title: 'Variables et types de données' },
-      { n: 3, title: 'Conditions et logique' },
-      { n: 4, title: 'Les boucles' },
-      { n: 5, title: 'Les fonctions' },
-      { n: 6, title: 'Listes et dictionnaires' },
-      { n: 7, title: 'Gestion des erreurs' },
-      { n: 8, title: 'Projet final' }
+      { n: 1, title: 'No Code App Magic — prototypage rapide avec l’IA' },
+      { n: 2, title: 'De l’idée à l’application — développement agentique' },
+      { n: 3, title: 'Du design au prototype interactif' },
+      { n: 4, title: 'No-Code GPT Wrappers' },
+      { n: 5, title: 'Google AI Studio, Gemini Playground & Antigravity' },
+      { n: 6, title: 'Expériences IA avec Google Labs' },
+      { n: 7, title: 'Éthique et responsabilité de l’IA' },
+      { n: 8, title: 'Présentations assistées par IA' }
     ]
   }
 };
