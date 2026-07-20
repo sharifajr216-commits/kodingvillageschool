@@ -45,12 +45,8 @@
         <div class="lp-drop">
           <a href="#" class="lp-drop-toggle" onclick="APP.navCourses(event)">Cours <span style="font-size:.6rem">▾</span></a>
           <div class="lp-drop-menu" id="navCoursesMenu">
-            <a href="#" onclick="APP.lpCourse('Web Development');return false"><span class="ui-icon-container is-sm"><i data-lucide="globe"></i></span> Web Development</a>
             <a href="#" onclick="APP.lpCourse('Python');return false"><span class="ui-icon-container is-sm"><i data-lucide="code-2"></i></span> Python</a>
-            <a href="#" onclick="APP.lpCourse('Java');return false"><span class="ui-icon-container is-sm"><i data-lucide="coffee"></i></span> Java</a>
-            <a href="#" onclick="APP.lpCourse('MIT App Inventor');return false"><span class="ui-icon-container is-sm"><i data-lucide="smartphone"></i></span> MIT App Inventor</a>
             <a href="#" onclick="APP.lpCourse('Scratch');return false"><span class="ui-icon-container is-sm"><i data-lucide="cat"></i></span> Scratch</a>
-            <a href="#" onclick="APP.lpCourse('Robotics');return false"><span class="ui-icon-container is-sm"><i data-lucide="bot"></i></span> Robotics</a>
           </div>
         </div>
         <a href="#" onclick="APP.lpGo('summer');return false">Camp d'été <span class="badge-sm-pill" style="background:var(--indigo);color:#fff">Nouveau</span></a>
@@ -77,8 +73,8 @@
           <button class="btn btn-trial btn-hero" onclick="APP.lpGo('getStarted')">Réserver un cours d'essai GRATUIT <span class="ui-icon-container is-sm"><i data-lucide="arrow-right"></i></span></button>
         </div>
         <div class="hero-ratings">
-          <div class="rating"><span class="rating-logo google">G</span><div class="rating-body"><div class="rating-stars"><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span><span class="half"><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span></span> <b>4.4</b></div><span class="rating-src">Avis Google</span></div></div>
-          <div class="rating"><span class="rating-logo tp"><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span></span><div class="rating-body"><div class="rating-stars"><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span><span class="half"><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span></span> <b>4.4</b></div><span class="rating-src">Trustpilot</span></div></div>
+          <div class="rating"><span class="rating-logo trust"><span class="ui-icon-container is-sm"><i data-lucide="user-round"></i></span></span><div class="rating-body"><div class="rating-claim">1 mentor dédié par élève</div><span class="rating-src">Jamais de cours en groupe</span></div></div>
+          <div class="rating"><span class="rating-logo trust"><span class="ui-icon-container is-sm"><i data-lucide="gift"></i></span></span><div class="rating-body"><div class="rating-claim">Premier cours gratuit</div><span class="rating-src">Sans carte bancaire</span></div></div>
         </div>
       </div>
       <div class="hero-visual">
@@ -105,7 +101,7 @@
   <section class="lp-section" id="about">
     <div class="lp-sec-head">
       <h2>L'avantage prouvé de l'apprentissage 1:1</h2>
-      <p class="lp-stat"><b>55 290</b> élèves ont suivi des cours 1:1 avec KodingvillageSchool dans le monde entier</p>
+      <p class="lp-stat">Une pédagogie fondée sur des décennies de recherche en sciences de l'éducation — appliquée à chaque élève, un cours à la fois</p>
     </div>
     <div class="proof-grid">
       <div class="proof-text card">
@@ -155,19 +151,16 @@
     <div class="lp-sec-head center"><h2>Démarrer est super simple</h2><p>Trois étapes simples vers le premier cours gratuit de votre enfant.</p></div>
     <div class="gs-grid">
       <div class="gs-step">
-        <div class="gs-num">1</div><h4>Choisir le cours</h4>
-        <select id="gsCourse" class="gs-select">
-          <option>Web Development</option><option>Python</option><option>Java</option><option>MIT App Inventor</option><option>Scratch</option><option>Robotics</option>
+        <div class="gs-num">1</div><h4>Votre pays et le cours</h4>
+        <select id="gsCountry" class="gs-select" aria-label="Pays de résidence" onchange="APP.gsCountryChange()"></select>
+        <select id="gsCourse" class="gs-select gs-select-2">
+          <option>Python</option><option>Scratch</option>
         </select>
       </div>
       <div class="gs-step">
         <div class="gs-num">2</div><h4>Réserver le cours d'essai GRATUIT</h4>
-        <div class="gs-slots">
-          <button class="gs-slot active" onclick="APP.gsSlot(this)">Lun · 17:00</button>
-          <button class="gs-slot" onclick="APP.gsSlot(this)">Mer · 18:00</button>
-          <button class="gs-slot" onclick="APP.gsSlot(this)">Ven · 16:30</button>
-          <button class="gs-slot" onclick="APP.gsSlot(this)">Sam · 10:00</button>
-        </div>
+        <div class="gs-slots" id="gsSlots"></div>
+        <p class="gs-tz" id="gsTz"></p>
       </div>
       <div class="gs-step">
         <div class="gs-num">3</div><h4>S'inscrire au cours</h4>
@@ -200,7 +193,7 @@
           <span>Proposez-vous des évaluations ou des bilans ?</span>
           <span class="faq-ic" aria-hidden="true">+</span>
         </button>
-        <div class="faq-a"><div class="faq-a-inner"><p>Oui, absolument ! Nous fournissons des rapports de performance détaillés après chaque étape clé, ainsi qu'un accès à plus de 10 000 exercices et fiches d'entraînement pour suivre les progrès.</p></div></div>
+        <div class="faq-a"><div class="faq-a-inner"><p>Oui. Vous recevez un point de progression après chaque étape clé du parcours, et votre enfant dispose d'exercices et de supports d'entraînement pour chaque chapitre travaillé en cours.</p></div></div>
       </div>
     </div>
   </section>
@@ -218,19 +211,16 @@
       </div>
       <div class="foot-col">
         <h5>Nous contacter</h5>
-        <a href="mailto:contact@kodingvillageschool.com"><span class="ui-icon-container is-sm"><i data-lucide="mail"></i></span> contact@kodingvillageschool.com</a>
-        <a href="#" onclick="APP.joinCommunity();return false"><span class="ui-icon-container is-sm"><i data-lucide="message-circle"></i></span> Communauté WhatsApp</a>
+        <a href="mailto:info@kodingvillageschool.com"><span class="ui-icon-container is-sm"><i data-lucide="mail"></i></span> info@kodingvillageschool.com</a>
+        <a href="tel:+16044992735"><span class="ui-icon-container is-sm"><i data-lucide="phone"></i></span> +1 604 499 2735</a>
+        <a href="https://wa.me/16044992735" target="_blank" rel="noopener"><span class="ui-icon-container is-sm"><i data-lucide="message-circle"></i></span> WhatsApp</a>
         <a href="#" onclick="APP.lpGo('about');return false"><span class="ui-icon-container is-sm"><i data-lucide="info"></i></span> À propos</a>
         <a href="#" onclick="APP.lpGo('blogs');return false"><span class="ui-icon-container is-sm"><i data-lucide="newspaper"></i></span> Blog</a>
       </div>
       <div class="foot-col">
         <h5>Cours</h5>
-        <a href="#" onclick="APP.lpCourse('Web Development');return false">Web Development</a>
         <a href="#" onclick="APP.lpCourse('Python');return false">Python</a>
-        <a href="#" onclick="APP.lpCourse('Java');return false">Java</a>
         <a href="#" onclick="APP.lpCourse('Scratch');return false">Scratch</a>
-        <a href="#" onclick="APP.lpCourse('Robotics');return false">Robotics</a>
-        <a href="#" onclick="APP.lpCourse('MIT App Inventor');return false">MIT App Inventor</a>
       </div>
       <div class="foot-col">
         <h5>Par niveau</h5>
@@ -285,37 +275,39 @@
             <input id="bkChildLast" type="text" required placeholder="Dupont">
           </div>
           <div class="bk-field">
-            <label for="bkChildPronoun">Pronom de l'enfant *</label>
-            <select id="bkChildPronoun" required>
+            <label for="bkChildGender">Genre de l'enfant *</label>
+            <select id="bkChildGender" required>
               <option value="">Sélectionner…</option>
-              <option value="Il / Lui">Il / Lui</option>
-              <option value="Elle / Elle">Elle / Elle</option>
-              <option value="Iel / Iel">Iel / Iel</option>
-              <option value="Préfère ne pas préciser">Préfère ne pas préciser</option>
+              <option value="Garçon">Garçon</option>
+              <option value="Fille">Fille</option>
+              <option value="Autre">Autre</option>
+              <option value="Préfère ne pas dire">Préfère ne pas dire</option>
+            </select>
+          </div>
+          <div class="bk-field">
+            <label for="bkChildAge">Âge de l'enfant *</label>
+            <select id="bkChildAge" required>
+              <option value="">Sélectionner…</option>
             </select>
           </div>
           <div class="bk-field">
             <label for="bkEmail">Adresse e-mail *</label>
             <input id="bkEmail" type="email" autocomplete="email" required placeholder="marie.dupont@email.com">
           </div>
+          <div class="bk-field">
+            <label for="bkCountry">Pays de résidence *</label>
+            <select id="bkCountry" required onchange="APP.bkCountryChange()"></select>
+          </div>
           <div class="bk-field bk-phone">
-            <label>Numéro de téléphone *</label>
+            <label for="bkPhone">Numéro de téléphone *</label>
             <div class="bk-phone-row">
-              <select id="bkPhoneCode" required aria-label="Indicatif pays">
-                <option value="+1">🇺🇸 +1</option>
-                <option value="+33">🇫🇷 +33</option>
-                <option value="+44">🇬🇧 +44</option>
-                <option value="+32">🇧🇪 +32</option>
-                <option value="+41">🇨🇭 +41</option>
-                <option value="+212">🇲🇦 +212</option>
-                <option value="+213">🇩🇿 +213</option>
-                <option value="+221">🇸🇳 +221</option>
-                <option value="+225">🇨🇮 +225</option>
-                <option value="+91">🇮🇳 +91</option>
-                <option value="+971">🇦🇪 +971</option>
-              </select>
+              <!-- Indicatif déduit du pays, non modifiable : il ne peut donc pas
+                   contredire le pays choisi. Transmis via bkPhoneCode. -->
+              <span class="bk-dial" id="bkDial" aria-hidden="true">—</span>
+              <input type="hidden" id="bkPhoneCode" value="">
               <input id="bkPhone" type="tel" autocomplete="tel" required placeholder="6 12 34 56 78" inputmode="tel">
             </div>
+            <span class="bk-hint" id="bkPhoneHint">L'indicatif suit votre pays de résidence.</span>
           </div>
           <div class="bk-field">
             <label for="bkCourse">Cours sélectionné</label>
@@ -365,6 +357,7 @@
           <div class="bk-field"><label for="admFirst">Prénom *</label><input id="admFirst" type="text" required placeholder="Bilal"></div>
           <div class="bk-field"><label for="admLast">Nom *</label><input id="admLast" type="text" required placeholder="Keita"></div>
           <div class="bk-field"><label for="admEmail">E-mail de l'élève *</label><input id="admEmail" type="email" required placeholder="bilal@email.com"></div>
+          <div class="bk-field"><label for="admPhone">Téléphone <span class="bk-hint">— requis pour les rappels WhatsApp</span></label><input id="admPhone" type="tel" placeholder="+1 604 555 1234"></div>
           <div class="bk-field"><label for="admSlot">Créneau de la session</label><input id="admSlot" type="text" placeholder="Lun 17:00"></div>
         </div>
         <p class="bk-error" id="admError" style="display:none"></p>
@@ -379,8 +372,58 @@
       </div>
       <div class="adm-table-wrap">
         <table class="adm-table">
-          <thead><tr><th>Élève</th><th>E-mail</th><th>Session</th><th>Accès</th><th>Actions</th></tr></thead>
+          <thead><tr><th>Élève</th><th>E-mail</th><th>Téléphone</th><th>Session</th><th>Accès</th><th>Actions</th></tr></thead>
           <tbody id="admTbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Séances planifiées — alimentent les rappels automatiques (api/reminders.js) -->
+    <div class="booking-card adm-card">
+      <div class="booking-head">
+        <div class="booking-step-pill">Planification</div>
+        <h1>Séances de cours</h1>
+        <p>Chaque séance déclenche un rappel automatique par e-mail (et WhatsApp si configuré) <strong id="admLeadLabel">1 heure</strong> avant le début.</p>
+      </div>
+
+      <form class="booking-form" id="admSesForm" onsubmit="return APP.adminSessionCreate(event)" novalidate>
+        <div class="bk-grid">
+          <div class="bk-field">
+            <label for="admSesCourse">Cours *</label>
+            <select id="admSesCourse" required>
+              <option value="python-boucles|Python · Les boucles">Python · Les boucles</option>
+              <option value="python-fonctions|Python · Les fonctions">Python · Les fonctions</option>
+              <option value="python-poo|Python · POO">Python · POO</option>
+              <option value="dev-jeux-python|Développement de jeux (Python)">Développement de jeux (Python)</option>
+              <option value="scratch|Scratch">Scratch</option>
+            </select>
+          </div>
+          <div class="bk-field">
+            <label for="admSesWhen">Date &amp; heure de début *</label>
+            <input id="admSesWhen" type="datetime-local" required>
+            <span class="bk-hint" id="admSesTzHint"></span>
+          </div>
+          <div class="bk-field">
+            <label for="admSesDuration">Durée (minutes)</label>
+            <input id="admSesDuration" type="number" min="15" max="240" step="15" value="60">
+          </div>
+          <div class="bk-field bk-field-wide">
+            <label for="admSesStudents">Élèves inscrits * <span class="bk-hint">— Ctrl/Cmd + clic pour en choisir plusieurs</span></label>
+            <select id="admSesStudents" multiple size="5"></select>
+          </div>
+        </div>
+        <p class="bk-error" id="admSesError" style="display:none"></p>
+        <button type="submit" class="btn btn-trial">Planifier la séance <span class="ui-icon-container is-sm"><i data-lucide="calendar-plus"></i></span></button>
+      </form>
+
+      <div class="adm-table-head">
+        <h2>Séances à venir (<span id="admSesCount">0</span>)</h2>
+        <button class="btn-ghost" onclick="APP.adminSessionsRefresh()"><span class="ui-icon-container is-sm"><i data-lucide="refresh-cw"></i></span> Rafraîchir</button>
+      </div>
+      <div class="adm-table-wrap">
+        <table class="adm-table">
+          <thead><tr><th>Cours</th><th>Début</th><th>Durée</th><th>Élèves</th><th>Rappel</th><th>Actions</th></tr></thead>
+          <tbody id="admSesTbody"></tbody>
         </table>
       </div>
     </div>
@@ -423,14 +466,15 @@
     <header class="dash-id">
       <div class="dash-id-main">
         <p class="greet">Content de te revoir,</p>
-        <div class="name-row"><span class="av" id="dashAvatar"></span><h1 id="dashName">Bilal Hassan Keita !</h1></div>
+        <div class="name-row"><span class="av" id="dashAvatar"></span><h1 id="dashName">—</h1></div>
       </div>
       <div class="dash-id-stats">
-        <span class="stat"><strong id="pointsDisplay">70</strong> points</span>
+        <span class="stat"><strong id="pointsDisplay">0</strong> points</span>
         <span class="stat-sep" aria-hidden="true">·</span>
-        <span class="stat">Classement <strong>#93</strong></span>
+        <!-- Classement affiché seulement quand l'élève a des points (voir updatePointsUI) -->
+        <span class="stat">Classement <strong id="rankDisplay">—</strong></span>
         <span class="stat-sep" aria-hidden="true">·</span>
-        <span class="stat"><strong id="creditsDisplay">31</strong> crédits</span>
+        <span class="stat"><strong id="creditsDisplay">0</strong> crédits</span>
         <button class="btn-sm indigo" onclick="APP.openBuyCredits()">+ Acheter des crédits</button>
       </div>
     </header>
@@ -443,22 +487,18 @@
           <button class="tz-pill"><span class="ui-icon-container is-sm ic-muted"><i data-lucide="globe"></i></span> Canada (EST) <span class="ui-icon-container is-sm ic-muted"><i data-lucide="chevron-down"></i></span></button>
         </div>
         <div class="classes-grid" id="classesGrid">
-      <div class="cc" id="cc1" data-course="dev-jeux-python" data-demo-offset-min="5"><div class="cc-top"><div class="cc-logo"><span class="ui-icon-container is-lg"><i data-lucide="gamepad-2"></i></span></div><div class="cc-info"><p class="cc-dt">28 juin 26 • 13h00</p><p class="cc-sub">Développement de jeux (Python)</p></div><div class="cc-cd" id="cd1" data-target="2026-06-28T17:00:00Z" data-end="2026-06-28T18:00:00Z">…</div></div><div class="cc-bottom"><span class="cc-session"><span class="ui-icon-container is-sm ic-muted"><i data-lucide="folder"></i></span> Session 18</span><button class="btn-outline" id="btn1" onclick="APP.editClass()"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg> Classe d'édition</button></div></div>
-      <div class="cc" id="cc2" data-course="web-dev" data-demo-offset-min="8"><div class="cc-top"><div class="cc-logo"><span class="ui-icon-container is-lg"><i data-lucide="globe"></i></span></div><div class="cc-info"><p class="cc-dt">04 juil. 26 • 12h00</p><p class="cc-sub">Web Development</p></div><div class="cc-cd" id="cd2" data-target="2026-07-04T16:00:00Z" data-end="2026-07-04T17:00:00Z">…</div></div><div class="cc-bottom"><span class="cc-session"><span class="ui-icon-container is-sm ic-muted"><i data-lucide="folder"></i></span> Session 12</span><button class="btn-outline" id="btn2" onclick="APP.editClass()"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg> Classe d'édition</button></div></div>
-      <div class="cc" id="cc3" data-course="java" data-demo-offset-min="8640"><div class="cc-top"><div class="cc-logo"><span class="ui-icon-container is-lg"><i data-lucide="coffee"></i></span></div><div class="cc-info"><p class="cc-dt">11 juil. 26 • 14h00</p><p class="cc-sub">Java</p></div><div class="cc-cd" id="cd3" data-target="2026-07-11T18:00:00Z" data-end="2026-07-11T19:00:00Z">…</div></div><div class="cc-bottom"><span class="cc-session"><span class="ui-icon-container is-sm ic-muted"><i data-lucide="folder"></i></span> Session 5</span><button class="btn-outline" id="btn3" onclick="APP.editClass()"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg> Classe d'édition</button></div></div>
-      <div class="cc" id="cc4" data-course="python-boucles" data-demo-offset-min="6"><div class="cc-top"><div class="cc-logo"><span class="ui-icon-container is-lg"><i data-lucide="code-2"></i></span></div><div class="cc-info"><p class="cc-dt">10 juil. 26 • 16h30</p><p class="cc-sub">Python · Les boucles</p></div><div class="cc-cd" id="cd4" data-target="2026-07-10T20:30:00Z" data-end="2026-07-10T21:30:00Z">…</div></div><div class="cc-bottom"><span class="cc-session"><span class="ui-icon-container is-sm ic-muted"><i data-lucide="folder"></i></span> Session 7</span><button class="btn-outline" id="btn4" onclick="APP.editClass()"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg> Classe d'édition</button></div></div>
-      <div class="cc" id="cc5" data-course="python-poo" data-demo-offset-min="4320"><div class="cc-top"><div class="cc-logo"><span class="ui-icon-container is-lg"><i data-lucide="code-2"></i></span></div><div class="cc-info"><p class="cc-dt">13 juil. 26 • 11h00</p><p class="cc-sub">Python · POO</p></div><div class="cc-cd" id="cd5" data-target="2026-07-13T15:00:00Z" data-end="2026-07-13T16:00:00Z">…</div></div><div class="cc-bottom"><span class="cc-session"><span class="ui-icon-container is-sm ic-muted"><i data-lucide="folder"></i></span> Session 9</span><button class="btn-outline" id="btn5" onclick="APP.editClass()"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg> Classe d'édition</button></div></div>
+      <!-- Cartes rendues dynamiquement depuis /api/my-sessions (renderMyClasses) -->
         </div>
         <div class="tile-actions"><button class="btn-outline" onclick="APP.joinClass()" title="Aperçu de la classe en direct (démo)"><span class="ui-icon-container is-sm"><i data-lucide="flask-conical"></i></span> Tester la classe en direct</button><button class="btn-outline" onclick="APP.comingSoon('Tutoriels de cours')">Tutoriels de cours <span class="ui-icon-container is-sm ic-muted"><i data-lucide="arrow-up-right"></i></span></button><button class="btn-outline" onclick="APP.comingSoon('Plannings')">Voir les plannings <span class="ui-icon-container is-sm ic-muted"><i data-lucide="arrow-up-right"></i></span></button></div>
       </div>
       <!-- Revenez -->
       <div class="tile tile-comeback"><h3 style="font-size:1.05rem;font-weight:700;margin-bottom:14px">Revenez</h3><div class="comeback-item"><div class="comeback-tag"><span class="ui-icon-container is-sm"><i data-lucide="graduation-cap"></i></span> Accompagné par l'enseignant</div><p class="comeback-name">Travailler avec Turtle</p><p class="comeback-sub">Objet : <strong style="color:var(--indigo)">Python</strong></p><button class="btn-resume" onclick="APP.modal('Reprendre l’apprentissage','<p style=&quot;color:var(--t2);font-size:.9rem&quot;>Le module Turtle reprendra à la leçon 4. Préparez votre environnement Python !</p><button class=&quot;btn btn-primary&quot; style=&quot;margin-top:16px&quot; onclick=&quot;APP.closeModal()&quot;>Compris !</button>')"><span class="ui-icon-container is-sm"><i data-lucide="play"></i></span> Reprendre l’apprentissage</button><p class="comeback-hw"><span class="ui-icon-container is-sm"><i data-lucide="clipboard-list"></i></span> 5 devoirs en attente</p></div></div>
       <!-- Série + crédits -->
-      <div class="tile tile-streak"><div class="streak-header"><h3>Ta série est terminée</h3><div class="py-pill"><span class="ui-icon-container is-sm"><i data-lucide="code-2"></i></span> Python <span class="ui-icon-container is-sm ic-muted"><i data-lucide="chevron-right"></i></span></div></div><p class="streak-sub">La prochaine série commence le 28 juin ! <span class="ui-icon-container is-sm" style="color:var(--orange)"><i data-lucide="gift"></i></span></p><div class="streak-days"><div class="streak-day missed"><span class="ui-icon-container is-sm"><i data-lucide="x"></i></span></div><div class="streak-day done"><span class="ui-icon-container is-sm"><i data-lucide="check"></i></span></div><div class="streak-day done"><span class="ui-icon-container is-sm"><i data-lucide="check"></i></span></div><div class="streak-day done"><span class="ui-icon-container is-sm"><i data-lucide="check"></i></span></div><div class="streak-day done"><span class="ui-icon-container is-sm"><i data-lucide="check"></i></span></div><div class="streak-day done"><span class="ui-icon-container is-sm"><i data-lucide="check"></i></span></div><div class="streak-day done"><span class="ui-icon-container is-sm"><i data-lucide="check"></i></span></div><div class="streak-day done"><span class="ui-icon-container is-sm"><i data-lucide="check"></i></span></div><div class="streak-day done"><span class="ui-icon-container is-sm"><i data-lucide="check"></i></span></div><div class="streak-day gift"><span class="ui-icon-container is-sm"><i data-lucide="gift"></i></span></div></div><div class="streak-labels"><span>27 juin</span><span>28 juin</span></div><div class="credits-row"><div class="lbl"><span class="ui-icon-container is-sm"><i data-lucide="ticket"></i></span> <strong id="creditsDisplay2">31</strong> crédits restants</div><button class="btn-sm green" onclick="APP.openBuyCredits()"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg> Acheter des crédits</button></div><div class="credits-row"><div class="lbl"><span class="ui-icon-container is-sm"><i data-lucide="house"></i></span> <strong>0</strong> Pass Club</div><button class="btn-sm indigo" onclick="APP.openAddClass()"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Ajouter une classe</button></div><p class="credits-note">Note : Les crédits sont au niveau du compte et utilisables par tous les étudiants</p></div>
+      <div class="tile tile-streak"><div class="streak-header"><h3>Ta série d'apprentissage</h3></div><p class="streak-sub">Assiste à ton premier cours pour lancer ta série <span class="ui-icon-container is-sm" style="color:var(--orange)"><i data-lucide="flame"></i></span></p><div class="streak-days" id="streakDays"></div><div class="credits-row"><div class="lbl"><span class="ui-icon-container is-sm"><i data-lucide="ticket"></i></span> <strong id="creditsDisplay2">0</strong> crédits restants</div><button class="btn-sm green" onclick="APP.openBuyCredits()"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg> Acheter des crédits</button></div><p class="credits-note">Les crédits sont rattachés au compte et utilisables par tous les élèves qui y sont liés.</p></div>
       <!-- Zone de plaisir -->
       <div class="tile fun-zone"><div class="fun-header"><h3>Zone de plaisir</h3><div class="fun-nav"><span id="funIdx">1/3</span><button onclick="APP.funPrev()">‹</button><button onclick="APP.funNext()">›</button></div></div><div class="fun-card" id="funCard"><div class="fun-card-title"><span class="fun-icon" id="funIcon"><span class="ui-icon-container"><i data-lucide="languages"></i></span></span><span id="funTitle">Apprentissage des langues</span></div><p class="fun-card-sub" id="funSub">Découvrez une nouvelle langue !</p><div class="fun-card-stats" id="funStats"><span class="ui-icon-container is-sm"><i data-lucide="flag"></i></span> 90 sujets • <span class="ui-icon-container is-sm"><i data-lucide="layers"></i></span> 1800 cartes</div><button class="btn-play" onclick="APP.openQuiz()"><span class="ui-icon-container is-sm"><i data-lucide="play"></i></span> Jeu</button></div></div>
       <!-- Événements -->
-      <div class="tile tile-events"><div class="events-header"><h3>Événements</h3><span class="ev-count">2</span><span class="ev-pass">0 Pass Club</span></div><div class="event-item"><span style="font-weight:600;flex:1">Savoir ce qu'est l'IA et comment…</span></div><div class="event-item"><span class="ev-date"><span class="ui-icon-container is-sm ic-muted"><i data-lucide="calendar"></i></span> 29/06/26</span><span class="ev-time"><span class="ui-icon-container is-sm"><i data-lucide="clock"></i></span> 05h30</span></div><div class="event-item"><span style="font-weight:600;flex:1">Savoir ce qu'est l'IA…</span></div><div class="event-item"><span class="ev-date"><span class="ui-icon-container is-sm ic-muted"><i data-lucide="calendar"></i></span> 29/06/26</span><span class="ev-time"><span class="ui-icon-container is-sm"><i data-lucide="clock"></i></span> 05h30</span></div></div>
+      <div class="tile tile-events"><div class="events-header"><h3>Événements</h3><span class="ev-count" id="evCount">0</span></div><div class="tile-empty" id="eventsEmpty"><span class="ui-icon-container is-lg ic-muted"><i data-lucide="calendar-off"></i></span><p>Aucun événement programmé pour le moment.</p></div></div>
       <!-- Résultats -->
       <div class="tile tile-grades"><div class="grades-header"><h3>Résultats scolaires</h3></div><div id="gradesContainer"><div class="grade-empty"><p>Aucun score ajouté</p><button class="btn-sm indigo" onclick="APP.openAddScore()"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Ajouter le score</button></div><div class="grade-empty"><p>Pas d'examen à venir</p><button class="btn-sm indigo" onclick="APP.openAddExam()"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Ajouter l'examen</button></div></div></div>
       <!-- Parrainage (accent) -->
@@ -491,7 +531,7 @@
     </section>
     <div class="sandbox-banner" onclick="APP.goSandbox()"><span>Aller à</span><a href="#">Bac à sable <span class="ui-icon-container is-sm"><i data-lucide="arrow-right"></i></span></a></div>
     <!-- Projects -->
-    <section class="project-section"><div class="card" style="padding:26px"><div class="project-header"><h2>Résumé du projet</h2><button class="btn-outline" onclick="APP.openAddProject()"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Ajouter le projet</button></div><div class="project-grid"><div class="pcard"><div class="pcard-h"><span class="ui-icon-container" style="color:var(--indigo)"><i data-lucide="code-2"></i></span><h4>Python Niveau 1</h4></div><div class="stars"><span class="star"><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span></span><span class="star"><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span></span><span class="star"><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span></span></div><div class="pstatus empty"><span class="ui-icon-container is-sm"><i data-lucide="alert-triangle"></i></span> Aucun projet ajouté</div><p class="pdesc">Ajoutez un mini, un projet majeur et un projet final pour gagner des étoiles</p></div><div class="pcard"><div class="pcard-h"><span class="ui-icon-container" style="color:var(--teal)"><i data-lucide="globe"></i></span><h4>Niveau 1 de développement web</h4></div><div class="stars"><span class="star"><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span></span><span class="star"><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span></span><span class="star"><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span></span></div><div class="pstatus empty"><span class="ui-icon-container is-sm"><i data-lucide="alert-triangle"></i></span> Aucun projet ajouté</div><p class="pdesc">Ajoutez un mini, un projet majeur et un projet final pour gagner des étoiles</p></div><div class="pcard"><div class="pcard-h"><span class="ui-icon-container" style="color:var(--indigo)"><i data-lucide="code-2"></i></span><h4>Python Niveau 2</h4></div><div class="stars"><span class="star"><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span></span><span class="star"><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span></span><span class="star"><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span></span></div><div class="pstatus empty"><span class="ui-icon-container is-sm"><i data-lucide="alert-triangle"></i></span> Aucun projet ajouté</div><p class="pdesc">Ajoutez un mini, un projet majeur et un projet final pour gagner des étoiles</p></div><div class="pcard"><div class="pcard-h"><span class="ui-icon-container" style="color:var(--purple)"><i data-lucide="gamepad-2"></i></span><h4>Développement de jeux</h4></div><div class="stars"><span class="star filled"><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span></span><span class="star"><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span></span><span class="star"><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span></span></div><div class="pstatus done"><span class="ui-icon-container is-sm"><i data-lucide="check-circle-2"></i></span> 1 projet réalisé</div><div class="pdetail"><span class="ui-icon-container is-sm" style="color:#F59E0B"><i data-lucide="trophy"></i></span> Défi en classe 1 — Livre de recettes de la chef Aanya<br><em>Mini Projet — 10/05/2026</em></div></div></div></div></section>
+    <section class="project-section"><div class="card" style="padding:26px"><div class="project-header"><h2>Résumé du projet</h2><button class="btn-outline" onclick="APP.openAddProject()"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Ajouter le projet</button></div><div class="project-grid"><div class="pcard"><div class="pcard-h"><span class="ui-icon-container" style="color:var(--indigo)"><i data-lucide="code-2"></i></span><h4>Python Niveau 1</h4></div><div class="stars"><span class="star"><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span></span><span class="star"><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span></span><span class="star"><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span></span></div><div class="pstatus empty"><span class="ui-icon-container is-sm"><i data-lucide="alert-triangle"></i></span> Aucun projet ajouté</div><p class="pdesc">Ajoutez un mini, un projet majeur et un projet final pour gagner des étoiles</p></div><div class="pcard"><div class="pcard-h"><span class="ui-icon-container" style="color:var(--teal)"><i data-lucide="cat"></i></span><h4>Scratch Niveau 1</h4></div><div class="stars"><span class="star"><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span></span><span class="star"><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span></span><span class="star"><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span></span></div><div class="pstatus empty"><span class="ui-icon-container is-sm"><i data-lucide="alert-triangle"></i></span> Aucun projet ajouté</div><p class="pdesc">Ajoutez un mini, un projet majeur et un projet final pour gagner des étoiles</p></div><div class="pcard"><div class="pcard-h"><span class="ui-icon-container" style="color:var(--indigo)"><i data-lucide="code-2"></i></span><h4>Python Niveau 2</h4></div><div class="stars"><span class="star"><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span></span><span class="star"><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span></span><span class="star"><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span></span></div><div class="pstatus empty"><span class="ui-icon-container is-sm"><i data-lucide="alert-triangle"></i></span> Aucun projet ajouté</div><p class="pdesc">Ajoutez un mini, un projet majeur et un projet final pour gagner des étoiles</p></div><div class="pcard"><div class="pcard-h"><span class="ui-icon-container" style="color:var(--purple)"><i data-lucide="gamepad-2"></i></span><h4>Développement de jeux</h4></div><div class="stars"><span class="star filled"><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span></span><span class="star"><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span></span><span class="star"><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span></span></div><div class="pstatus done"><span class="ui-icon-container is-sm"><i data-lucide="check-circle-2"></i></span> 1 projet réalisé</div><div class="pdetail"><span class="ui-icon-container is-sm" style="color:#F59E0B"><i data-lucide="trophy"></i></span> Défi en classe 1 — Livre de recettes de la chef Aanya<br><em>Mini Projet — 10/05/2026</em></div></div></div></div></section>
   </main>
 </div>
 
@@ -513,7 +553,7 @@
     <div class="sbx-foot">
       <button class="sbx-profile" onclick="APP.sbxNav(7)">
         <span class="sandbox-avatar" id="sandboxAvatar"></span>
-        <span class="sbx-profile-meta"><span class="sbx-profile-name">Bilan446698</span><span class="sbx-profile-role">Élève</span></span>
+        <span class="sbx-profile-meta"><span class="sbx-profile-name" id="sandboxName">Mon profil</span><span class="sbx-profile-role">Élève</span></span>
       </button>
       <button class="sbx-logout" onclick="APP.confirmLogout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>Déconnexion</button>
     </div>
@@ -645,7 +685,7 @@
         <div class="card com-profile" id="comProfile"></div>
         <div class="card com-subject-card">
           <h4 class="com-r-title">Ma matière</h4>
-          <div class="com-subject-tags"><span class="subj-tag"><span class="ui-icon-container is-sm"><i data-lucide="code-2"></i></span> Python</span><span class="subj-tag"><span class="ui-icon-container is-sm"><i data-lucide="globe"></i></span> Web Dev</span></div>
+          <div class="com-subject-tags"><span class="subj-tag"><span class="ui-icon-container is-sm"><i data-lucide="code-2"></i></span> Python</span><span class="subj-tag"><span class="ui-icon-container is-sm"><i data-lucide="cat"></i></span> Scratch</span></div>
         </div>
         <div class="card com-badges-card">
           <h4 class="com-r-title">Mes badges</h4>
@@ -828,6 +868,8 @@
       <div class="prof-preview-wrap">
         <div class="prof-preview" id="profilePreview"></div>
         <button class="prof-upload" onclick="APP.profileUpload()"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Téléverser une photo</button>
+        <button class="prof-remove" id="profRemovePhoto" style="display:none" onclick="APP.profileRemovePhoto()"><span class="ui-icon-container is-sm"><i data-lucide="trash-2"></i></span> Retirer la photo</button>
+        <p class="prof-av-hint">Sans photo ni avatar, tes initiales sont utilisées.</p>
       </div>
       <div class="prof-gallery">
         <p class="prof-gallery-label">ou choisissez un avatar</p>
@@ -1082,8 +1124,11 @@ const APP = (() => {
   'use strict';
 
   // === STATE ===
-  let points = 70;
-  function _loadCredits() { try { const v = localStorage.getItem('kvs_credits'); return v !== null ? parseInt(v, 10) : 31; } catch (_) { return 31; } }
+  // Valeurs de départ à ZÉRO : un compte neuf n'a ni points, ni crédits, ni
+  // classement. Afficher 70 points et 31 crédits d'office revenait à inventer
+  // une progression que l'élève n'a pas.
+  let points = 0;
+  function _loadCredits() { try { const v = localStorage.getItem('kvs_credits'); return v !== null ? parseInt(v, 10) : 0; } catch (_) { return 0; } }
   function _saveCredits() { try { localStorage.setItem('kvs_credits', String(credits)); } catch (_) {} }
   let credits = _loadCredits();
   let countdownTimer = null;
@@ -1307,7 +1352,7 @@ print("Bonne séance de code, Bilal ! 🚀")
     show(target);
     _syncMobileNav(target);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    if (target === 'viewDashboard') startCountdowns();
+    if (target === 'viewDashboard') { loadMySessions(); startCountdowns(); }
     else stopCountdowns();
     document.title = target === 'viewDashboard' ? 'Portail Élève — Kodingvillageschool' :
                      target === 'viewSandbox' ? 'Bac à sable — Kodingvillageschool' :
@@ -1474,11 +1519,21 @@ print("Bonne séance de code, Bilal ! 🚀")
   function _enterApp(user, isNew) {
     currentUser = user;
     _setSession(user.email);
-    const fullName = user.firstName + ' ' + user.lastName;
-    try { if (typeof STUDENT === 'object' && STUDENT) { STUDENT.name = fullName; } } catch (_) {}
+    const fullName = (user.firstName + ' ' + user.lastName).trim();
+    // Identité canonique de l'élève connecté + son avatar personnel.
+    // Sans ce rattachement, l'avatar du compte précédent resterait affiché.
+    try {
+      if (typeof STUDENT === 'object' && STUDENT) {
+        STUDENT.name = fullName;
+        STUDENT.email = user.email || '';
+        loadAvatarFor(STUDENT.email);
+        profileBindUser(fullName, STUDENT.email);
+      }
+    } catch (_) {}
     // personnalise l'accueil du portail avec l'utilisateur connecté
     const greet = document.querySelector('#viewDashboard .greet'); if (greet) greet.textContent = isNew ? 'Bienvenue,' : 'Content de te revoir,';
     const dn = $('dashName'); if (dn) dn.textContent = fullName + ' !';
+    try { syncProfileUI(); } catch (_) {}
     closeModal();
     switchView('viewDashboard');
     preloadZoomSDK();
@@ -1500,7 +1555,14 @@ print("Bonne séance de code, Bilal ! 🚀")
     `);
   }
 
-  function logout() { closeModal(); currentUser = null; _clearSession(); try { sessionStorage.removeItem('kvs_token'); } catch (_) {} switchView('viewLanding'); }
+  function logout() {
+    closeModal(); currentUser = null; _clearSession();
+    try { sessionStorage.removeItem('kvs_token'); } catch (_) {}
+    // Purge l'identité en mémoire : sinon le prochain compte connecté sur ce
+    // poste hériterait du nom et de l'avatar du précédent.
+    try { STUDENT.name = ''; STUDENT.email = ''; STUDENT.avatarPhoto = null; STUDENT.avatarEmoji = null; } catch (_) {}
+    switchView('viewLanding');
+  }
 
   // === ADMIN — gestion des comptes élèves (front) ===
   // Le jeton admin est obtenu à la connexion (Phase 4 : /api/auth → role 'admin').
@@ -1524,7 +1586,7 @@ print("Bonne séance de code, Bilal ! 🚀")
   const _admEsc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   function _admErr(msg) { const e = $('admError'); if (e) { e.textContent = msg || ''; e.style.display = msg ? 'block' : 'none'; } }
 
-  function goAdmin() { switchView('viewAdmin'); adminRefresh(); }
+  function goAdmin() { switchView('viewAdmin'); _admShowTz(); adminRefresh(); adminSessionsRefresh(); }
   function adminLogout() { _setAdminToken(null); switchView('viewLanding'); }
 
   async function adminCreate(e) {
@@ -1532,8 +1594,9 @@ print("Bonne séance de code, Bilal ! 🚀")
     _admErr('');
     const firstName = $('admFirst').value.trim(), lastName = $('admLast').value.trim();
     const email = $('admEmail').value.trim().toLowerCase(), slot = $('admSlot').value.trim();
+    const phone = $('admPhone').value.trim();
     if (!firstName || !lastName || !email) { _admErr('⚠️ Prénom, nom et e-mail sont obligatoires.'); return false; }
-    const { status, data } = await _adminApi('create', { firstName, lastName, email, slot });
+    const { status, data } = await _adminApi('create', { firstName, lastName, email, phone, slot });
     if (status === 401) { _admErr('🔒 Session admin expirée — reconnecte-toi.'); return false; }
     if (status === 409) { _admErr('⚠️ Un compte existe déjà avec cet e-mail.'); return false; }
     if (!data.ok) { _admErr('⚠️ Création impossible (' + (data.error || 'erreur') + ').'); return false; }
@@ -1563,9 +1626,12 @@ print("Bonne séance de code, Bilal ! 🚀")
     $('admTbody').innerHTML = rows.map(s => {
       const em = _admEsc(s.email);
       const badge = s.credsSentAt ? '<span class="adm-badge ok">Envoyés</span>' : '<span class="adm-badge no">Non envoyés</span>';
+      // Téléphone absent → le rappel WhatsApp sera ignoré pour cet élève.
+      const tel = s.phone ? _admEsc(s.phone) : '<span class="adm-muted" title="Sans téléphone, pas de rappel WhatsApp">—</span>';
       return `<tr>
         <td>${_admEsc(s.firstName)} ${_admEsc(s.lastName)}</td>
         <td>${em}</td>
+        <td>${tel}</td>
         <td>${_admEsc(s.slot) || '—'}</td>
         <td>${badge}</td>
         <td class="adm-actions">
@@ -1573,7 +1639,102 @@ print("Bonne séance de code, Bilal ! 🚀")
           <button class="btn-ghost" onclick="APP.adminReset('${em}')">Réinit.</button>
           <button class="btn-ghost adm-del" onclick="APP.adminDelete('${em}')">Suppr.</button>
         </td></tr>`;
-    }).join('') || '<tr><td colspan="5" class="adm-empty">Aucun élève pour l\'instant.</td></tr>';
+    }).join('') || '<tr><td colspan="6" class="adm-empty">Aucun élève pour l\'instant.</td></tr>';
+
+    // La liste des élèves inscriptibles à une séance suit celle des comptes.
+    _admFillStudentPicker(rows);
+  }
+
+  // === ADMIN — séances planifiées (socle des rappels automatiques) ===
+
+  function _admSesErr(msg) { const e = $('admSesError'); if (e) { e.textContent = msg || ''; e.style.display = msg ? 'block' : 'none'; } }
+
+  // Alimente le multi-select en préservant la sélection en cours (un rafraîchissement
+  // de la liste des élèves ne doit pas effacer ce que l'admin vient de cocher).
+  function _admFillStudentPicker(rows) {
+    const sel = $('admSesStudents'); if (!sel) return;
+    const keep = new Set(Array.from(sel.selectedOptions).map(o => o.value));
+    sel.innerHTML = rows.map(s =>
+      `<option value="${_admEsc(s.email)}"${keep.has(s.email) ? ' selected' : ''}>${_admEsc(s.firstName)} ${_admEsc(s.lastName)} — ${_admEsc(s.email)}${s.phone ? '' : ' (sans tél.)'}</option>`
+    ).join('');
+  }
+
+  // Affiche le fuseau du navigateur : l'admin saisit en heure locale, le serveur
+  // stocke en UTC. Sans ce repère, une erreur de fuseau passe inaperçue.
+  function _admShowTz() {
+    const el = $('admSesTzHint'); if (!el) return;
+    let tz = '';
+    try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (_) {}
+    el.textContent = tz ? `Heure locale (${tz})` : 'Heure locale de ce navigateur';
+  }
+
+  const _admSesFmt = (iso) => {
+    try {
+      return new Intl.DateTimeFormat('fr-CA', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
+    } catch (_) { return String(iso).replace('T', ' ').slice(0, 16); }
+  };
+
+  async function adminSessionCreate(e) {
+    if (e) e.preventDefault();
+    _admSesErr('');
+    const raw = $('admSesCourse').value || '';
+    const sep = raw.indexOf('|');
+    const courseId = sep < 0 ? raw : raw.slice(0, sep);
+    const courseLabel = sep < 0 ? raw : raw.slice(sep + 1);
+    const when = $('admSesWhen').value;
+    const durationMin = parseInt($('admSesDuration').value, 10) || 60;
+    const students = Array.from($('admSesStudents').selectedOptions).map(o => o.value);
+
+    if (!when) { _admSesErr('⚠️ Choisis une date et une heure de début.'); return false; }
+    if (!students.length) { _admSesErr('⚠️ Sélectionne au moins un élève inscrit.'); return false; }
+
+    // `datetime-local` est sans fuseau : Date() l'interprète en heure locale,
+    // toISOString() le convertit en UTC — le format attendu par l'API.
+    const d = new Date(when);
+    if (isNaN(d.getTime())) { _admSesErr('⚠️ Date invalide.'); return false; }
+    if (d.getTime() <= Date.now()) { _admSesErr('⚠️ La séance doit être dans le futur (sinon aucun rappel ne partira).'); return false; }
+
+    const { status, data } = await _adminApi('session.create', {
+      courseId, courseLabel, startsAt: d.toISOString(), durationMin, students
+    });
+    if (status === 401) { _admSesErr('🔒 Session admin expirée — reconnecte-toi.'); return false; }
+    if (!data.ok) { _admSesErr('⚠️ ' + (data.message || 'Planification impossible (' + (data.error || 'erreur') + ').')); return false; }
+
+    toast('Séance planifiée 🗓️', 'ok', '🗓️');
+    $('admSesForm').reset();
+    $('admSesDuration').value = 60;
+    adminSessionsRefresh();
+    return false;
+  }
+
+  let _admSesSeq = 0;
+  async function adminSessionsRefresh() {
+    const seq = ++_admSesSeq;
+    const { data } = await _adminApi('session.list');
+    if (seq !== _admSesSeq) return; // résultat périmé → une requête plus récente a pris la main
+    const rows = (data && data.sessions) || [];
+    $('admSesCount').textContent = rows.length;
+    $('admSesTbody').innerHTML = rows.map(s => {
+      const rappel = s.remindedAt
+        ? `<span class="adm-badge ok">Envoyé</span>`
+        : `<span class="adm-badge no">En attente</span>`;
+      return `<tr>
+        <td>${_admEsc(s.courseLabel || s.courseId)}</td>
+        <td>${_admEsc(_admSesFmt(s.startsAt))}</td>
+        <td>${_admEsc(String(s.durationMin || 60))} min</td>
+        <td>${(s.students || []).length}</td>
+        <td>${rappel}</td>
+        <td class="adm-actions">
+          <button class="btn-ghost adm-del" onclick="APP.adminSessionDelete('${_admEsc(s.id)}')">Annuler</button>
+        </td></tr>`;
+    }).join('') || '<tr><td colspan="6" class="adm-empty">Aucune séance planifiée.</td></tr>';
+  }
+
+  async function adminSessionDelete(id) {
+    if (!window.confirm('Annuler cette séance ? Le rappel ne partira pas.')) return;
+    const { data } = await _adminApi('session.delete', { id });
+    if (data.ok) { toast('Séance annulée.', 'ok', '🗑️'); adminSessionsRefresh(); }
+    else { toast('Annulation impossible.', 'err', '⚠️'); }
   }
 
   async function adminSend(email) {
@@ -1598,17 +1759,17 @@ print("Bonne séance de code, Bilal ! 🚀")
   // === TEACHER DASHBOARD (complete, simulated) ===
   const teacherStudents = [
     { n: 'Bilal Hassan Keita', sub: 'Python', pct: 78, att: '100%', last: '28-06-2026', trend: '▲' },
-    { n: 'Aria Patel', sub: 'Web Dev', pct: 64, att: '92%', last: '27-06-2026', trend: '▲' },
+    { n: 'Aria Patel', sub: 'Python', pct: 64, att: '92%', last: '27-06-2026', trend: '▲' },
     { n: 'Diego Martinez', sub: 'Scratch', pct: 52, att: '85%', last: '26-06-2026', trend: '▬' },
     { n: 'Chloe Smith', sub: 'Python', pct: 90, att: '98%', last: '28-06-2026', trend: '▲' },
     { n: 'Yuki Tanaka', sub: 'Python', pct: 88, att: '100%', last: '25-06-2026', trend: '▲' },
-    { n: "Liam O'Connor", sub: 'Web Dev', pct: 47, att: '80%', last: '24-06-2026', trend: '▼' }
+    { n: "Liam O'Connor", sub: 'Scratch', pct: 47, att: '80%', last: '24-06-2026', trend: '▼' }
   ];
   const teacherClasses = [
     { t: '10:00', s: 'Bilal Hassan Keita', c: 'Python · Développement de jeux', st: 'live', course: 'dev-jeux-python' },
-    { t: '13:00', s: 'Aria Patel', c: 'Web Dev · Flexbox', st: 'soon', course: 'web-dev' },
+    { t: '13:00', s: 'Aria Patel', c: 'Python · Fonctions', st: 'soon', course: 'python-fonctions' },
     { t: '15:30', s: 'Yuki Tanaka', c: 'Python · Boucles', st: 'soon', course: 'python-boucles' },
-    { t: '17:00', s: 'Chloe Smith', c: 'Java · Interfaces', st: 'soon', course: 'java' }
+    { t: '17:00', s: 'Chloe Smith', c: 'Scratch · Animations', st: 'soon', course: 'scratch' }
   ];
   const teacherMessages = [
     { f: 'Mohamed Keita', r: 'Parent', m: 'Bilal adore les cours, merci !', t: 'il y a 1h', ic: 'users' },
@@ -1816,17 +1977,23 @@ print("Bonne séance de code, Bilal ! 🚀")
     toast(`Cours sélectionné : ${name} 🎯`, 'info', '📚');
   }
   function bookSlot() { lpGo('getStarted'); toast('Réserve ton créneau d’essai gratuit ! 🎉', 'ok', '🗓️'); }
-  // === COMMUNAUTÉ WHATSAPP « THE PARENTING LAB » ===
-  // 👉 Remplace le numéro ci-dessous par ton vrai numéro WhatsApp (format international, sans + ni espaces),
-  //    ex: '33612345678'. Ou colle directement un lien d'invitation de groupe WhatsApp
-  //    (ex: 'https://chat.whatsapp.com/XXXXXXXXXXXXX') dans WHATSAPP_LINK.
-  const WHATSAPP_NUMBER = '1234567890';
+  // === CONTACT WHATSAPP ===
+  // Numéro officiel de l'école (format international, sans + ni espaces).
+  // Pour basculer sur un GROUPE WhatsApp plutôt qu'une conversation directe,
+  // remplace WHATSAPP_LINK par un lien d'invitation ('https://chat.whatsapp.com/XXXX').
+  const WHATSAPP_NUMBER = '16044992735';
   const WHATSAPP_LINK = `https://wa.me/${WHATSAPP_NUMBER}`;
   function joinCommunity() {
-    toast('Ouverture de la communauté WhatsApp « The Parenting Lab » 💬', 'ok', '👨‍👩‍👧‍👦');
+    toast('Ouverture de la conversation WhatsApp 💬', 'ok', '💬');
     window.open(WHATSAPP_LINK, '_blank', 'noopener');
   }
-  function gsSlot(btn) { document.querySelectorAll('.gs-slot').forEach(s => s.classList.remove('active')); btn.classList.add('active'); }
+  function gsSlot(btn) {
+    document.querySelectorAll('.gs-slot').forEach(s => s.classList.remove('active'));
+    btn.classList.add('active');
+    const iso = btn.dataset.iso;
+    const pays = paysParCode($('gsCountry') ? $('gsCountry').value : null);
+    gsSlotChoisi = creneauxPour(pays).find(c => c.iso === iso) || null;
+  }
 
   // === FAQ ACCORDION ===
   function faqToggle(btn) {
@@ -1846,10 +2013,204 @@ print("Bonne séance de code, Bilal ! 🚀")
   }
 
   // === BOOKING CONFIRMATION FLOW ===
+  // ============================================================
+  //  PAYS, FUSEAUX ET CRÉNEAUX
+  // ============================================================
+  // Référentiel unique : la landing et le formulaire s'en servent tous les deux.
+  // `tz` liste les fuseaux du pays, du plus courant au moins courant. Pour les
+  // pays qui en couvrent plusieurs (Canada, États-Unis), on retient celui du
+  // navigateur s'il correspond — sinon le premier.
+  const COUNTRIES = [
+    { code: 'CA', nom: 'Canada',          drapeau: '🇨🇦', dial: '+1',   tz: ['America/Toronto','America/Vancouver','America/Edmonton','America/Winnipeg','America/Halifax','America/St_Johns'] },
+    { code: 'GN', nom: 'Guinée',          drapeau: '🇬🇳', dial: '+224', tz: ['Africa/Conakry'] },
+    { code: 'FR', nom: 'France',          drapeau: '🇫🇷', dial: '+33',  tz: ['Europe/Paris'] },
+    { code: 'BE', nom: 'Belgique',        drapeau: '🇧🇪', dial: '+32',  tz: ['Europe/Brussels'] },
+    { code: 'CH', nom: 'Suisse',          drapeau: '🇨🇭', dial: '+41',  tz: ['Europe/Zurich'] },
+    { code: 'US', nom: 'États-Unis',      drapeau: '🇺🇸', dial: '+1',   tz: ['America/New_York','America/Chicago','America/Denver','America/Los_Angeles'] },
+    { code: 'GB', nom: 'Royaume-Uni',     drapeau: '🇬🇧', dial: '+44',  tz: ['Europe/London'] },
+    { code: 'MA', nom: 'Maroc',           drapeau: '🇲🇦', dial: '+212', tz: ['Africa/Casablanca'] },
+    { code: 'DZ', nom: 'Algérie',         drapeau: '🇩🇿', dial: '+213', tz: ['Africa/Algiers'] },
+    { code: 'TN', nom: 'Tunisie',         drapeau: '🇹🇳', dial: '+216', tz: ['Africa/Tunis'] },
+    { code: 'SN', nom: 'Sénégal',         drapeau: '🇸🇳', dial: '+221', tz: ['Africa/Dakar'] },
+    { code: 'CI', nom: "Côte d'Ivoire",   drapeau: '🇨🇮', dial: '+225', tz: ['Africa/Abidjan'] },
+    { code: 'ML', nom: 'Mali',            drapeau: '🇲🇱', dial: '+223', tz: ['Africa/Bamako'] },
+    { code: 'CM', nom: 'Cameroun',        drapeau: '🇨🇲', dial: '+237', tz: ['Africa/Douala'] }
+    // Inde et Émirats retirés : avec les créneaux actuels (soirée nord-américaine
+    // et matinée Vancouver), aucun horaire ne tombe à une heure décente là-bas.
+    // Les proposer n'aboutissait qu'à un tunnel vide. À réintroduire si des
+    // créneaux tôt le matin heure de Vancouver sont ouverts un jour.
+  ];
+  const paysParCode = c => COUNTRIES.find(p => p.code === c) || null;
+
+  // Créneaux tels que l'école les ouvre, exprimés dans SON fuseau.
+  // Ils sont ensuite convertis dans le fuseau de l'élève.
+  const SCHOOL_TZ = 'America/Vancouver';
+  // Deux familles de créneaux, pour couvrir les deux bassins de clientèle.
+  // Les heures ci-dessous sont EN HEURE DE VANCOUVER ; les équivalences
+  // indiquées valent été comme hiver (vérifiées aux deux bascules d'heure d'été).
+  //
+  //   • Fin d'après-midi Vancouver  → soirée en Amérique du Nord
+  //   • Milieu de matinée Vancouver → soirée en Europe et en Afrique de l'Ouest
+  //     (10h00-11h00 ici = 19h-20h à Paris, 17h-19h à Conakry/Dakar/Abidjan)
+  const SCHOOL_SLOTS = [
+    { dow: 1, h: 17, m: 0 },   // lun. 17h00 → 20h00 Toronto
+    { dow: 2, h: 10, m: 0 },   // mar. 10h00 → 19h00 Paris · 17h/18h Conakry
+    { dow: 3, h: 18, m: 0 },   // mer. 18h00 → 21h00 Toronto
+    { dow: 4, h: 10, m: 30 },  // jeu. 10h30 → 19h30 Paris · 17h30/18h30 Conakry
+    { dow: 5, h: 16, m: 30 },  // ven. 16h30 → 19h30 Toronto
+    { dow: 6, h: 10, m: 0 },   // sam. 10h00 → 19h00 Paris · 13h00 Toronto
+    { dow: 6, h: 11, m: 0 }    // sam. 11h00 → 20h00 Paris · 18h/19h Conakry
+  ];
+  // Plage horaire raisonnable pour un enfant, dans SON fuseau : au-delà, le
+  // créneau est masqué plutôt que proposé à 3 h du matin.
+  const HEURE_MIN = 7, HEURE_MAX = 21;
+
+  const _JOURS = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
+
+  // Décompose un instant UTC dans un fuseau donné.
+  function _tzParts(utcMs, tz) {
+    const f = new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', weekday: 'short', hour12: false
+    });
+    const p = {};
+    for (const { type, value } of f.formatToParts(new Date(utcMs))) p[type] = value;
+    return {
+      y: +p.year, mo: +p.month, d: +p.day,
+      h: +(p.hour === '24' ? '0' : p.hour), mi: +p.minute,
+      dow: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(p.weekday)
+    };
+  }
+
+  // Heure murale (y/mo/d h:mi) dans `tz` → instant UTC.
+  // Deux itérations suffisent à converger, y compris aux bascules d'heure d'été.
+  function _zonedToUtc(y, mo, d, h, mi, tz) {
+    let utc = Date.UTC(y, mo - 1, d, h, mi);
+    for (let i = 0; i < 3; i++) {
+      const p = _tzParts(utc, tz);
+      const ecart = Date.UTC(p.y, p.mo - 1, p.d, p.h, p.mi) - utc;
+      utc = Date.UTC(y, mo - 1, d, h, mi) - ecart;
+    }
+    return utc;
+  }
+
+  // Prochaine occurrence d'un créneau (jour + heure école) après `depuis`.
+  function _prochaineOccurrence(slot, depuis) {
+    for (let i = 0; i < 14; i++) {
+      const p = _tzParts(depuis + i * 864e5, SCHOOL_TZ);
+      if (p.dow !== slot.dow) continue;
+      const utc = _zonedToUtc(p.y, p.mo, p.d, slot.h, slot.m, SCHOOL_TZ);
+      if (utc > depuis) return utc;
+    }
+    return null;
+  }
+
+  // Fuseau retenu pour un pays : celui du navigateur s'il appartient au pays.
+  function fuseauDuPays(pays) {
+    if (!pays) return SCHOOL_TZ;
+    let local = '';
+    try { local = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (_) {}
+    return pays.tz.includes(local) ? local : pays.tz[0];
+  }
+
+  // Créneaux convertis dans le fuseau de l'élève, ceux hors plage étant écartés.
+  function creneauxPour(pays) {
+    const tz = fuseauDuPays(pays);
+    const maintenant = Date.now();
+    const sortie = [];
+    for (const s of SCHOOL_SLOTS) {
+      const utc = _prochaineOccurrence(s, maintenant);
+      if (utc == null) continue;
+      const p = _tzParts(utc, tz);
+      const hors = p.h < HEURE_MIN || p.h > HEURE_MAX;
+      sortie.push({
+        utc, tz, hors,
+        label: `${_JOURS[p.dow]} · ${String(p.h).padStart(2, '0')}:${String(p.mi).padStart(2, '0')}`,
+        iso: new Date(utc).toISOString()
+      });
+    }
+    return sortie.sort((a, b) => a.utc - b.utc);
+  }
+
+  let gsSlotChoisi = null;
+
+  function _optionsPays(selectionne) {
+    return COUNTRIES.map(p =>
+      `<option value="${p.code}"${p.code === selectionne ? ' selected' : ''}>${p.drapeau} ${_admEsc(p.nom)}</option>`
+    ).join('');
+  }
+
+  // Pré-sélection : pays dont un fuseau correspond à celui du navigateur.
+  function _paysParDefaut() {
+    let local = '';
+    try { local = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (_) {}
+    const trouve = COUNTRIES.find(p => p.tz.includes(local));
+    return trouve ? trouve.code : 'CA';
+  }
+
+  function initPaysEtCreneaux() {
+    const defaut = _paysParDefaut();
+    const gsc = $('gsCountry');
+    if (gsc && !gsc.options.length) { gsc.innerHTML = _optionsPays(defaut); }
+    const bkc = $('bkCountry');
+    if (bkc && !bkc.options.length) { bkc.innerHTML = _optionsPays(defaut); }
+    // Âges proposés : 5 à 18 ans.
+    const age = $('bkChildAge');
+    if (age && age.options.length <= 1) {
+      age.innerHTML = '<option value="">Sélectionner…</option>' +
+        Array.from({ length: 14 }, (_, i) => i + 5).map(a => `<option value="${a}">${a} ans</option>`).join('');
+    }
+    renderGsSlots();
+    bkCountryChange();
+  }
+
+  function renderGsSlots() {
+    const zone = $('gsSlots'); if (!zone) return;
+    const pays = paysParCode($('gsCountry') ? $('gsCountry').value : null);
+    const creneaux = creneauxPour(pays);
+    const dispos = creneaux.filter(c => !c.hors);
+    const masques = creneaux.length - dispos.length;
+
+    if (!dispos.length) {
+      zone.innerHTML = `<p class="gs-noslot">Aucun créneau ne tombe à une heure raisonnable chez vous. Un mentor vous proposera un horaire sur mesure.</p>`;
+      gsSlotChoisi = null;
+    } else {
+      // Conserve la sélection si le créneau existe toujours après changement de pays.
+      if (!dispos.some(c => gsSlotChoisi && c.iso === gsSlotChoisi.iso)) gsSlotChoisi = dispos[0];
+      zone.innerHTML = dispos.map(c =>
+        `<button type="button" class="gs-slot${c.iso === gsSlotChoisi.iso ? ' active' : ''}" data-iso="${c.iso}" onclick="APP.gsSlot(this)">${_admEsc(c.label)}</button>`
+      ).join('');
+    }
+
+    const tzEl = $('gsTz');
+    if (tzEl) {
+      const tz = fuseauDuPays(pays);
+      tzEl.textContent = `Heures affichées dans votre fuseau (${tz})`
+        + (masques ? ` · ${masques} créneau${masques > 1 ? 'x' : ''} masqué${masques > 1 ? 's' : ''} (trop tôt ou trop tard chez vous)` : '');
+    }
+  }
+
+  function gsCountryChange() {
+    renderGsSlots();
+    // Le formulaire suit le pays choisi en amont.
+    const bkc = $('bkCountry'), gsc = $('gsCountry');
+    if (bkc && gsc) { bkc.value = gsc.value; bkCountryChange(); }
+  }
+
+  // Indicatif strictement dérivé du pays — l'utilisateur ne peut pas le contredire.
+  function bkCountryChange() {
+    const pays = paysParCode($('bkCountry') ? $('bkCountry').value : null);
+    const dial = $('bkDial'), code = $('bkPhoneCode');
+    if (dial) dial.textContent = pays ? `${pays.drapeau} ${pays.dial}` : '—';
+    if (code) code.value = pays ? pays.dial : '';
+  }
+
   function enrollNow() {
-    const course = $('gsCourse') ? $('gsCourse').value : 'Web Development';
-    const slot = document.querySelector('.gs-slot.active');
-    const when = slot ? slot.textContent.trim() : 'Lun · 17:00';
+    const course = $('gsCourse') ? $('gsCourse').value : 'Python';
+    const when = gsSlotChoisi ? gsSlotChoisi.label : '';
+    // Aligne le pays du formulaire sur celui choisi à l'étape 1.
+    const gsc = $('gsCountry'), bkc = $('bkCountry');
+    if (gsc && bkc) { bkc.value = gsc.value; bkCountryChange(); }
     // pre-fill the booking page
     $('bkCourseLabel').textContent = course;
     $('bkSlotLabel').textContent = when;
@@ -1874,22 +2235,34 @@ print("Bonne séance de code, Bilal ! 🚀")
   async function submitBooking(e) {
     if (e) e.preventDefault();
     const get = id => ($(id) ? $(id).value.trim() : '');
+    const paysSel = paysParCode(get('bkCountry'));
     const fields = {
       parentFirst: get('bkParentFirst'), parentLast: get('bkParentLast'),
       childFirst: get('bkChildFirst'), childLast: get('bkChildLast'),
-      pronoun: get('bkChildPronoun'), email: get('bkEmail'),
-      phoneCode: get('bkPhoneCode'), phone: get('bkPhone'),
-      course: get('bkCourse'), slot: get('bkSlot')
+      gender: get('bkChildGender'), age: get('bkChildAge'),
+      email: get('bkEmail'),
+      country: paysSel ? paysSel.nom : '', countryCode: paysSel ? paysSel.code : '',
+      // Indicatif recalculé depuis le pays au moment de l'envoi : même si le
+      // champ caché était trafiqué, il ne peut pas contredire le pays.
+      phoneCode: paysSel ? paysSel.dial : '', phone: get('bkPhone'),
+      timezone: fuseauDuPays(paysSel),
+      course: get('bkCourse'), slot: get('bkSlot'),
+      slotIso: gsSlotChoisi ? gsSlotChoisi.iso : ''
     };
     const err = $('bkError');
+    const echec = (msg, id) => { err.textContent = msg; err.style.display = 'block'; if (id && $(id)) $(id).focus(); return false; };
     // validation
-    const required = ['parentFirst','parentLast','childFirst','childLast','pronoun','email','phone'];
-    const missing = required.some(k => !fields[k]);
-    if (missing) { err.textContent = '⚠️ Merci de remplir tous les champs obligatoires.'; err.style.display = 'block'; return false; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email)) { err.textContent = '⚠️ Merci de saisir une adresse e-mail valide.'; err.style.display = 'block'; $('bkEmail').focus(); return false; }
-    if (!/^[0-9 ()\-]{6,}$/.test(fields.phone)) { err.textContent = '⚠️ Merci de saisir un numéro de téléphone valide.'; err.style.display = 'block'; $('bkPhone').focus(); return false; }
+    const required = ['parentFirst','parentLast','childFirst','childLast','gender','age','country','email','phone'];
+    if (required.some(k => !fields[k])) return echec('⚠️ Merci de remplir tous les champs obligatoires.');
+    const age = parseInt(fields.age, 10);
+    if (!(age >= 5 && age <= 18)) return echec('⚠️ L’âge de l’enfant doit être compris entre 5 et 18 ans.', 'bkChildAge');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email)) return echec('⚠️ Merci de saisir une adresse e-mail valide.', 'bkEmail');
+    if (!/^[0-9 ()\-.]{6,}$/.test(fields.phone)) return echec('⚠️ Merci de saisir un numéro de téléphone valide.', 'bkPhone');
     err.style.display = 'none';
 
+    // Numéro complet pour l'affichage/l'archivage local uniquement.
+    // À l'envoi, `phone` reste le numéro NATIONAL : c'est le serveur qui
+    // recompose avec l'indicatif déduit du pays (sinon on préfixerait deux fois).
     const fullPhone = fields.phoneCode + ' ' + fields.phone;
 
     // persist (sauvegarde locale, survit aux rechargements)
@@ -1909,8 +2282,7 @@ print("Bonne séance de code, Bilal ! 🚀")
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({
-          ...fields,
-          phone: fullPhone,
+          ...fields,   // `phone` = numéro national ; le serveur préfixe l'indicatif
           // honeypot anti-spam : vrai si un bot a coché le champ invisible
           botcheck: !!($('bkBotcheck') && $('bkBotcheck').checked)
         })
@@ -1927,7 +2299,7 @@ print("Bonne séance de code, Bilal ! 🚀")
       }
     } catch (sendErr) {
       if (btn) { btn.disabled = false; btn.innerHTML = oldLabel; }
-      err.textContent = '⚠️ L’envoi a échoué. Vérifie ta connexion et réessaie, ou écris-nous à contact@kodingvillageschool.com.';
+      err.textContent = '⚠️ L’envoi a échoué. Vérifie ta connexion et réessaie, ou écris-nous à info@kodingvillageschool.com.';
       err.style.display = 'block';
       return false;
     }
@@ -1980,11 +2352,6 @@ print("Bonne séance de code, Bilal ! 🚀")
       goals: ['Programmation orientée objet', 'Gestion des fichiers'],
       files: [],
       content: ['Les classes', 'Héritage & polymorphisme', 'Gérer les exceptions'],
-      recordings: [] },
-    { title: 'Web Dev Level 1', icon: 'globe', color: 'var(--teal-l)',
-      goals: ['Construire ma première page HTML'],
-      files: [],
-      content: ['HTML de base', 'CSS & mise en page'],
       recordings: [] }
   ];
 
@@ -1995,7 +2362,7 @@ print("Bonne séance de code, Bilal ! 🚀")
     recordings: { label: 'Enregistrements',       icon: 'video', key: 'recordings' }
   };
 
-  let resActiveCourse = 3;   // "Web Dev Level 1" selected by default (per design)
+  let resActiveCourse = 1;   // "Python Level 1" selected by default
   let resActiveTab = 'recordings';
   let resQuery = '';
 
@@ -2065,17 +2432,20 @@ print("Bonne séance de code, Bilal ! 🚀")
   }
 
   // === COMMUNITY ===
-  const STUDENT = { name: 'Bilal Hassan Keita', avatar: 'profile-bilal.png', avatarEmoji: null, emoji: '🧑🏽', grade: 6, flag: '🇨🇦', country: 'Canada', city: 'Montréal', subjects: ['Python', 'Web Dev'] };
+  // Aucune photo par défaut : sans avatar choisi, on génère les initiales de
+  // l'élève. Une image fixe partagée afficherait le visage d'un autre enfant
+  // à tout le monde.
+  const STUDENT = { name: '', email: '', avatarPhoto: null, avatarEmoji: null, emoji: '🧑🏽', grade: 6, flag: '🇨🇦', country: 'Canada', city: 'Montréal', subjects: ['Python', 'Scratch'] };
 
   const comStudents = [
     { name: 'Amine Daoudi',    emoji: '🦊', grade: 6, flag: '🇲🇦', country: 'Maroc',     city: 'Casablanca',  badges: 12, streak: 21, points: 980, subjects: ['Math','Python','Science'] },
-    { name: 'Chloe Smith',     emoji: '🐰', grade: 5, flag: '🇨🇦', country: 'Canada',    city: 'Toronto',     badges: 10, streak: 15, points: 845, subjects: ['English','Web Dev','Scratch'] },
+    { name: 'Chloe Smith',     emoji: '🐰', grade: 5, flag: '🇨🇦', country: 'Canada',    city: 'Toronto',     badges: 10, streak: 15, points: 845, subjects: ['English','Python','Scratch'] },
     { name: 'Yuki Tanaka',     emoji: '🐼', grade: 7, flag: '🇯🇵', country: 'Japon',     city: 'Tokyo',       badges: 9,  streak: 30, points: 760, subjects: ['Python','Math','Science'] },
-    { name: "Liam O'Connor",   emoji: '🦁', grade: 6, flag: '🇮🇪', country: 'Irlande',   city: 'Dublin',      badges: 8,  streak: 12, points: 690, subjects: ['Web Dev','Scratch','English'] },
+    { name: "Liam O'Connor",   emoji: '🦁', grade: 6, flag: '🇮🇪', country: 'Irlande',   city: 'Dublin',      badges: 8,  streak: 12, points: 690, subjects: ['Python','Scratch','English'] },
     { name: 'Fatima Al-Sayed', emoji: '🦋', grade: 5, flag: '🇦🇪', country: 'Émirats',   city: 'Dubaï',       badges: 7,  streak: 18, points: 610, subjects: ['Math','Science','Python'] },
-    { name: 'Diego Martinez',  emoji: '🐯', grade: 7, flag: '🇲🇽', country: 'Mexique',   city: 'Mexico',      badges: 6,  streak: 9,  points: 540, subjects: ['Scratch','Web Dev'] },
+    { name: 'Diego Martinez',  emoji: '🐯', grade: 7, flag: '🇲🇽', country: 'Mexique',   city: 'Mexico',      badges: 6,  streak: 9,  points: 540, subjects: ['Scratch','Python'] },
     { name: 'Aria Patel',      emoji: '🦄', grade: 6, flag: '🇮🇳', country: 'Inde',      city: 'Mumbai',      badges: 5,  streak: 14, points: 410, subjects: ['Python','Math','English'] },
-    { name: 'Noah Becker',     emoji: '🐨', grade: 5, flag: '🇩🇪', country: 'Allemagne', city: 'Berlin',      badges: 4,  streak: 7,  points: 180, subjects: ['Web Dev','Scratch','Science'] }
+    { name: 'Noah Becker',     emoji: '🐨', grade: 5, flag: '🇩🇪', country: 'Allemagne', city: 'Berlin',      badges: 4,  streak: 7,  points: 180, subjects: ['Python','Scratch','Science'] }
   ];
 
   const comBadgeList = [
@@ -2105,11 +2475,11 @@ print("Bonne séance de code, Bilal ! 🚀")
   const comProjectList = [
     { title: 'Fusée spatiale animée', creator: 'Amine Daoudi',    date: '27-06-2026', type: 'python',  emoji: 'rocket', votes: 0, voted: false },
     { title: 'Labyrinthe magique',    creator: 'Fatima Al-Sayed', date: '26-06-2026', type: 'scratch', emoji: 'milestone', votes: 0, voted: false },
-    { title: 'Portfolio coloré',      creator: "Liam O'Connor",   date: '25-06-2026', type: 'webdev',  emoji: 'palette', votes: 0, voted: false },
+    { title: 'Jeu de plateforme',     creator: "Liam O'Connor",   date: '25-06-2026', type: 'scratch', emoji: 'gamepad-2', votes: 0, voted: false },
     { title: 'Quiz de maths',         creator: 'Aria Patel',      date: '24-06-2026', type: 'python',  emoji: 'calculator', votes: 0, voted: false }
   ];
 
-  const COM_SUBJECTS = ['Overall', 'Math', 'English', 'Science', 'Python', 'Web Dev', 'Scratch'];
+  const COM_SUBJECTS = ['Overall', 'Math', 'English', 'Science', 'Python', 'Scratch'];
   let comSubject = 'Overall';
   let comFilters = { grade: '', country: '', city: '' };
 
@@ -2165,7 +2535,7 @@ print("Bonne séance de code, Bilal ! 🚀")
     _fillSelect('comFilterCity', 'Ville', cities.map(c => [c, c]), comFilters.city);
   }
 
-  const COM_SUBJ_LABELS = { 'Overall': 'Général', 'Math': 'Maths', 'English': 'Anglais', 'Science': 'Sciences', 'Python': 'Python', 'Web Dev': 'Web Dev', 'Scratch': 'Scratch' };
+  const COM_SUBJ_LABELS = { 'Overall': 'Général', 'Math': 'Maths', 'English': 'Anglais', 'Science': 'Sciences', 'Python': 'Python', 'Scratch': 'Scratch' };
   function renderComSubjects() {
     const el = $('comSubjects'); if (!el) return;
     el.innerHTML = COM_SUBJECTS.map(s =>
@@ -2249,8 +2619,8 @@ print("Bonne séance de code, Bilal ! 🚀")
 
   function renderComProjects() {
     const el = $('comProjects'); if (!el) return;
-    const grad = { python: 'linear-gradient(135deg,#3B82F6,#1e40af)', scratch: 'linear-gradient(135deg,#F97316,#FFC233)', webdev: 'linear-gradient(135deg,#14B8A6,#0f766e)' };
-    const lbl = { python: 'Python', scratch: 'Scratch', webdev: 'Web Dev' };
+    const grad = { python: 'linear-gradient(135deg,#3B82F6,#1e40af)', scratch: 'linear-gradient(135deg,#F97316,#FFC233)' };
+    const lbl = { python: 'Python', scratch: 'Scratch' };
     el.innerHTML = comProjectList.map((p, i) =>
       `<div class="proj-card">` +
         `<div class="proj-cover" style="background:${grad[p.type]}">${icon(p.emoji,{size:'lg'})}</div>` +
@@ -2549,27 +2919,91 @@ print("Bonne séance de code, Bilal ! 🚀")
   };
   const PROFILE_CATS = ['Toons','Prefects','Cadets','Gamers','Supers','Slayers','Animes','Basic'];
 
+  // Fiche profil — vide par défaut. Les valeurs identifiantes (nom, parent,
+  // école, e-mail…) sont renseignées à la connexion depuis le compte réel :
+  // les coder en dur afficherait l'identité d'un élève à tous les autres.
   const profileData = {
-    name: STUDENT.name,
-    parentName: 'Mohamed Keita',
-    dob: '2014-05-10',
-    grade: '3',
-    gender: 'M',
-    school: 'École Internationale de Montréal',
-    schoolSite: 'www.eim.ca',
-    username: 'Bilan446698',
-    email: 'bilal.keita@kodingvillageschool.com',
-    contact: '+16044992735'
+    name: '', parentName: '', dob: '', grade: '', gender: '',
+    school: '', schoolSite: '', username: '', email: '', contact: ''
   };
 
-  let profileCat = 'Toons';
-  let profileDraftAvatar = STUDENT.avatarEmoji; // null = use the uploaded photo
+  // Aligne la fiche sur le compte connecté (appelé depuis _enterApp).
+  function profileBindUser(fullName, email) {
+    profileData.name = fullName || '';
+    profileData.email = email || '';
+    profileData.parentName = '';
+    profileData.dob = ''; profileData.grade = ''; profileData.gender = '';
+    profileData.school = ''; profileData.schoolSite = '';
+    profileData.username = ''; profileData.contact = '';
+  }
 
-  // Canonical avatar markup (image OR chosen emoji) reused across all pages
+  let profileCat = 'Toons';
+  // Brouillons : modifiés en direct dans l'aperçu, appliqués seulement à l'enregistrement.
+  let profileDraftAvatar = STUDENT.avatarEmoji;  // emoji choisi, ou null
+  let profileDraftPhoto = STUDENT.avatarPhoto;   // photo téléversée, ou null
+
+  // === AVATARS ===
+  // Trois niveaux, dans l'ordre : photo téléversée → emoji choisi → initiales.
+  // Les initiales garantissent qu'un compte sans avatar reste identifiable,
+  // sans jamais emprunter le visage d'un autre élève.
+
+  // « Mohamed Keita » → « MK ». Un seul mot → deux premières lettres.
+  function initialsOf(name) {
+    const mots = String(name || '').trim().split(/[\s-]+/).filter(Boolean);
+    if (!mots.length) return '?';
+    if (mots.length === 1) return mots[0].slice(0, 2).toUpperCase();
+    return (mots[0][0] + mots[mots.length - 1][0]).toUpperCase();
+  }
+
+  // Couleur stable dérivée du nom : le même élève garde toujours la sienne.
+  function avatarHue(seed) {
+    let h = 0;
+    const s = String(seed || '');
+    for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360;
+    return h;
+  }
+
+  function initialsMarkup(name, seed) {
+    const h = avatarHue(seed || name);
+    return `<span class="av-initials" style="background:hsl(${h} 62% 42%)" aria-hidden="true">${_admEsc(initialsOf(name))}</span>`;
+  }
+
+  // Balisage canonique de l'avatar, réutilisé partout dans l'app.
   function avatarInner() {
-    return STUDENT.avatarEmoji
-      ? `<span class="av-emoji">${STUDENT.avatarEmoji}</span>`
-      : `<img src="${STUDENT.avatar}" alt="${STUDENT.name}">`;
+    if (STUDENT.avatarPhoto) return `<img src="${STUDENT.avatarPhoto}" alt="Photo de ${_admEsc(STUDENT.name)}">`;
+    if (STUDENT.avatarEmoji) return `<span class="av-emoji">${STUDENT.avatarEmoji}</span>`;
+    return initialsMarkup(STUDENT.name, STUDENT.email || STUDENT.name);
+  }
+
+  // ── Persistance par compte ──────────────────────────────────────────────
+  // Clé indexée sur l'e-mail : deux comptes sur le même poste ne partagent
+  // pas leur avatar. Stockage local (l'image ne quitte pas l'appareil).
+  const _avatarKey = (email) => 'kvs_avatar:' + String(email || '').toLowerCase();
+
+  function loadAvatarFor(email) {
+    STUDENT.avatarPhoto = null;
+    STUDENT.avatarEmoji = null;
+    if (!email) return;
+    try {
+      const raw = localStorage.getItem(_avatarKey(email));
+      if (!raw) return;
+      const d = JSON.parse(raw);
+      if (d.photo) STUDENT.avatarPhoto = d.photo;
+      else if (d.emoji) STUDENT.avatarEmoji = d.emoji;
+    } catch (_) {}
+  }
+
+  function saveAvatarFor(email) {
+    if (!email) return;
+    try {
+      const d = STUDENT.avatarPhoto ? { photo: STUDENT.avatarPhoto }
+        : STUDENT.avatarEmoji ? { emoji: STUDENT.avatarEmoji } : null;
+      if (d) localStorage.setItem(_avatarKey(email), JSON.stringify(d));
+      else localStorage.removeItem(_avatarKey(email));
+    } catch (e) {
+      // Quota localStorage dépassé (~5 Mo) : on prévient au lieu d'échouer en silence.
+      toast('Impossible d’enregistrer la photo (espace insuffisant).', 'err', '⚠️');
+    }
   }
 
   // Reflect the canonical profile (name + avatar) everywhere it appears
@@ -2577,6 +3011,7 @@ print("Bonne séance de code, Bilal ! 🚀")
     const da = $('dashAvatar'); if (da) da.innerHTML = avatarInner();
     const dn = $('dashName'); if (dn) dn.textContent = STUDENT.name + ' !';
     const sa = $('sandboxAvatar'); if (sa) sa.innerHTML = avatarInner();
+    const sn = $('sandboxName'); if (sn) sn.textContent = STUDENT.name || 'Mon profil';
     const pcn = $('parentChildName'); if (pcn) pcn.textContent = STUDENT.name;
     const la = $('loopAvatar'); if (la) la.innerHTML = avatarInner();
     const ln = $('loopName'); if (ln) ln.textContent = STUDENT.name;
@@ -2584,7 +3019,12 @@ print("Bonne séance de code, Bilal ! 🚀")
     renderProfilePreview();
   }
 
-  function goProfile() { switchView('viewProfile'); profileDraftAvatar = STUDENT.avatarEmoji; renderProfile(); }
+  function goProfile() {
+    switchView('viewProfile');
+    profileDraftAvatar = STUDENT.avatarEmoji;
+    profileDraftPhoto = STUDENT.avatarPhoto;
+    renderProfile();
+  }
 
   function renderProfile() {
     renderProfilePreview();
@@ -2595,9 +3035,14 @@ print("Bonne séance de code, Bilal ! 🚀")
 
   function renderProfilePreview() {
     const el = $('profilePreview'); if (!el) return;
-    el.innerHTML = profileDraftAvatar
-      ? `<span class="pp-emoji">${profileDraftAvatar}</span>`
-      : `<img src="${STUDENT.avatar}" alt="${STUDENT.name}">`;
+    el.innerHTML = profileDraftPhoto
+      ? `<img src="${profileDraftPhoto}" alt="Photo de ${_admEsc(STUDENT.name)}">`
+      : profileDraftAvatar
+        ? `<span class="pp-emoji">${profileDraftAvatar}</span>`
+        : initialsMarkup(STUDENT.name, STUDENT.email || STUDENT.name);
+    // Le bouton « Retirer la photo » n'a de sens que s'il y a une photo.
+    const rm = $('profRemovePhoto');
+    if (rm) rm.style.display = profileDraftPhoto ? '' : 'none';
   }
 
   function renderProfileCats() {
@@ -2630,15 +3075,60 @@ print("Bonne séance de code, Bilal ! 🚀")
 
   function profilePickAvatar(emoji) {
     profileDraftAvatar = emoji;     // updates the preview live; committed only on Save
+    profileDraftPhoto = null;       // un emoji remplace la photo éventuelle
     renderProfilePreview();
     renderProfileAvatars();
   }
 
+  // Téléversement réel : sélecteur de fichier → redimensionnement → aperçu.
+  // Le redimensionnement est indispensable : une photo de téléphone pèse 3-8 Mo
+  // et saturerait à elle seule le quota localStorage (~5 Mo).
   function profileUpload() {
-    profileDraftAvatar = null;      // revert preview to the uploaded photo
+    const inp = document.createElement('input');
+    inp.type = 'file';
+    inp.accept = 'image/png,image/jpeg,image/webp';
+    inp.onchange = () => {
+      const file = inp.files && inp.files[0];
+      if (!file) return;
+      if (!/^image\/(png|jpe?g|webp)$/.test(file.type)) {
+        toast('Format non supporté — choisis un PNG, JPEG ou WebP.', 'err', '⚠️'); return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        toast('Image trop lourde (10 Mo maximum).', 'err', '⚠️'); return;
+      }
+      const rd = new FileReader();
+      rd.onload = ev => {
+        const img = new Image();
+        img.onload = () => {
+          // Recadrage carré centré, puis réduction à 256 px.
+          const T = 256;
+          const cv = document.createElement('canvas');
+          cv.width = cv.height = T;
+          const ctx = cv.getContext('2d');
+          const côté = Math.min(img.width, img.height);
+          ctx.drawImage(img, (img.width - côté) / 2, (img.height - côté) / 2, côté, côté, 0, 0, T, T);
+          profileDraftPhoto = cv.toDataURL('image/jpeg', 0.85);
+          profileDraftAvatar = null;   // la photo prend le pas sur l'emoji
+          renderProfilePreview();
+          renderProfileAvatars();
+          toast('Photo prête — clique sur Enregistrer pour la conserver 📷', 'ok', '🖼️');
+        };
+        img.onerror = () => toast('Image illisible.', 'err', '⚠️');
+        img.src = ev.target.result;
+      };
+      rd.onerror = () => toast('Lecture du fichier impossible.', 'err', '⚠️');
+      rd.readAsDataURL(file);
+    };
+    inp.click();
+  }
+
+  // Retire la photo et revient aux initiales.
+  function profileRemovePhoto() {
+    profileDraftPhoto = null;
+    profileDraftAvatar = null;
     renderProfilePreview();
     renderProfileAvatars();
-    toast('Photo de profil prête (simulation) 📷', 'ok', '🖼️');
+    toast('Photo retirée — tes initiales seront utilisées.', 'info', '🔤');
   }
 
   function profileSave() {
@@ -2653,15 +3143,20 @@ print("Bonne séance de code, Bilal ! 🚀")
     profileData.username = val('pfUsername');
     profileData.email = val('pfEmail');
     profileData.contact = val('pfContact');
-    // Commit to the canonical student state shared across the whole app
-    STUDENT.name = profileData.name;
+    // Commit to the canonical student state shared across the whole app.
+    // Garde-fou : un champ nom vidé ne doit pas effacer l'identité du compte
+    // (les initiales retomberaient sur « ? »).
+    STUDENT.name = profileData.name || STUDENT.name;
     STUDENT.avatarEmoji = profileDraftAvatar;
+    STUDENT.avatarPhoto = profileDraftPhoto;
+    saveAvatarFor(STUDENT.email);
     syncProfileUI();
     toast('Profil mis à jour avec succès ! 👤✨', 'ok', '✅');
   }
 
   function profileCancel() {
     profileDraftAvatar = STUDENT.avatarEmoji; // discard unsaved avatar change
+    profileDraftPhoto = STUDENT.avatarPhoto;
     renderProfile();
     toast('Modifications annulées', 'info', '↩️');
   }
@@ -2892,7 +3387,6 @@ print("Bonne séance de code, Bilal ! 🚀")
 
   // === SANDBOX › WORKBENCH (Étable) — mini IDE ===
   const WB_MODES = [
-    { key: 'java',       label: 'Interface graphique Java' },
     { key: 'python',     label: 'Python' },
     { key: 'pygui',      label: 'Interface graphique Python' },
     { key: 'scratch',    label: 'Scratch' },
@@ -3355,7 +3849,7 @@ print("Bonne séance de code, Bilal ! 🚀")
   function tbwSetColor(c, btn) { tbwColor = c; document.querySelectorAll('#tbwStylesPop .tbw-sw').forEach(s => s.classList.remove('active')); if (btn) btn.classList.add('active'); const dot = $('tbwStyleDot'); if (dot) dot.style.background = c; _tbwCloseMenus(); }
   function tbwNew() { _tbwCloseMenus(); _tbwClearCanvas(); tbwUndoStack = []; tbwRedoStack = []; toast('Nouveau tableau blanc 🧽', 'ok', '🆕'); }
   function tbwEtabli() { _tbwCloseMenus(); sbxNav(1); toast('Bascule vers l’Établi 🛠️', 'info', '🚀'); }
-  function tbwSaveAs() { _tbwCloseMenus(); try { const a = document.createElement('a'); a.download = 'tableau-blanc-bilal.png'; a.href = tbwCanvas.toDataURL('image/png'); a.click(); toast('Tableau enregistré (PNG) 💾', 'ok', '💾'); } catch (e) { toast('Enregistrement simulé 💾', 'ok', '💾'); } }
+  function tbwSaveAs() { _tbwCloseMenus(); try { const a = document.createElement('a'); a.download = 'tableau-blanc.png'; a.href = tbwCanvas.toDataURL('image/png'); a.click(); toast('Tableau enregistré (PNG) 💾', 'ok', '💾'); } catch (e) { toast('Enregistrement simulé 💾', 'ok', '💾'); } }
   function tbwUndo() { if (!tbwCtx || !tbwUndoStack.length) { toast('Rien à annuler', 'info', '↶'); return; } try { tbwRedoStack.push(tbwCtx.getImageData(0, 0, tbwCanvas.width, tbwCanvas.height)); tbwCtx.putImageData(tbwUndoStack.pop(), 0, 0); } catch (e) {} }
   function tbwRedo() { if (!tbwCtx || !tbwRedoStack.length) { toast('Rien à rétablir', 'info', '↷'); return; } try { tbwUndoStack.push(tbwCtx.getImageData(0, 0, tbwCanvas.width, tbwCanvas.height)); tbwCtx.putImageData(tbwRedoStack.pop(), 0, 0); } catch (e) {} }
   function tbwClear() { if (!tbwCtx) return; _tbwPushUndo(); _tbwClearCanvas(); toast('Tableau effacé 🗑️', 'info', '🗑️'); }
@@ -3363,11 +3857,11 @@ print("Bonne séance de code, Bilal ! 🚀")
   // === SANDBOX › PROJECTS (hub de déploiement) ===
   const sbxProjects = [
     {
-      id: 'p1', emoji: '🌐', name: 'Portfolio Personnel', status: 'online',
-      desc: 'Site vitrine moderne responsive avec animations CSS avancées.',
-      tech: ['HTML5', 'CSS3', 'JavaScript'],
+      id: 'p1', emoji: '🐱', name: 'Labyrinthe Magique', status: 'online',
+      desc: 'Jeu de labyrinthe animé avec lutins, scores et niveaux progressifs.',
+      tech: ['Scratch'],
       actions: [
-        { label: 'Visiter le site <span class="ui-icon-container is-sm"><i data-lucide="link-2"></i></span>', kind: 'visit' },
+        { label: 'Voir le projet <span class="ui-icon-container is-sm"><i data-lucide="link-2"></i></span>', kind: 'visit' },
         { label: 'Voir le code <span class="ui-icon-container is-sm"><i data-lucide="wrench"></i></span>', kind: 'code' }
       ]
     },
@@ -3441,123 +3935,20 @@ print("Bonne séance de code, Bilal ! 🚀")
   }
 
   // === SANDBOX › LEARNING CONTENT (cours réels + PDF locaux) ===
-  const COURSES_RAW = `Essentiels de l'IA Agentique|8|fichiers
-Algèbre 1 HS|121|fichiers
-Algèbre 2 HS|136|fichiers
-Algèbre 48|121|fichiers
-Studio d'automatisation|8|fichiers
-Construire et entraîner l'IA|8|fichiers
-Apprentissage profond|48|fichiers
-MS en sciences de la Terre et de l'Espace L2|9|fichiers
-Anglais Grade 1 (48)|87|fichiers
-Anglais Grade 1 (96)|87|fichiers
-Anglais Grade 2 (48)|86|fichiers
-Anglais Grade 2 (96)|86|fichiers
-Anglais 3e (144)|122|dossiers
-Anglais 3e (48e)|122|dossiers
-Anglais 3e (96)|122|dossiers
-Anglais 4e (144)|123|fichiers
-Anglais 4e (48e)|123|fichiers
-Anglais 4e (96)|123|fichiers
-Anglais 5e (144)|122|dossiers
-Anglais 5e (48e)|122|dossiers
-Anglais 5e (96)|122|dossiers
-Anglais 6e (144)|116|fichiers
-Anglais 6e (48)|116|fichiers
-Anglais 6e (96)|116|fichiers
-ANGLAIS 7|24|fichiers
-Anglais 7e (144)|116|fichiers
-Anglais 7e (48e)|116|fichiers
-Anglais 7e (96)|116|fichiers
-Anglais Grade 8 (144)|115|fichiers
-Anglais Grade 8 (48)|115|fichiers
-Anglais Grade 8 (96)|115|fichiers
-Anglais KG (96)|87|fichiers
-Développement de jeux|48|fichiers
-Constructeur d'applications d'IA générative|96|fichiers
-Explorateur d'IA générative|48|fichiers
-Géométrie HS|147|dossiers
-Java 1|48|fichiers
-Java 2|48|fichiers
-Master en sciences de la vie L2|6|fichiers
-Apprentissage automatique|48|fichiers
-Mathématiques 1re (96e)|57|fichiers
-Mathématiques Niveau 1|57|fichiers
-Mathématiques Niveau 1 Niveau 2|57|fichiers
-Mathématiques 10e (144)|122|dossiers
-Mathématiques Niveau 10|136|fichiers
-Mathématiques Classe 10 Niveau 2|136|fichiers
-Mathématiques Niveau 3 de 10e année|136|fichiers
-Mathématiques Niveau 2|88|fichiers
-Mathématiques Niveau 2 Niveau 2|88|fichiers
-Mathématiques 2e (96e)|89|fichiers
-Mathématiques 3e (96e)|90|fichiers
-Mathématiques 3e Niveau 1|90|fichiers
-Mathématiques 3e Niveau 2|91|fichiers
-Mathématiques 4e (96e)|104|fichiers
-Mathématiques 4e Niveau 1|104|fichiers
-Mathématiques 4e Niveau 2|104|fichiers
-Mathématiques 5e (96e)|101|fichiers
-Mathématiques 5e Niveau 1|101|fichiers
-Mathématiques 5e Niveau 2|101|fichiers
-Mathématiques 6e (144)|98|fichiers
-Mathématiques 6e Niveau 1|98|fichiers
-Mathématiques 6e Niveau 2|98|fichiers
-Mathématiques 6e Niveau 3|98|fichiers
-Mathématiques 7e (144)|116|fichiers
-Mathématiques 7e Niveau 1|116|fichiers
-Mathématiques 8e (144)|114|fichiers
-Mathématiques Grade 8 Niveau 1|114|fichiers
-Mathématiques 9e (144)|135|fichiers
-Mathématiques 9e (96e)|135|fichiers
-Mathématiques Niveau 1 de la 9e année|135|fichiers
-Mathématiques 9e Niveau 2|104|fichiers
-Mathématiques 9e Niveau 3|122|dossiers
-Mathématiques KG 96|29|fichiers
-MIT App Inventor Niveau 1|44|fichiers
-MIT App Inventor Niveau 2|43|fichiers
-MIT App Inventor Niveau 3|40|fichiers
-MS en sciences physiques L2|15|fichiers
-Prise de parole en public (tranche d'âge 11 à 15 ans) - 48 ans|48|fichiers
-Prise de parole en public (tranche d'âge 6 à 10 ans) - 48 ans|46|fichiers
+  const COURSES_RAW = `Développement de jeux|48|fichiers
 Python|48|fichiers
 Python L1-v2|48|fichiers
 Python Niveau 1|48|fichiers
 Python Niveau 2|48|fichiers
-Robotique 144|36|fichiers
-Robotique 48|48|fichiers
-Robotique 96|96|fichiers
-Sciences Grade 3 (48)|37|fichiers
-Sciences 3e (96e)|39|fichiers
-Sciences 4e (48e)|46|fichiers
-Sciences Grade 4 (96)|46|fichiers
-Sciences 5e (48e)|87|fichiers
-Sciences 5e (96e)|87|fichiers
-Sciences de la 6e à la 96e année|103|fichiers
-Sciences 6e (48e)|103|fichiers
-Sciences de la 7e à la 96e année|51|fichiers
-Sciences 7e (48e)|51|fichiers
-Sciences de la 8e à la 96e année|93|fichiers
-Sciences 8e (48e)|93|fichiers
-Sciences Classe 9 (48)|63|fichiers
-Sciences Classe 9 (96)|63|fichiers
 Scratch Jr|48|fichiers
 Niveau de Scratch 0|48|fichiers
 Niveau de Scratch 1|48|fichiers
 Niveau Scratch 2|48|fichiers
 Niveau Scratch 3|48|fichiers
 Scratch avec l'IA - Fondations|8|fichiers
-Scratch avec l'IA - Game Lab|8|fichiers
-Laboratoire de Codage Vibe|8|fichiers
-Développement Web|48|fichiers
-Web Dev 144|48|fichiers
-Web Dev 192|48|fichiers
-Niveau 1 de développement web|48|fichiers
-Développement Web Niveau 2|48|fichiers
-Niveau 3 de développement web|48|fichiers`;
+Scratch avec l'IA - Game Lab|8|fichiers`;
 
   const coursesData = COURSES_RAW.trim().split('\n').map(l => { const p = l.split('|'); return { name: p[0], count: +p[1], unit: p[2] }; });
-  const COURSE_FILES = ['Chapitre_1_Introduction.pdf', 'Support_de_Cours.pdf', 'Exercices_Pratiques.pdf', 'Corrigé_des_Exercices.pdf'];
   let contentFilterVal = '';
 
   function renderSandboxContent() {
@@ -3592,27 +3983,151 @@ Niveau 3 de développement web|48|fichiers`;
       : '<div class="lc-empty">Aucun cours trouvé.</div>';
   }
 
+  // Modules dont le contenu est réellement branché sur /api/content.
+  // Les autres restent en attente de téléversement (voir api/_content.js).
+  const MODULES_BRANCHES = { 'Python Niveau 1': 'python-niveau-1' };
+
   function _courseAccordion(c, open) {
-    const rows = COURSE_FILES.map(f => {
-      const href = encodeURI('./' + c.name + '/' + f);
-      return `<div class="lc-file"><span class="lc-file-name"><span class="ui-icon-container is-sm"><i data-lucide="file-text"></i></span> ${f}</span><span class="lc-file-actions">` +
-        `<a class="lc-act view" href="${href}" target="_blank" rel="noopener"><span class="ui-icon-container is-sm"><i data-lucide="eye"></i></span> Lire / Ouvrir</a>` +
-        `<a class="lc-act dl" href="${href}" download><span class="ui-icon-container is-sm"><i data-lucide="inbox"></i></span> Télécharger</a>` +
-      `</span></div>`;
-    }).join('');
-    return `<div class="lc-acc">` +
-      `<div class="lc-acc-head${open ? ' open' : ''}" onclick="APP.contentToggle(this)">` +
-        `<span class="lc-acc-title"><span class="ui-icon-container is-sm"><i data-lucide="book-open"></i></span> ${c.name}</span>` +
+    const moduleId = MODULES_BRANCHES[c.name] || '';
+    return `<div class="lc-acc" data-module="${moduleId}" data-name="${_admEsc(c.name)}">` +
+      `<button type="button" class="lc-acc-head${open ? ' open' : ''}" aria-expanded="${open ? 'true' : 'false'}" onclick="APP.contentToggle(this)">` +
+        `<span class="lc-acc-title"><span class="ui-icon-container is-sm"><i data-lucide="book-open"></i></span> ${_admEsc(c.name)}</span>` +
         `<span class="lc-acc-right"><span class="lc-acc-count">${c.count} ${c.unit}</span><span class="lc-acc-arrow"><span class="ui-icon-container is-sm"><i data-lucide="chevron-down"></i></span></span></span>` +
-      `</div>` +
-      `<div class="lc-acc-body${open ? ' open' : ''}">${rows}</div>` +
+      `</button>` +
+      `<div class="lc-acc-body${open ? ' open' : ''}">${open ? '<div class="lc-loading">Chargement…</div>' : ''}</div>` +
     `</div>`;
   }
 
+  // Déploie/replie, et charge les chapitres à la première ouverture seulement
+  // (114 modules × un appel réseau au rendu serait inutilement coûteux).
   function contentToggle(head) {
-    head.classList.toggle('open');
+    const open = !head.classList.contains('open');
+    head.classList.toggle('open', open);
+    head.setAttribute('aria-expanded', open ? 'true' : 'false');
     const body = head.nextElementSibling;
-    if (body) body.classList.toggle('open');
+    if (!body) return;
+    body.classList.toggle('open', open);
+    if (open && !body.dataset.loaded) _loadChapters(head.closest('.lc-acc'), body);
+  }
+
+  async function _loadChapters(acc, body) {
+    body.dataset.loaded = '1';
+    const moduleId = acc.dataset.module;
+
+    // Module pas encore branché sur du contenu réel.
+    if (!moduleId) {
+      body.innerHTML = `<div class="lc-pending"><span class="ui-icon-container is-sm"><i data-lucide="clock"></i></span> Les supports de ce module seront bientôt disponibles.</div>`;
+      refreshIcons();
+      return;
+    }
+
+    body.innerHTML = '<div class="lc-loading">Chargement des chapitres…</div>';
+    let token = null;
+    try { token = sessionStorage.getItem('kvs_token'); } catch (_) {}
+
+    let data = {};
+    try {
+      const res = await fetch('/api/content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (token || '') },
+        body: JSON.stringify({ action: 'chapters', moduleId })
+      });
+      data = await res.json().catch(() => ({}));
+      data._status = res.status;
+    } catch (_) { data = { _status: 0 }; }
+
+    if (data._status === 401) { body.innerHTML = `<div class="lc-pending">Connecte-toi pour accéder aux supports.</div>`; return; }
+    if (data._status === 403) { body.innerHTML = `<div class="lc-pending">${_admEsc(data.message || 'Module non accessible.')}</div>`; return; }
+    if (!data.ok) { body.innerHTML = `<div class="lc-pending">Chargement impossible. Réessaie dans un instant.</div>`; return; }
+
+    body.innerHTML = data.chapters.map(ch => {
+      const poids = ch.size ? ` · ${(ch.size / 1048576).toFixed(1)} Mo` : '';
+      const action = ch.available
+        ? `<button class="lc-act view" type="button" onclick="APP.contentOpen('${moduleId}',${ch.n})"><span class="ui-icon-container is-sm"><i data-lucide="eye"></i></span> Voir</button>`
+        : `<span class="lc-act muted" title="Support pas encore téléversé"><span class="ui-icon-container is-sm"><i data-lucide="clock"></i></span> Bientôt</span>`;
+      return `<div class="lc-file">` +
+        `<span class="lc-file-name"><span class="ui-icon-container is-sm"><i data-lucide="file-text"></i></span> ` +
+          `<span class="lc-file-num">Chapitre ${ch.n}</span> ${_admEsc(ch.title)}` +
+          `<span class="lc-file-meta">${poids}</span></span>` +
+        `<span class="lc-file-actions">${action}</span>` +
+      `</div>`;
+    }).join('');
+    refreshIcons();
+  }
+
+  // === VISIONNEUSE DE SUPPORT ===
+  let _viewerUrl = null, _viewerName = '';
+
+  async function contentOpen(moduleId, n) {
+    let token = null;
+    try { token = sessionStorage.getItem('kvs_token'); } catch (_) {}
+    toast('Ouverture du chapitre…', 'info', '📖');
+
+    let data = {}, status = 0;
+    try {
+      const res = await fetch('/api/content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (token || '') },
+        body: JSON.stringify({ action: 'open', moduleId, n })
+      });
+      status = res.status;
+      data = await res.json().catch(() => ({}));
+    } catch (_) {}
+
+    if (!data.ok) {
+      const msg = status === 403 ? (data.message || 'Tu n’es pas inscrit à ce cours.')
+        : status === 409 ? (data.message || 'Ce chapitre n’a pas encore été téléversé.')
+        : status === 401 ? 'Session expirée — reconnecte-toi.'
+        : 'Ouverture impossible pour le moment.';
+      toast(msg, 'err', '⚠️');
+      return;
+    }
+
+    _viewerUrl = data.url;
+    _viewerName = `Chapitre ${data.n} — ${data.title}`;
+    const poids = data.size ? ` (${(data.size / 1048576).toFixed(1)} Mo)` : '';
+
+    modal(_viewerName, `
+      <div class="pdfv">
+        <object class="pdfv-frame" data="${_admEsc(_viewerUrl)}#view=FitH" type="application/pdf">
+          <div class="pdfv-fallback">
+            <p>Ton navigateur n’affiche pas les PDF directement.</p>
+            <a class="btn btn-trial" href="${_admEsc(_viewerUrl)}" target="_blank" rel="noopener">Ouvrir dans un nouvel onglet</a>
+          </div>
+        </object>
+        <div class="pdfv-bar">
+          <span class="pdfv-meta"><span class="ui-icon-container is-sm ic-muted"><i data-lucide="file-text"></i></span> PDF${poids}</span>
+          <span class="pdfv-actions">
+            <button class="btn-ghost" type="button" onclick="APP.contentDownload()"><span class="ui-icon-container is-sm"><i data-lucide="download"></i></span> Télécharger</button>
+            <button class="btn-ghost" type="button" onclick="APP.contentSave()"><span class="ui-icon-container is-sm"><i data-lucide="bookmark"></i></span> Enregistrer</button>
+          </span>
+        </div>
+      </div>
+    `, true);
+    refreshIcons();
+  }
+
+  function contentDownload() {
+    if (!_viewerUrl) return;
+    const a = document.createElement('a');
+    a.href = _viewerUrl;
+    a.download = _viewerName.replace(/[^\w\s-]/g, '').trim() + '.pdf';
+    document.body.appendChild(a); a.click(); a.remove();
+    toast('Téléchargement lancé 📥', 'ok', '📥');
+  }
+
+  // « Enregistrer » = marque-page local, pour retrouver le chapitre en cours.
+  function contentSave() {
+    if (!_viewerUrl) return;
+    try {
+      const key = 'kvs_saved_content';
+      const list = JSON.parse(localStorage.getItem(key) || '[]');
+      if (!list.some(x => x.url === _viewerUrl)) {
+        list.unshift({ name: _viewerName, url: _viewerUrl, at: new Date().toISOString() });
+        localStorage.setItem(key, JSON.stringify(list.slice(0, 50)));
+      }
+      toast('Chapitre enregistré dans tes favoris 🔖', 'ok', '🔖');
+    } catch (_) { toast('Enregistrement impossible.', 'err', '⚠️'); }
   }
 
   // === SANDBOX › REWARDS (boutique RPG) ===
@@ -3678,7 +4193,7 @@ Niveau 3 de développement web|48|fichiers`;
     { id: 'ex_r1', title: 'Dans le défi de classe 1 - « Tortues d’équipe : Escouade de Forme »', sub: 'Tortues d’équipe : Escouade de Forme', level: 'Moyen', badges: ['Déploiement du jeu', 'Travailler avec Turtle'], last: 'Il y a 6 jours', icon: '🔺', done: false },
     { id: 'ex_r2', title: 'Test de rappel', sub: 'Teste la mémoire du matériel appris', level: 'Moyen', badges: ['Déploiement du jeu', 'Travailler avec Turtle'], last: 'Il y a 6 jours', icon: '📋', done: true },
     { id: 'ex_r3', title: 'Quiz Python — Boucles', sub: 'Maîtrise les boucles for et while', level: 'Facile', badges: ['Python', 'Logique'], last: 'Il y a 2 jours', icon: '🐍', done: true },
-    { id: 'ex_r4', title: 'Défi Flexbox', sub: 'Centre tout avec Flexbox', level: 'Difficile', badges: ['CSS', 'Web Dev'], last: 'Il y a 8 jours', icon: '🎨', done: false }
+    { id: 'ex_r4', title: 'Défi Scratch — Animation', sub: 'Anime un lutin avec des boucles', level: 'Difficile', badges: ['Scratch', 'Logique'], last: 'Il y a 8 jours', icon: '🎨', done: false }
   ];
   const exCollection = [
     { id: 'ex_c1', title: 'Assigné à toi', icon: '📒', tone: 'orange', badge: '<span class="ui-icon-container is-sm"><i data-lucide="clock"></i></span> 4 Nouveaux', pct: 57, text: 'A terminé 8 des 14 exercices' },
@@ -3922,7 +4437,7 @@ Niveau 3 de développement web|48|fichiers`;
   const FILE_ICONS = { py: '<span class="ui-icon-container is-sm"><i data-lucide="code-2"></i></span>', html: '<span class="ui-icon-container is-sm"><i data-lucide="globe"></i></span>', css: '<span class="ui-icon-container is-sm"><i data-lucide="palette"></i></span>', js: '<span class="ui-icon-container is-sm"><i data-lucide="zap"></i></span>', pdf: '<span class="ui-icon-container is-sm"><i data-lucide="file-text"></i></span>', txt: '<span class="ui-icon-container is-sm"><i data-lucide="pen-line"></i></span>', img: '<span class="ui-icon-container is-sm"><i data-lucide="image"></i></span>' };
   const foldersData = [
     { id: 'f_py', name: 'Mes Projets Python', icon: '🐍', color: 'blue', files: [{ name: 'jeu_serpent.py', type: 'py' }, { name: 'calculatrice.py', type: 'py' }, { name: 'quiz_python.py', type: 'py' }] },
-    { id: 'f_web', name: 'Web Dev', icon: '🌐', color: 'teal', files: [{ name: 'index.html', type: 'html' }, { name: 'style.css', type: 'css' }, { name: 'script.js', type: 'js' }] },
+    { id: 'f_scratch', name: 'Mes Projets Scratch', icon: '🐱', color: 'teal', files: [{ name: 'labyrinthe.sb3', type: 'txt' }, { name: 'jeu_plateforme.sb3', type: 'txt' }] },
     { id: 'f_hw', name: 'Devoirs', icon: '📚', color: 'orange', files: [{ name: 'maths_chapitre3.pdf', type: 'pdf' }, { name: 'rapport_science.pdf', type: 'pdf' }] },
     { id: 'f_draft', name: 'Brouillons', icon: '✏️', color: 'purple', files: [{ name: 'idee_de_jeu.txt', type: 'txt' }] },
     { id: 'f_assets', name: 'Ressources & Images', icon: '🖼️', color: 'green', files: [{ name: 'logo_perso.png', type: 'img' }, { name: 'fond_ecran.jpg', type: 'img' }] }
@@ -3991,76 +4506,162 @@ Niveau 3 de développement web|48|fichiers`;
     }
   }
 
-  // === COUNTDOWNS ===
-  // Fenêtre d'ouverture du bouton « Rejoindre » : de 10 min avant le début
-  // jusqu'à la fin programmée du cours (exigence de sécurité / horaires).
-  const JOIN_WINDOW_BEFORE_MS = 10 * 60 * 1000;
+  // === MES COURS — séances de l'élève connecté ===
+  //
+  // Les cartes ne sont plus écrites en dur : elles viennent de /api/my-sessions,
+  // qui ne renvoie QUE les séances du porteur du jeton (filtrage côté serveur —
+  // masquer côté client laisserait les données des autres élèves lisibles).
+  //
+  // Le bouton « Rejoindre » n'est actif qu'entre le début et la fin du cours.
+  // Passer JOIN_WINDOW_BEFORE_MS à 10*60*1000 pour rouvrir l'accès 10 min avant.
+  const JOIN_WINDOW_BEFORE_MS = 0;
 
-  function startCountdowns() {
-    seedDemoSchedule();
-    updateCountdowns();
-    countdownTimer = setInterval(updateCountdowns, 1000);
+  let mySessions = [];          // séances de l'élève, triées par date croissante
+  let _clockSkewMs = 0;         // horloge serveur − horloge locale
+  let _sessionsPollTimer = null;
+
+  // Heure de référence : corrigée du décalage d'horloge du poste. Sans ça, un
+  // navigateur en avance activerait « Rejoindre » avant le début réel du cours.
+  const serverNow = () => Date.now() + _clockSkewMs;
+
+  const COURSE_ICONS = {
+    'python-boucles': 'code-2', 'python-fonctions': 'code-2', 'python-poo': 'code-2',
+    'dev-jeux-python': 'gamepad-2', 'scratch': 'cat'
+  };
+  const _MOIS = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+
+  function _fmtDateTime(d) {
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    return `${d.getDate()} ${_MOIS[d.getMonth()]} ${String(d.getFullYear()).slice(2)} • ${hh}h${mm}`;
   }
 
-  function stopCountdowns() { if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; } }
+  // « Dans 6 jours et 4 heures » — on ne descend d'un cran qu'une fois l'unité
+  // supérieure épuisée, pour éviter « Dans 0 jour et 4 heures ».
+  function humanCountdown(ms) {
+    if (ms <= 0) return 'maintenant';
+    const j = Math.floor(ms / 864e5);
+    const h = Math.floor((ms % 864e5) / 36e5);
+    const m = Math.floor((ms % 36e5) / 60000);
+    const s = Math.floor((ms % 60000) / 1000);
+    const plur = (n, mot) => `${n} ${mot}${n > 1 ? 's' : ''}`;
+    if (j > 0) return h > 0 ? `${plur(j, 'jour')} et ${plur(h, 'heure')}` : plur(j, 'jour');
+    if (h > 0) return m > 0 ? `${plur(h, 'heure')} et ${m} min` : plur(h, 'heure');
+    if (m > 0) return `${m} min`;
+    return `${s} s`;
+  }
 
-  // Démo : re-date les cartes porteuses de `data-demo-offset-min` par rapport à
-  // MAINTENANT, afin que la fenêtre horaire de 10 min soit toujours démontrable
-  // (une carte « bientôt/en cours », une autre « à venir »). Sans cet attribut,
-  // les cartes gardent leurs vraies dates (production).
-  let _demoSeeded = false;
-  function seedDemoSchedule() {
-    if (_demoSeeded) return;
-    _demoSeeded = true;
-    const MOIS = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
-    document.querySelectorAll('.cc[data-demo-offset-min] .cc-cd').forEach(el => {
-      const card = el.closest('.cc');
-      const off = parseInt(card.dataset.demoOffsetMin, 10);
-      if (isNaN(off)) return;
-      const start = new Date(Date.now() + off * 60000);
-      const end = new Date(start.getTime() + 60 * 60000); // cours d'1 h
-      el.dataset.target = start.toISOString();
-      el.dataset.end = end.toISOString();
-      const dt = card.querySelector('.cc-dt');
-      if (dt) {
-        const hh = String(start.getHours()).padStart(2, '0');
-        const mm = String(start.getMinutes()).padStart(2, '0');
-        dt.textContent = `${start.getDate()} ${MOIS[start.getMonth()]} ${String(start.getFullYear()).slice(2)} • ${hh}h${mm}`;
-      }
-    });
+  async function loadMySessions() {
+    let token = null;
+    try { token = sessionStorage.getItem('kvs_token'); } catch (_) {}
+    if (!token) { mySessions = []; renderMyClasses(); return; }
+
+    try {
+      const res = await fetch('/api/my-sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({})
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!data.ok) { mySessions = []; renderMyClasses(res.status === 401 ? 'expired' : 'error'); return; }
+      if (data.now) _clockSkewMs = Date.parse(data.now) - Date.now();
+      mySessions = (data.sessions || []).map(s => ({
+        ...s, startMs: Date.parse(s.startsAt), endMs: Date.parse(s.endsAt)
+      })).sort((a, b) => a.startMs - b.startMs);
+      renderMyClasses();
+    } catch (_) {
+      mySessions = [];
+      renderMyClasses('error');
+    }
+  }
+
+  function renderMyClasses(state) {
+    const grid = $('classesGrid');
+    if (!grid) return;
+
+    if (!mySessions.length) {
+      const msg = state === 'expired'
+        ? 'Ta session a expiré — reconnecte-toi pour voir tes cours.'
+        : state === 'error'
+          ? 'Impossible de charger tes cours pour le moment. Réessaie dans un instant.'
+          : 'Aucun cours programmé pour l’instant. Ton mentor planifiera ta prochaine séance très bientôt.';
+      grid.innerHTML = `<div class="cc-empty"><span class="ui-icon-container is-lg ic-muted"><i data-lucide="calendar-off"></i></span><p>${msg}</p></div>`;
+      refreshIcons();
+      return;
+    }
+
+    grid.innerHTML = mySessions.map((s, i) => {
+      const icon = COURSE_ICONS[s.courseId] || 'code-2';
+      const when = _fmtDateTime(new Date(s.startMs));
+      return `<div class="cc" data-idx="${i}" data-course="${_admEsc(s.courseId)}">
+        <div class="cc-top">
+          <div class="cc-logo"><span class="ui-icon-container is-lg"><i data-lucide="${icon}"></i></span></div>
+          <div class="cc-info">
+            <p class="cc-dt">${_admEsc(when)}</p>
+            <p class="cc-sub">${_admEsc(s.courseLabel)}</p>
+          </div>
+          <div class="cc-cd">…</div>
+        </div>
+        <div class="cc-bottom">
+          <span class="cc-session"><span class="ui-icon-container is-sm ic-muted"><i data-lucide="clock"></i></span> ${s.durationMin} min</span>
+          <button class="btn-outline" type="button"></button>
+        </div>
+      </div>`;
+    }).join('');
+
+    refreshIcons();
+    updateCountdowns();
+  }
+
+  function startCountdowns() {
+    updateCountdowns();
+    countdownTimer = setInterval(updateCountdowns, 1000);
+    // Re-synchronisation périodique : capte les séances ajoutées par l'admin
+    // pendant que l'élève laisse son onglet ouvert.
+    if (!_sessionsPollTimer) _sessionsPollTimer = setInterval(loadMySessions, 120000);
+  }
+
+  function stopCountdowns() {
+    if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+    if (_sessionsPollTimer) { clearInterval(_sessionsPollTimer); _sessionsPollTimer = null; }
   }
 
   function updateCountdowns() {
-    const now = Date.now();
-    document.querySelectorAll('.cc-cd[data-target]').forEach(el => {
-      const card = el.closest('.cc');
-      const btn = card.querySelector('.cc-bottom button');
-      const courseId = card.dataset.course || '';
-      const start = new Date(el.dataset.target).getTime();
-      const end = el.dataset.end ? new Date(el.dataset.end).getTime() : start + 60 * 60 * 1000;
-      const diff = start - now;
+    const now = serverNow();
+    let expired = false;
 
-      if (now > end) {
-        // Cours terminé → bouton désactivé
-        el.innerHTML = 'Terminé';
-        el.classList.remove('live');
+    document.querySelectorAll('#classesGrid .cc').forEach(card => {
+      const s = mySessions[parseInt(card.dataset.idx, 10)];
+      if (!s) return;
+      const cd = card.querySelector('.cc-cd');
+      const btn = card.querySelector('.cc-bottom button');
+      const diff = s.startMs - now;
+
+      if (now >= s.endMs) {
+        // Séance terminée → on la retire au prochain cycle et la suivante remonte.
+        cd.innerHTML = 'Terminé';
+        cd.classList.remove('live');
         makeFinishedButton(btn);
+        expired = true;
       } else if (diff <= JOIN_WINDOW_BEFORE_MS) {
-        // Fenêtre active : de 10 min avant jusqu'à la fin
-        el.innerHTML = diff <= 0
-          ? '<span class="cc-live-dot"></span> EN COURS'
-          : `Dans ${Math.ceil(diff / 60000)} min`;
-        el.classList.add('live');
-        makeJoinButton(btn, courseId);
+        // Le cours a commencé (ou la fenêtre anticipée est ouverte) → accès Zoom.
+        cd.innerHTML = '<span class="cc-live-dot"></span> EN COURS';
+        cd.classList.add('live');
+        makeJoinButton(btn, s.courseId);
       } else {
-        // Trop tôt : compte à rebours + bouton d'édition
-        const d = Math.floor(diff / 864e5);
-        const h = Math.floor((diff % 864e5) / 36e5);
-        el.innerHTML = d > 0 ? `Commence dans<br>${d} jour${d>1?'s':''}` : `Commence dans<br>${h}h`;
-        el.classList.remove('live');
-        makeEditButton(btn);
+        // Trop tôt : compte à rebours détaillé, bouton verrouillé.
+        cd.innerHTML = `Commence dans<br>${humanCountdown(diff)}`;
+        cd.classList.remove('live');
+        makeLockedButton(btn, diff);
       }
     });
+
+    // Une séance vient de se terminer → on l'évacue et la suivante prend sa place.
+    if (expired) {
+      const before = mySessions.length;
+      mySessions = mySessions.filter(s => now < s.endMs);
+      if (mySessions.length !== before) renderMyClasses();
+    }
   }
 
   function makeJoinButton(btn, courseId) {
@@ -4068,17 +4669,29 @@ Niveau 3 de développement web|48|fichiers`;
     btn.dataset.role = 'join';
     btn.className = 'btn-join';
     btn.disabled = false;
+    btn.removeAttribute('title');
     btn.innerHTML = '<span class="cc-live-dot light"></span> REJOINDRE LA CLASSE EN DIRECT';
     btn.onclick = () => joinZoomMeeting(courseId);
   }
 
-  function makeEditButton(btn) {
-    if (btn.dataset.role === 'edit') return;
-    btn.dataset.role = 'edit';
-    btn.className = 'btn-outline';
-    btn.disabled = false;
-    btn.innerHTML = '<svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg> Classe d\'édition';
-    btn.onclick = editClass;
+  // Verrouillé avant l'heure : `disabled` bloque le clic ET retire le bouton du
+  // parcours clavier, pour ne pas laisser croire qu'il est actionnable.
+  function makeLockedButton(btn, diff) {
+    const label = `Disponible dans ${humanCountdown(diff)}`;
+    if (btn.dataset.role !== 'locked') {
+      btn.dataset.role = 'locked';
+      btn.className = 'btn-join is-locked';
+      btn.disabled = true;
+      btn.onclick = null;
+    }
+    // Le libellé, lui, doit continuer à s'égrener chaque seconde.
+    const txt = `<span class="ui-icon-container is-sm"><i data-lucide="lock"></i></span> ${label}`;
+    if (btn.dataset.label !== label) {
+      btn.dataset.label = label;
+      btn.innerHTML = txt;
+      btn.title = 'Le bouton s’activera automatiquement à l’heure du cours.';
+      refreshIcons();
+    }
   }
 
   function makeFinishedButton(btn) {
@@ -4119,8 +4732,10 @@ Niveau 3 de développement web|48|fichiers`;
       sdkSecret: 'YOUR_ZOOM_SDK_SECRET',
       meetingNumber: '1234567890',
       password: 'kvs2026',
-      userName: 'Bilal Hassan Keita',
-      userEmail: 'bilal.keita@kodingvillageschool.com',
+      // Identité transmise à Zoom : celle de l'élève connecté, sinon le mentor
+      // verrait tous ses élèves entrer sous le même nom.
+      get userName() { return STUDENT.name || 'Élève KodingvillageSchool'; },
+      get userEmail() { return STUDENT.email || ''; },
       role: 0, // 0 = attendee
       leaveUrl: window.location.href,
       // Zoom Web SDK CDN
@@ -4574,41 +5189,59 @@ Niveau 3 de développement web|48|fichiers`;
   }
 
   // === BUY CREDITS ===
-  function openBuyCredits() {
-    modal('Acheter des crédits de cours', `
-      <p class="modal-sub">Choisissez le forfait qui convient à votre enfant.</p>
-      <div class="pricing-grid">
-        <div class="price-card">
-          <div class="sessions">10 Sessions</div>
-          <div class="amount">89 €</div>
-          <div class="per">8,90 € / session</div>
-          <ul><li>Cours 1:1 en direct</li><li>Mentor dédié</li><li>Valable 3 mois</li></ul>
-          <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="APP.buyCredits(10)">Acheter <span class="ui-icon-container is-sm"><i data-lucide="arrow-right"></i></span></button>
-        </div>
-        <div class="price-card popular" style="padding-top:36px">
-          <div class="sessions">20 Sessions</div>
-          <div class="amount">159 €</div>
-          <div class="per">7,95 € / session</div>
-          <ul><li>Tout du forfait 10</li><li>Accès ressources premium</li><li>Valable 6 mois</li></ul>
-          <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="APP.buyCredits(20)">Acheter <span class="ui-icon-container is-sm"><i data-lucide="arrow-right"></i></span></button>
-        </div>
-        <div class="price-card">
-          <div class="sessions">50 Sessions</div>
-          <div class="amount">349 €</div>
-          <div class="per">6,98 € / session</div>
-          <ul><li>Tout du forfait 20</li><li>Support prioritaire</li><li>Valable 12 mois</li></ul>
-          <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="APP.buyCredits(50)">Acheter <span class="ui-icon-container is-sm"><i data-lucide="arrow-right"></i></span></button>
-        </div>
-      </div>
-    `, true);
+  // === PAIEMENT — FORFAITS DE CRÉDITS ===
+  //
+  // ⚠️ Ces montants doivent rester IDENTIQUES à ceux de api/create-checkout-session.js,
+  //    qui fait seul autorité sur ce qui est réellement débité. Ceux-ci ne servent
+  //    qu'à l'affichage et au panneau de démonstration.
+  //
+  // Le prix par session est CALCULÉ (jamais saisi à la main) : impossible qu'il
+  // se désynchronise du montant total.
+  // Facturation en dollars américains (USD) — cf. CURRENCY dans api/create-checkout-session.js.
+  const DEVISE = '$';
+  const DEVISE_CODE = 'USD';
+  const CREDIT_PLANS = {
+    1:  { sessions: 1,  price: 22,  duree: '1h30', validite: '1 mois' },
+    10: { sessions: 10, price: 215, duree: '1h30', validite: '6 mois' },
+    20: { sessions: 20, price: 420, duree: '1h30', validite: '9 mois' },
+    40: { sessions: 40, price: 800, duree: '1h30', validite: '12 mois' }
+  };
+
+  // Prix unitaire arrondi au cent, sans décimale inutile (24 $ plutôt que 24,00 $).
+  function prixParSession(plan) {
+    const u = plan.price / plan.sessions;
+    const txt = Number.isInteger(u) ? String(u) : u.toFixed(2).replace('.', ',');
+    return `${txt} ${DEVISE} / session`;
   }
 
-  // === PAIEMENT — FORFAITS DE CRÉDITS ===
-  const CREDIT_PLANS = {
-    10: { sessions: 10, price: 89 },
-    20: { sessions: 20, price: 159 },
-    50: { sessions: 50, price: 349 }
+  // Avantages par forfait — cumulatifs, cohérents avec le volume.
+  const CREDIT_AVANTAGES = {
+    1:  ['Cours 1:1 en direct de 1h30', 'Mentor dédié', 'Sans engagement'],
+    10: ['Cours 1:1 en direct de 1h30', 'Mentor dédié attitré', 'Suivi de progression', 'Valable 6 mois'],
+    20: ['Tout du forfait 10 sessions', 'Accès aux ressources premium', 'Bilan pédagogique à mi-parcours', 'Valable 9 mois'],
+    40: ['Tout du forfait 20 sessions', 'Support prioritaire', 'Projet final encadré', 'Valable 12 mois']
   };
+
+  function openBuyCredits() {
+    const ordre = [1, 10, 20, 40];
+    const cartes = ordre.map(n => {
+      const plan = CREDIT_PLANS[n];
+      const populaire = n === 20;   // meilleur rapport volume/prix hors gros forfait
+      const avantages = (CREDIT_AVANTAGES[n] || []).map(a => `<li>${a}</li>`).join('');
+      return `<div class="price-card${populaire ? ' popular' : ''}"${populaire ? ' style="padding-top:36px"' : ''}>
+          <div class="sessions">${plan.sessions} Session${plan.sessions > 1 ? 's' : ''}</div>
+          <div class="amount">${plan.price} ${DEVISE}</div>
+          <div class="per">${prixParSession(plan)}</div>
+          <ul>${avantages}</ul>
+          <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="APP.buyCredits(${n})">Acheter <span class="ui-icon-container is-sm"><i data-lucide="arrow-right"></i></span></button>
+        </div>`;
+    }).join('');
+
+    modal('Acheter des crédits de cours', `
+      <p class="modal-sub">Choisissez le forfait qui convient à votre enfant. Chaque session dure 1h30, en cours particulier. Tarifs en dollars américains (${DEVISE_CODE}).</p>
+      <div class="pricing-grid pricing-grid-4">${cartes}</div>
+    `, true);
+  }
 
   // Au clic sur « Acheter » : tente le vrai paiement Stripe (Checkout hébergé) ; si le
   // backend n'est pas disponible (clés absentes / non déployé), repli sur le panneau démo.
@@ -4674,9 +5307,10 @@ Niveau 3 de développement web|48|fichiers`;
     modal('Paiement sécurisé <span class="ui-icon-container is-sm"><i data-lucide="lock"></i></span>', `
       <div class="co-summary">
         <div class="co-sum-head">Récapitulatif de la commande</div>
-        <div class="co-sum-row"><span>Forfait choisi</span><strong>Forfait ${plan.sessions} sessions</strong></div>
+        <div class="co-sum-row"><span>Forfait choisi</span><strong>Forfait ${plan.sessions} session${plan.sessions>1?"s":""} (${plan.duree})</strong></div>
         <div class="co-sum-row"><span>Crédits de cours</span><strong>+${plan.sessions} cours</strong></div>
-        <div class="co-sum-row co-total"><span>Total à payer</span><strong>${plan.price} €</strong></div>
+        <div class="co-sum-row"><span>Prix par session</span><strong>${prixParSession(plan)}</strong></div>
+        <div class="co-sum-row co-total"><span>Total à payer</span><strong>${plan.price} ${DEVISE} ${DEVISE_CODE}</strong></div>
       </div>
       <form class="co-form" id="coForm" onsubmit="return APP.processPayment(event, ${n})" autocomplete="on">
         <h4 class="co-h">Informations de facturation</h4>
@@ -4696,7 +5330,7 @@ Niveau 3 de développement web|48|fichiers`;
           <div class="form-g"><label for="coCvc">Code de sécurité (CVC)</label><input id="coCvc" type="text" inputmode="numeric" autocomplete="cc-csc" maxlength="4" required placeholder="123" oninput="APP.coFmtCvc(this)"></div>
         </div>
         <p class="co-error" id="coError" style="display:none"></p>
-        <button type="submit" class="btn-submit co-pay"><span class="ui-icon-container is-sm"><i data-lucide="lock"></i></span> Valider le paiement ${plan.price} €</button>
+        <button type="submit" class="btn-submit co-pay"><span class="ui-icon-container is-sm"><i data-lucide="lock"></i></span> Valider le paiement ${plan.price} ${DEVISE}</button>
         <p class="co-secure"><span class="ui-icon-container is-sm"><i data-lucide="lock"></i></span> Paiement chiffré de bout en bout. Vos données bancaires ne sont pas conservées.</p>
       </form>
     `, true);
@@ -4747,6 +5381,18 @@ Niveau 3 de développement web|48|fichiers`;
     return false;
   }
 
+  // Série : 7 cases neutres tant qu'aucun cours n'a été suivi. Les cases se
+  // rempliront quand la présence aux séances sera remontée par le serveur.
+  function renderStreakDays(joursFaits = 0) {
+    const el = $('streakDays'); if (!el) return;
+    el.innerHTML = Array.from({ length: 7 }, (_, i) =>
+      i < joursFaits
+        ? '<div class="streak-day done"><span class="ui-icon-container is-sm"><i data-lucide="check"></i></span></div>'
+        : '<div class="streak-day"></div>'
+    ).join('');
+    refreshIcons();
+  }
+
   function updateCreditsUI() {
     document.querySelectorAll('#creditsDisplay,#creditsDisplay2').forEach(el => el.textContent = credits);
     // Real-time sync: refresh the Parents wallet balance if that view is open
@@ -4755,6 +5401,10 @@ Niveau 3 de développement web|48|fichiers`;
 
   function updatePointsUI() {
     document.querySelectorAll('#pointsDisplay').forEach(el => el.textContent = points);
+    // Le classement n'a de sens qu'une fois des points marqués : afficher
+    // « #93 » sur un compte à 0 point serait un chiffre inventé.
+    const r = $('rankDisplay');
+    if (r) r.textContent = points > 0 ? '#' + Math.max(1, 100 - Math.floor(points / 10)) : '—';
     // Real-time sync: if the Community view is open, reflect the new points immediately
     if ($('viewCommunity') && $('viewCommunity').classList.contains('flex-active')) {
       renderComProfile();
@@ -4904,7 +5554,7 @@ Niveau 3 de développement web|48|fichiers`;
     modal('Ajouter un projet', `
       <p class="modal-sub">Téléversez votre projet ou définissez-en un nouveau.</p>
       <div class="form-g"><label>Nom du projet</label><input type="text" placeholder="Ex: Mon premier jeu Pygame"></div>
-      <div class="form-g"><label>Parcours</label><select><option>Python Niveau 1</option><option>Développement web</option><option>Python Niveau 2</option><option>Développement de jeux</option></select></div>
+      <div class="form-g"><label>Parcours</label><select><option>Python Niveau 1</option><option>Scratch Niveau 1</option><option>Python Niveau 2</option><option>Développement de jeux</option></select></div>
       <div class="form-g"><label>Type</label><select><option>Mini projet</option><option>Projet majeur</option><option>Projet final</option></select></div>
       <div class="form-g"><label>Fichier (simulé)</label><input type="file"></div>
       <button class="btn-submit" onclick="APP.closeModal()">Soumettre le projet <span class="ui-icon-container is-sm"><i data-lucide="check"></i></span></button>
@@ -4958,7 +5608,7 @@ Niveau 3 de développement web|48|fichiers`;
   function showQuizResult() {
     const earned = window._quizScore * 5;
     points += earned;
-    $('pointsDisplay').textContent = points;
+    updatePointsUI();
 
     modal('<span class="ui-icon-container is-sm"><i data-lucide="gamepad-2"></i></span> Quiz terminé !', `
       <div class="quiz-result">
@@ -5440,6 +6090,13 @@ Niveau 3 de développement web|48|fichiers`;
   _initIcons();
   // Paint the canonical avatar/name into the shell on first load
   syncProfileUI();
+  // Pays, âges et créneaux localisés (landing + formulaire de réservation)
+  initPaysEtCreneaux();
+  // États initiaux du tableau de bord (série vide, classement masqué à 0 point)
+  renderStreakDays(0);
+  updatePointsUI();
+  // Pastille « événements » en gris tant qu'il n'y en a aucun
+  (() => { const c = $('evCount'); if (c) c.dataset.zero = c.textContent.trim() === '0' ? '1' : '0'; })();
   _initFootGrades();
   // Affiche le solde de crédits persistant (localStorage) dès le chargement
   updateCreditsUI();
@@ -5453,19 +6110,20 @@ Niveau 3 de développement web|48|fichiers`;
   // === PUBLIC API ===
   return {
     openLogin, login: loginAndPreload, logout, confirmLogout, modal, closeModal,
-    authTab, doSignIn, doSignUp, lpGo, navCourses, lpCourse, bookSlot, joinCommunity, gsSlot, enrollNow, faqToggle, backToLanding, submitBooking, teacherTab, teacherSortBy, toggleTheme, goTeacher,
+    authTab, doSignIn, doSignUp, lpGo, navCourses, lpCourse, bookSlot, joinCommunity, gsSlot, gsCountryChange, bkCountryChange, enrollNow, faqToggle, backToLanding, submitBooking, teacherTab, teacherSortBy, toggleTheme, goTeacher,
     sbActive, mobNav, goSandbox, goDashboard,
     goAdmin, adminCreate, adminRefresh, adminSend, adminReset, adminDelete, adminCopyPwd, adminLogout,
+    adminSessionCreate, adminSessionsRefresh, adminSessionDelete,
     goResources, resSelect, resTab, resSearch,
     goCommunity, comSubjectTab, comFilter, comClearFilters, comLike, comUpvote, comShareEvent, comSharePost,
     goParents, goReferral, refSubmit, refRedeem, refCopy, refShare, refHowItWorks, refRequestUpdate,
-    goProfile, profileSave, profileCancel, profileSelectCat, profilePickAvatar, profileUpload,
+    goProfile, profileSave, profileCancel, profileSelectCat, profilePickAvatar, profileUpload, profileRemovePhoto,
     goLoop, loopTab, loopSimulate, loopClear, loopAccept, loopReschedule, loopOpenCreate, loopSubmitCreate,
     sbxNav,
     wbToggle, wbInput, wbCursor, wbToggleMenu, wbSetMode, wbRun, wbClear, wbSave, wbTips, wbFullscreen, wbColor, wbBoardClear,
     goalTap, goalAction,
     tbwMenu, tbwStyles, tbwSetColor, tbwTool, tbwNew, tbwEtabli, tbwSaveAs, tbwUndo, tbwRedo, tbwClear,
-    projectAction, contentFilter, contentToggle, rewardBuy,
+    projectAction, contentFilter, contentToggle, contentOpen, contentDownload, contentSave, rewardBuy,
     exSearch, exRecentPrev, exRecentNext, exOpen,
     llmSetModel, llmSend,
     folderOpen, folderBack, folderNew, fileNew, fileOpen,

@@ -204,6 +204,19 @@ img{max-width:100%;display:block}
 
 /* Pricing cards */
 .pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:16px}
+/* Grille des forfaits de crédits : 4 offres. En dessous de 900 px la modale
+   n'a plus la largeur pour 4 colonnes → 2 puis 1. */
+.pricing-grid-4{grid-template-columns:repeat(4,1fr);gap:12px;align-items:stretch}
+/* Colonne flex + marge auto sur le bouton : les « Acheter » s'alignent en bas
+   même quand les listes d'avantages n'ont pas le même nombre de lignes. */
+.pricing-grid-4 .price-card{padding:18px 14px;display:flex;flex-direction:column}
+.pricing-grid-4 .price-card ul{flex:1}
+.pricing-grid-4 .price-card .btn{margin-top:auto}
+.pricing-grid-4 .price-card .amount{font-size:1.6rem}
+.pricing-grid-4 .price-card .sessions{font-size:.98rem}
+.pricing-grid-4 .price-card ul{font-size:.76rem}
+@media(max-width:900px){.pricing-grid-4{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:520px){.pricing-grid-4{grid-template-columns:1fr}}
 .price-card{border:2px solid var(--border);border-radius:var(--r-lg);padding:22px;text-align:center;transition:all var(--dur) var(--ease);position:relative;overflow:hidden}
 .price-card:hover{border-color:var(--indigo);transform:translateY(-4px);box-shadow:var(--sh-md)}
 .price-card.popular{border-color:var(--indigo);background:var(--indigo-l)}
@@ -338,6 +351,13 @@ img{max-width:100%;display:block}
 .btn-join{display:inline-flex;align-items:center;gap:5px;padding:8px 18px;background:var(--emerald);color:var(--tw);border-radius:var(--r-full);font-size:.8rem;font-weight:700;box-shadow:0 2px 8px rgba(16,185,129,.3);animation:glowG 2s ease-in-out infinite}
 .btn-join:hover{background:var(--emerald-d);transform:translateY(-1px)}
 @keyframes glowG{0%,100%{box-shadow:0 2px 8px rgba(16,185,129,.3)}50%{box-shadow:0 2px 20px rgba(16,185,129,.5)}}
+/* Verrouillé tant que l'heure du cours n'est pas atteinte : ni pulsation verte
+   (qui signale « c'est ouvert »), ni curseur main, ni interaction. */
+.btn-join.is-locked{background:var(--surface-hover);color:var(--t3);box-shadow:none;animation:none;cursor:not-allowed}
+.btn-join.is-locked:hover{background:var(--surface-hover);transform:none}
+/* Aucune séance à afficher */
+.cc-empty{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:34px 20px;color:var(--t3)}
+.cc-empty p{font-size:.88rem;max-width:34ch;line-height:1.6;margin:0}
 
 /* Mid grid */
 .mid-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:32px}
@@ -352,12 +372,21 @@ img{max-width:100%;display:block}
 .streak-header h3{font-size:1.05rem;font-weight:700}
 .py-pill{display:inline-flex;align-items:center;gap:4px;padding:4px 12px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r-full);font-size:.75rem;font-weight:600}
 .streak-sub{font-size:.82rem;color:var(--t3);margin-bottom:14px}
-.streak-days{display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap}
-.streak-day{width:32px;height:32px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.7rem;color:var(--t3)}
+.streak-days{display:grid;grid-template-columns:repeat(7,1fr);align-items:center;justify-items:center;gap:6px;margin-bottom:8px}
+.streak-day{width:100%;max-width:32px;aspect-ratio:1;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.7rem;color:var(--t3)}
 .streak-day.done{border-color:var(--emerald);color:var(--emerald)}
 .streak-day.missed{border-color:var(--red);color:var(--red)}
 .streak-day.gift{border-color:var(--orange);color:var(--orange);font-size:.9rem}
 .streak-labels{display:flex;gap:12px;font-size:.72rem;color:var(--t3);margin-bottom:18px}
+/* Cases de série non encore acquises : la grille reste visible sans rien
+   affirmer sur la progression de l'élève. */
+.streak-days{margin-bottom:18px}
+/* Compteur d'événements à zéro : gris neutre au lieu de la pastille orange
+   d'alerte, qui attirait l'œil sur une absence d'information. */
+.ev-count[data-zero="1"]{background:var(--surface-hover);color:var(--t3)}
+/* État vide générique des tuiles du tableau de bord */
+.tile-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:22px 12px;text-align:center;color:var(--t3)}
+.tile-empty p{font-size:.82rem;line-height:1.55;margin:0;max-width:30ch}
 .credits-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid var(--border-light)}
 .credits-row .lbl{display:flex;align-items:center;gap:6px;font-size:.88rem;font-weight:600}
 .credits-note{font-size:.72rem;color:var(--t3);margin-top:8px;font-style:italic}
@@ -590,11 +619,35 @@ img{max-width:100%;display:block}
   .welcome-row,.mid-grid{grid-template-columns:1fr}
   .triple-grid,.goals-grid,.project-grid,.pricing-grid{grid-template-columns:1fr 1fr}
 }
-@media(max-width:768px){
+/* La nav horizontale (6 entrées, ~440 px) ne tient plus sous ~900 px : elle
+   passe en menu burger dès ce seuil. Le reste du responsive garde son point de
+   rupture à 768 px — seule la barre de navigation bascule plus tôt. */
+@media(max-width:940px){
   .lp-nav{display:none;position:absolute;top:68px;left:0;right:0;background:var(--surface);flex-direction:column;padding:12px 20px;border-bottom:1px solid var(--border);box-shadow:var(--sh-md);z-index:100}
   .lp-nav.show{display:flex}
   .burger{display:flex}
-  .lp-actions .btn-primary{display:none}
+}
+
+/* Palier intermédiaire (petits portables) : entre 901 et 1100 px, logo + nav +
+   actions réclament ~1025 px pour 971 px disponibles. On resserre plutôt que
+   de basculer en burger, qui serait prématuré à cette taille. */
+@media(min-width:941px) and (max-width:1180px){
+  .lp-header .wrap{padding:0 16px;gap:10px}
+  .logo{gap:8px}
+  .logo-n{font-size:.95rem}
+  .lp-nav{gap:2px}
+  .lp-nav a{padding:8px 7px;font-size:.81rem}
+  .lp-actions{gap:6px}
+  .lp-actions .btn-trial{padding:9px 13px;font-size:.8rem}
+  .lp-actions .btn-ghost{padding:8px 10px;font-size:.83rem}
+}
+@media(max-width:768px){
+  /* Sur mobile, l'en-tête ne peut pas loger le CTA large (228 px) en plus du
+     logo, de « Connexion » et du burger → débordement horizontal de la page.
+     Le parcours de réservation reste accessible par le CTA du hero et le menu.
+     (`.btn-primary` était un nom de classe périmé : la règle ne s'appliquait
+     à rien depuis que le bouton est passé en `.btn-trial`.) */
+  .lp-actions .btn-trial,.lp-actions .btn-primary{display:none}
   .hero-grid{grid-template-columns:1fr;text-align:center;gap:30px}
   .hero-sub{margin:0 auto 28px}
   .hero-actions{justify-content:center}
@@ -622,6 +675,22 @@ img{max-width:100%;display:block}
   .logo-n{font-size:.95rem}
   .cc-top{flex-wrap:wrap;gap:10px}
   .path-tab{padding:10px 14px;font-size:.78rem}
+}
+
+/* Petits écrans : « KodingvillageSchool » + « Connexion » + burger dépassent
+   la largeur disponible dès ~360 px. Plutôt que de rogner au pixel près, on
+   rend le logo compressible (min-width:0 + ellipsis) : l'en-tête ne peut alors
+   plus déborder, quelle que soit la largeur ou la longueur du nom. */
+@media(max-width:560px){
+  .lp-header .wrap{padding:0 14px;gap:8px}
+  .logo{min-width:0;flex:1 1 auto;overflow:hidden}
+  .logo-n{font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lp-actions{flex-shrink:0;gap:4px}
+  .lp-actions .btn-ghost{padding:7px 9px;font-size:.8rem}
+}
+@media(max-width:380px){
+  .logo-n{font-size:.82rem}
+  .lp-actions .btn-ghost{padding:6px 7px;font-size:.75rem}
 }
 
 /* ============================================================
@@ -1121,6 +1190,27 @@ img{max-width:100%;display:block}
 .lc-act.dl{color:var(--sx-6ee7b7);border:1px solid rgba(16,185,129,.35);background:rgba(16,185,129,.12)}
 .lc-act.dl:hover{background:var(--emerald);color:#fff}
 .lc-empty{padding:40px;text-align:center;color:var(--sx-6c7086);font-size:.9rem}
+/* L'en-tête d'accordéon est un <button> (clavier + lecteurs d'écran) : on neutralise
+   les styles natifs pour retrouver l'apparence d'une ligne pleine largeur. */
+.lc-acc-head{width:100%;background:none;border:none;font-family:inherit;text-align:left;color:inherit}
+.lc-acc-head:focus-visible{outline:2px solid var(--indigo);outline-offset:-2px}
+.lc-file-num{color:var(--sx-a5b4fc);font-weight:700;margin-right:4px}
+.lc-file-meta{color:var(--sx-6c7086);font-size:.76rem}
+.lc-loading,.lc-pending{padding:18px 20px;color:var(--sx-6c7086);font-size:.83rem;display:flex;align-items:center;gap:7px}
+.lc-act.muted{color:var(--sx-6c7086);border:1px solid var(--sx-3a3a5e);background:transparent;cursor:default}
+
+/* Visionneuse PDF (modale large) */
+.pdfv{display:flex;flex-direction:column;gap:0}
+/* .modal-box plafonne à 85vh : on dimensionne le cadre pour que la barre
+   d'actions reste visible sans avoir à faire défiler la modale. */
+.pdfv-frame{width:100%;height:min(56vh,540px);border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);display:block}
+.pdfv-fallback{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;height:100%;padding:30px;text-align:center;color:var(--t3);font-size:.9rem}
+/* Collée en bas du conteneur défilant : Télécharger/Enregistrer restent
+   accessibles même sur un écran court. */
+.pdfv-bar{position:sticky;bottom:-32px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 2px;margin-bottom:-32px;background:var(--surface)}
+.pdfv-meta{font-size:.8rem;color:var(--t3);display:flex;align-items:center;gap:6px}
+.pdfv-actions{display:flex;gap:8px;flex-wrap:wrap}
+@media(max-width:560px){.pdfv-frame{height:52vh}.pdfv-bar{justify-content:center}}
 @media(max-width:768px){
   .lc-count{margin-left:0;width:100%}
   .lc-file{flex-direction:column;align-items:flex-start}
@@ -1394,6 +1484,19 @@ img{max-width:100%;display:block}
 .prof-preview .pp-emoji{font-size:4.4rem}
 .prof-upload{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;font-size:.8rem;font-weight:600;color:var(--indigo);background:var(--indigo-l);border-radius:var(--r-full);transition:all var(--dur) var(--ease)}
 .prof-upload:hover{background:var(--indigo);color:#fff;transform:translateY(-1px)}
+.prof-remove{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;font-size:.76rem;font-weight:600;color:#dc2626;background:transparent;border-radius:var(--r-full);transition:all var(--dur) var(--ease)}
+.prof-remove:hover{background:rgba(220,38,38,.1)}
+.prof-av-hint{font-size:.72rem;color:var(--t3);text-align:center;max-width:22ch;line-height:1.5}
+
+/* Avatar par initiales — repli quand ni photo ni emoji n'est défini.
+   Occupe toute la pastille héritée (.av, .prof-preview…).
+   La taille de police est fixée par contexte : un `em` se calculerait sur la
+   police du parent, sans rapport avec le diamètre de la pastille. */
+.av-initials{display:flex;align-items:center;justify-content:center;width:100%;height:100%;border-radius:inherit;color:#fff;font-weight:700;letter-spacing:.5px;line-height:1;font-size:.82rem;user-select:none}
+.prof-preview .av-initials{font-size:2.9rem;letter-spacing:2px}
+.spf-avatar .av-initials{font-size:2rem;letter-spacing:1px}
+.loop-user-av .av-initials{font-size:.7rem}
+.com-prof-av .av-initials,.sbx-profile .av-initials{font-size:.9rem}
 .prof-gallery{flex:1;min-width:280px}
 .prof-gallery-label{font-size:.85rem;color:var(--t3);font-weight:600;margin-bottom:12px}
 .prof-cats{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
@@ -1802,11 +1905,11 @@ img{max-width:100%;display:block}
 .lp-drop-menu a{display:block;padding:9px 12px;border-radius:var(--r-sm);font-size:.85rem;font-weight:500;color:var(--t2)}
 .lp-drop-menu a:hover{background:var(--surface-hover);color:var(--t1)}
 
-.hero-ratings{display:flex;gap:22px;margin-top:26px;flex-wrap:wrap}
+.hero-ratings{display:flex;gap:18px 26px;margin-top:26px;flex-wrap:wrap}
 .rating{display:flex;align-items:center;gap:10px}
 .rating-logo{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.1rem;flex-shrink:0}
-.rating-logo.google{background:#fff;border:1.5px solid var(--border);color:#4285F4}
-.rating-logo.tp{background:#00B67A;color:#fff}
+.rating-logo.trust{background:var(--indigo-l);color:var(--indigo);border:1.5px solid var(--indigo)}
+.rating-claim{font-size:.88rem;font-weight:700;color:var(--t1);line-height:1.3}
 .rating-stars{font-size:.9rem;color:var(--yellow);font-weight:600;letter-spacing:1px}
 .rating-stars b{color:var(--t1);margin-left:4px}
 .rating-stars .half{opacity:.45}
@@ -1904,9 +2007,17 @@ img{max-width:100%;display:block}
 .bk-field input,.bk-field select{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:var(--r-md);font-size:.9rem;font-family:inherit;background:var(--bg);color:var(--t1);transition:border-color var(--dur) var(--ease),box-shadow var(--dur) var(--ease)}
 .bk-field input:focus,.bk-field select:focus{outline:none;border-color:var(--indigo);box-shadow:0 0 0 3px var(--indigo-l)}
 .bk-field input[readonly]{background:var(--surface-2,#f1f5f9);color:var(--t2);font-weight:600;cursor:not-allowed}
-.bk-phone-row{display:flex;gap:8px}
+.bk-phone-row{display:flex;gap:8px;align-items:stretch}
 .bk-phone-row select{flex:0 0 100px}
 .bk-phone-row input{flex:1}
+/* Indicatif déduit du pays : présenté comme une étiquette, pas comme un champ,
+   pour qu'il soit clair qu'il n'est pas modifiable. */
+.bk-dial{flex:0 0 auto;display:flex;align-items:center;gap:5px;padding:0 13px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r-md);font-size:.9rem;font-weight:700;color:var(--t2);white-space:nowrap}
+
+/* Étape 1 : deux sélecteurs empilés (pays puis cours) */
+.gs-select-2{margin-top:10px}
+.gs-tz{margin-top:10px;font-size:.72rem;color:var(--t3);line-height:1.5}
+.gs-noslot{grid-column:1 / -1;font-size:.82rem;color:var(--t3);line-height:1.6;text-align:left}
 .bk-error{color:#dc2626;font-size:.86rem;font-weight:600;margin-top:16px;background:#fef2f2;border:1.5px solid #fecaca;border-radius:var(--r-md);padding:10px 14px}
 .bk-submit{width:100%;justify-content:center;margin-top:22px}
 .bk-fineprint{font-size:.78rem;color:var(--t3);text-align:center;margin-top:14px;line-height:1.5}
@@ -1937,6 +2048,17 @@ img{max-width:100%;display:block}
 .adm-actions .adm-send{color:var(--indigo);font-weight:700}
 .adm-actions .adm-del{color:#dc2626}
 .adm-empty{text-align:center;color:var(--t3);padding:22px}
+.adm-muted{color:var(--t3)}
+/* Séances planifiées */
+/* .booking-wrap est un flex horizontal prévu pour UNE carte ; l'admin en empile
+   plusieurs (comptes, puis séances) → on repasse en colonne centrée. */
+.adm-wrap{flex-direction:column;align-items:center}
+.adm-wrap .adm-card{width:100%}
+.adm-wrap .adm-card + .adm-card{margin-top:26px}
+.bk-hint{font-weight:400;color:var(--t3);font-size:.76rem}
+.bk-field-wide{grid-column:1 / -1}
+.bk-field select[multiple]{width:100%;padding:8px;border:1.5px solid var(--border);border-radius:var(--r-md);background:var(--surface);color:var(--t1);font-size:.86rem;font-family:inherit}
+.bk-field select[multiple] option{padding:5px 7px;border-radius:var(--r-sm)}
 
 .lp-footer{background:#0f172a;color:#cbd5e1;margin-top:70px;padding:50px 24px 0}
 .lp-foot-grid{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:30px}
