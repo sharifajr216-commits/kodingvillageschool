@@ -1891,11 +1891,6 @@ img{max-width:100%;display:block}
 /* ============================================================
    LANDING PAGE (full marketing site) + Teacher + Login tabs
    ============================================================ */
-.promo-banner{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;background:#FDF6EC;border-bottom:1px solid #F3E6CE;color:#7c5a1e;font-size:.82rem;font-weight:500;padding:9px 18px;text-align:center}
-.promo-banner strong{color:#9a3412}
-.promo-link{font-weight:800;color:var(--indigo);white-space:nowrap;transition:color var(--dur) var(--ease)}
-.promo-link:hover{color:var(--indigo-d);text-decoration:underline}
-
 .lp-actions{display:flex;align-items:center;gap:10px}
 .btn-trial{padding:10px 20px;font-size:.88rem;color:#3a2c00;background:var(--yellow);box-shadow:0 2px 10px rgba(255,194,51,.4)}
 .btn-trial:hover{background:#FFB400;transform:translateY(-1px)}
@@ -2342,11 +2337,8 @@ img{max-width:100%;display:block}
 [data-theme="dark"] .tch-row-tag{background:var(--surface);color:#FCA5A5}
 /* tuile streak : le fond indigo-l devient sombre, garder un texte lisible */
 [data-theme="dark"] .comeback-item{background:var(--indigo-l);border-color:#312E81}
-/* en-tête + bannière promo de la landing (fonds clairs codés en dur) */
+/* en-tête de la landing (fond clair codé en dur) */
 [data-theme="dark"] .lp-header{background:rgba(11,17,32,.85)}
-[data-theme="dark"] .promo-banner{background:#2A1E0C;border-bottom-color:#3D2E14;color:#E8C88A}
-[data-theme="dark"] .promo-banner strong{color:#FBBF24}
-[data-theme="dark"] .promo-link{color:#A5B4FC}
 
 
 /* ============================================================

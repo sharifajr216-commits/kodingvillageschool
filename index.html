@@ -31,12 +31,6 @@
      VIEW 1 — LANDING PAGE
      ============================================================ -->
 <div class="view active" id="viewLanding">
-  <!-- Promo banner -->
-  <div class="promo-banner">
-    <span class="promo-txt"><span class="ui-icon-container is-sm"><i data-lucide="party-popper"></i></span> <strong>Nouveau !</strong> Le Camp d’été 2026 de KodingvillageSchool est arrivé • 8 sessions de 60 min • 1:1 en ligne en direct • 1 mentor dédié • <strong>-33 % !</strong></span>
-    <button class="promo-link" onclick="APP.bookSlot()">Réservez votre place <span class="ui-icon-container is-sm"><i data-lucide="arrow-right"></i></span></button>
-  </div>
-
   <header class="lp-header" id="lpHeader">
     <div class="wrap">
       <a href="#" class="logo" onclick="APP.lpGo('top');return false"><div class="logo-m"><svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M24 8 4 18l20 10 20-10z" fill="#FFC233"/><path d="M13 23v9c0 3 5 6 11 6s11-3 11-6v-9l-11 5.5z" fill="#4F46E5"/><path d="M44 18v15" stroke="#10B981" stroke-width="2.5" stroke-linecap="round"/><circle cx="44" cy="35" r="3" fill="#10B981"/></svg></div><span class="logo-n">KodingvillageSchool</span></a>
@@ -349,6 +343,29 @@
   </header>
 
   <section class="booking-wrap adm-wrap">
+    <!-- Prospects d'essai — leads reçus via le formulaire de réservation.
+         Aucun identifiant n'est envoyé automatiquement : l'admin décide quand
+         « Créer & envoyer les accès » (conversion en compte élève). -->
+    <div class="booking-card adm-card">
+      <div class="booking-head">
+        <div class="booking-step-pill">Espace administration</div>
+        <h1>Inscriptions d'essai</h1>
+        <p>Chaque réservation reçue apparaît ici. Quand tu es prêt·e, clique sur <strong>Créer &amp; envoyer les accès</strong> : le compte élève est créé et les identifiants sont envoyés par e-mail.</p>
+      </div>
+
+      <div class="adm-table-head">
+        <h2>Prospects (<span id="admLeadsCount">0</span>)</h2>
+        <button class="btn-ghost" onclick="APP.adminLeadsRefresh()"><span class="ui-icon-container is-sm"><i data-lucide="refresh-cw"></i></span> Rafraîchir</button>
+      </div>
+      <div class="adm-cred" id="admLeadCred" style="display:none"></div>
+      <div class="adm-table-wrap">
+        <table class="adm-table">
+          <thead><tr><th>Enfant / Parent</th><th>Contact</th><th>Cours / Créneau</th><th>Reçu le</th><th>Statut</th><th>Actions</th></tr></thead>
+          <tbody id="admLeadsTbody"></tbody>
+        </table>
+      </div>
+    </div>
+
     <div class="booking-card adm-card">
       <div class="booking-head">
         <div class="booking-step-pill">Espace administration</div>
@@ -1591,7 +1608,7 @@ print("Bonne séance de code, Bilal ! 🚀")
   const _admEsc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   function _admErr(msg) { const e = $('admError'); if (e) { e.textContent = msg || ''; e.style.display = msg ? 'block' : 'none'; } }
 
-  function goAdmin() { switchView('viewAdmin'); _admShowTz(); adminRefresh(); adminSessionsRefresh(); }
+  function goAdmin() { switchView('viewAdmin'); _admShowTz(); adminLeadsRefresh(); adminRefresh(); adminSessionsRefresh(); }
   function adminLogout() { _setAdminToken(null); switchView('viewLanding'); }
 
   async function adminCreate(e) {
@@ -1758,6 +1775,82 @@ print("Bonne séance de code, Bilal ! 🚀")
     if (!window.confirm('Supprimer définitivement le compte de ' + email + ' ?')) return;
     const { data } = await _adminApi('delete', { email });
     if (data.ok) { toast('Compte supprimé.', 'ok', '🗑️'); adminRefresh(); }
+    else { toast('Suppression impossible.', 'err', '⚠️'); }
+  }
+
+  // === ADMIN — prospects d'essai (leads) : conversion + envoi manuel des accès ===
+
+  const _admDateFmt = (iso) => {
+    try {
+      return new Intl.DateTimeFormat('fr-CA', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
+    } catch (_) { return String(iso || '').replace('T', ' ').slice(0, 16); }
+  };
+
+  let _admLeadsSeq = 0;
+  async function adminLeadsRefresh() {
+    const seq = ++_admLeadsSeq;
+    const { data } = await _adminApi('leads.list');
+    if (seq !== _admLeadsSeq) return; // une requête plus récente a pris la main
+    const rows = (data && data.leads) || [];
+    $('admLeadsCount').textContent = rows.length;
+    $('admLeadsTbody').innerHTML = rows.map(l => {
+      const id = _admEsc(l.id);
+      const child = `${_admEsc(l.childFirst)} ${_admEsc(l.childLast)}`.trim() || '—';
+      const parent = `${_admEsc(l.parentFirst)} ${_admEsc(l.parentLast)}`.trim();
+      const email = _admEsc(l.email);
+      const tel = l.phone ? _admEsc(l.phone) : '—';
+      const cours = _admEsc(l.course) || '—';
+      const slot = l.slot ? _admEsc(l.slot) : '—';
+      const converted = l.status === 'converted';
+      const badge = converted
+        ? `<span class="adm-badge ok">Accès envoyés</span>`
+        : `<span class="adm-badge no">À traiter</span>`;
+      const actions = converted
+        ? `<button class="btn-ghost adm-del" onclick="APP.adminLeadDelete('${id}')">Suppr.</button>`
+        : `<button class="btn-ghost adm-send" onclick="APP.adminLeadConvert('${id}')">Créer &amp; envoyer les accès</button>
+           <button class="btn-ghost adm-del" onclick="APP.adminLeadDelete('${id}')">Suppr.</button>`;
+      return `<tr>
+        <td>${child}${parent ? `<br><span class="adm-muted">Parent : ${parent}</span>` : ''}</td>
+        <td>${email}<br><span class="adm-muted">${tel}</span></td>
+        <td>${cours}<br><span class="adm-muted">${slot}</span></td>
+        <td>${_admEsc(_admDateFmt(l.createdAt))}</td>
+        <td>${badge}</td>
+        <td class="adm-actions">${actions}</td></tr>`;
+    }).join('') || '<tr><td colspan="6" class="adm-empty">Aucune inscription d\'essai pour l\'instant.</td></tr>';
+  }
+
+  function _admLeadShowCred(html) {
+    const box = $('admLeadCred'); if (!box) return;
+    box.innerHTML = html;
+    box.style.display = 'block';
+  }
+
+  async function adminLeadConvert(id) {
+    if (!window.confirm('Créer le compte élève et lui envoyer ses identifiants de connexion par e-mail ?')) return;
+    const { status, data } = await _adminApi('leads.convert', { id });
+    if (status === 401) { toast('🔒 Session admin expirée — reconnecte-toi.', 'err', '🔒'); return; }
+    if (status === 409) { toast('Un compte existe déjà pour cet e-mail (voir « Comptes élèves »).', 'err', '⚠️'); return; }
+    if (data.error === 'send_failed') {
+      // Le compte a bien été créé, seul l'e-mail a échoué : on affiche le mot de
+      // passe pour une transmission manuelle et on garde le prospect « à traiter ».
+      if (data.tempPassword) {
+        _admLeadShowCred(`⚠️ Compte créé pour <strong>${_admEsc(data.email)}</strong> mais l'e-mail n'est PAS parti (Resend). Transmets ce mot de passe manuellement : <code id="admTempPwd">${_admEsc(data.tempPassword)}</code> <button class="btn-ghost adm-copy" onclick="APP.adminCopyPwd()">Copier</button>`);
+      }
+      toast('Compte créé, mais l\'envoi e-mail a échoué (Resend).', 'err', '⚠️');
+      adminRefresh();
+      return;
+    }
+    if (!data.ok) { toast('Conversion impossible (' + (data.error || 'erreur') + ').', 'err', '⚠️'); return; }
+    _admLeadShowCred(`✅ Accès envoyés à <strong>${_admEsc(data.email)}</strong>. Mot de passe temporaire : <code id="admTempPwd">${_admEsc(data.tempPassword)}</code> <button class="btn-ghost adm-copy" onclick="APP.adminCopyPwd()">Copier</button>`);
+    toast('Compte créé et accès envoyés 📩', 'ok', '📩');
+    adminLeadsRefresh();
+    adminRefresh();
+  }
+
+  async function adminLeadDelete(id) {
+    if (!window.confirm('Supprimer cette inscription d\'essai ?')) return;
+    const { data } = await _adminApi('leads.delete', { id });
+    if (data.ok) { toast('Inscription supprimée.', 'ok', '🗑️'); adminLeadsRefresh(); }
     else { toast('Suppression impossible.', 'err', '⚠️'); }
   }
 
@@ -6065,6 +6158,7 @@ Laboratoire de Codage Vibe|8|fichiers`;
     authTab, doSignIn, doSignUp, lpGo, navCourses, lpCourse, bookSlot, joinCommunity, gsSlot, gsCountryChange, bkCountryChange, enrollNow, faqToggle, backToLanding, submitBooking, teacherTab, teacherSortBy, toggleTheme, goTeacher,
     sbActive, mobNav, goSandbox, goDashboard,
     goAdmin, adminCreate, adminRefresh, adminSend, adminReset, adminDelete, adminCopyPwd, adminLogout,
+    adminLeadsRefresh, adminLeadConvert, adminLeadDelete,
     adminSessionCreate, adminSessionsRefresh, adminSessionDelete,
     goResources, resSelect, resTab, resSearch,
     goCommunity, comSubjectTab, comFilter, comClearFilters, comLike, comUpvote, comShareEvent, comSharePost,
