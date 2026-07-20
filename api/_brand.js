@@ -12,6 +12,22 @@ const PHONE_DISPLAY = process.env.PHONE_DISPLAY || '+1 604 499 2735';
 const BRAND = 'KodingvillageSchool';
 const PUBLIC_URL = process.env.PUBLIC_URL || 'https://kodingvillageschool.com';
 
+// ── Expéditeur des e-mails ──────────────────────────────────────────────────
+// Défini ICI et nulle part ailleurs : la valeur était auparavant recopiée dans
+// booking.js, admin.js et reminders.js, avec le risque qu'elles divergent.
+//
+// ⚠️ `onboarding@resend.dev` est l'adresse de TEST de Resend : elle ne délivre
+//    qu'à l'adresse propriétaire du compte Resend. Tant qu'elle est active,
+//    AUCUN e-mail n'atteint un parent ou un élève.
+//    Pour y remédier : vérifier le domaine dans Resend (Domains → Add Domain,
+//    puis publier les enregistrements DNS), et seulement ENSUITE définir
+//    BOOKING_FROM_EMAIL=info@kodingvillageschool.com.
+const FALLBACK_FROM = 'onboarding@resend.dev';
+const FROM_EMAIL = process.env.BOOKING_FROM_EMAIL || FALLBACK_FROM;
+// Vrai quand l'expéditeur est encore l'adresse de test : permet aux appelants
+// de prévenir explicitement plutôt que d'échouer sans explication.
+const usingTestSender = () => FROM_EMAIL === FALLBACK_FROM;
+
 const esc = (s) => String(s == null ? '' : s)
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
   .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -30,5 +46,5 @@ function emailFooter() {
 
 module.exports = {
   CONTACT_EMAIL, WHATSAPP_NUMBER, WHATSAPP_LINK, PHONE_DISPLAY,
-  BRAND, PUBLIC_URL, esc, emailFooter
+  BRAND, PUBLIC_URL, FROM_EMAIL, usingTestSender, esc, emailFooter
 };

@@ -24,7 +24,7 @@ const B = require('./_brand');
 const S = require('./_schedule');
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const FROM_EMAIL = process.env.BOOKING_FROM_EMAIL || 'onboarding@resend.dev';
+const FROM_EMAIL = B.FROM_EMAIL;   // source unique : api/_brand.js
 const PUBLIC_URL = B.PUBLIC_URL;
 
 const clean = (s, max = 120) => String(s == null ? '' : s).trim().slice(0, max);
@@ -143,7 +143,15 @@ module.exports = async (req, res) => {
             ${B.emailFooter()}`
         });
       } catch (e) {
-        res.status(502).json({ ok: false, error: 'send_failed', message: String(e.message || 'Resend error') });
+        // Cause n°1 des échecs : l'expéditeur est encore l'adresse de test Resend,
+        // qui ne délivre qu'au propriétaire du compte. Le message brut de Resend
+        // ne le dit pas clairement — on l'explicite pour éviter de chercher ailleurs.
+        const message = B.usingTestSender()
+          ? "Envoi refusé : l'expéditeur est encore l'adresse de test Resend (onboarding@resend.dev), "
+            + "qui ne peut écrire qu'au propriétaire du compte Resend. Vérifie ton domaine dans Resend, "
+            + "puis définis BOOKING_FROM_EMAIL. — Détail : " + String(e.message || 'Resend error')
+          : String(e.message || 'Resend error');
+        res.status(502).json({ ok: false, error: 'send_failed', message });
         return;
       }
       user.credsSentAt = new Date().toISOString();

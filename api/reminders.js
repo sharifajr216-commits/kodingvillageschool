@@ -36,7 +36,7 @@ const WA = require('./_whatsapp');
 
 const CRON_SECRET = process.env.CRON_SECRET || '';
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const FROM_EMAIL = process.env.BOOKING_FROM_EMAIL || 'onboarding@resend.dev';
+const FROM_EMAIL = B.FROM_EMAIL;   // source unique : api/_brand.js
 const LEAD_MINUTES = Number(process.env.REMINDER_LEAD_MIN) > 0 ? Number(process.env.REMINDER_LEAD_MIN) : 60;
 
 // Comparaison à temps constant : évite de divulguer le secret par timing.

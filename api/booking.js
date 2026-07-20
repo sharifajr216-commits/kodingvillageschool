@@ -23,7 +23,7 @@ const B = require('./_brand');
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const TO_EMAIL = process.env.BOOKING_TO_EMAIL || B.CONTACT_EMAIL;
-const FROM_EMAIL = process.env.BOOKING_FROM_EMAIL || 'onboarding@resend.dev';
+const FROM_EMAIL = B.FROM_EMAIL;   // source unique : api/_brand.js
 
 const clean = (s, max = 200) => String(s == null ? '' : s).trim().slice(0, max);
 const isEmail = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
