@@ -58,9 +58,12 @@ async function getThread(tid) {
 //     seraient départagés au hasard par Redis (ordre lexicographique du membre) ;
 //   - putThread est aussi appelé par markRead / noteAlerted, et une simple
 //     LECTURE ne doit pas faire remonter le fil en tête de la boîte.
-// Repli sur l'horodatage pour un fil créé avant l'introduction du rang.
+// Un fil sans message n'a pas encore de rang : il vaut 0 et se range donc EN BAS
+// de la boîte, ce qui est exact — il n'a aucune activité. Surtout, ne pas replier
+// sur l'horodatage : un epoch en millisecondes (~1,8e12) écraserait des rangs
+// valant 1, 2, 3…, et le fil vide resterait épinglé en tête à jamais.
 async function putThread(t) {
-  const score = String(t.rank || Date.parse(t.lastMessageAt || t.createdAt));
+  const score = String(t.rank || 0);
   await A.kv(['SET', `thread:${t.id}`, JSON.stringify(t)]);
   await A.kv(['ZADD', `threads:teacher:${t.teacherUsername}`, score, t.id]);
   await A.kv(['ZADD', `threads:student:${t.studentUsername}`, score, t.id]);
