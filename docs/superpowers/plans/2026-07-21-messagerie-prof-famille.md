@@ -221,7 +221,7 @@ test('les e-mails sont capturés et non envoyés', async () => {
 
 - [ ] **Step 4: Lancer les tests**
 
-Run: `node --test test/`
+Run: `node --test test/*.test.js`
 Expected: `# pass 4` et `# fail 0`.
 
 - [ ] **Step 5: Commit**
@@ -390,9 +390,10 @@ Create `api/_messages.js`:
 //   thread:<tid>:seq            compteur monotone du fil (INCR)
 //   thread:<tid>:msgs           ZSET { score: numéro de séquence, member: messageId }
 //   msg:<mid>                   JSON du message
-//   threads:teacher:<username>  ZSET trié par dernier message → boîte enseignant
-//   threads:student:<username>  ZSET trié par dernier message → boîte famille
-//   threads:all                 ZSET trié par dernier message → supervision admin
+//   threads:rank                compteur monotone global (INCR)
+//   threads:teacher:<username>  ZSET trié par rang → boîte enseignant
+//   threads:student:<username>  ZSET trié par rang → boîte famille
+//   threads:all                 ZSET trié par rang → supervision admin
 
 const crypto = require('crypto');
 const A = require('./_auth');
@@ -425,10 +426,17 @@ async function getThread(tid) {
   try { return JSON.parse(raw); } catch (_) { return null; }
 }
 
-// Écrit le fil ET réaligne les trois index sur `lastMessageAt` : un fil dont
-// l'index n'est pas mis à jour disparaît du haut de la boîte de réception.
+// Écrit le fil ET réaligne les trois index de boîte de réception.
+//
+// Le score est `t.rank`, un rang monotone attribué UNIQUEMENT à l'ajout d'un
+// message (voir appendMessage) — pas l'horodatage. Deux raisons :
+//   - deux fils dont le dernier message tombe dans la même milliseconde
+//     seraient départagés au hasard par Redis (ordre lexicographique du membre) ;
+//   - putThread est aussi appelé par markRead / noteAlerted, et une simple
+//     LECTURE ne doit pas faire remonter le fil en tête de la boîte.
+// Repli sur l'horodatage pour un fil créé avant l'introduction du rang.
 async function putThread(t) {
-  const score = String(Date.parse(t.lastMessageAt || t.createdAt));
+  const score = String(t.rank || Date.parse(t.lastMessageAt || t.createdAt));
   await A.kv(['SET', `thread:${t.id}`, JSON.stringify(t)]);
   await A.kv(['ZADD', `threads:teacher:${t.teacherUsername}`, score, t.id]);
   await A.kv(['ZADD', `threads:student:${t.studentUsername}`, score, t.id]);
@@ -478,6 +486,10 @@ async function appendMessage(thread, { fromRole, fromUsername, fromName, body })
   const seq = await A.kv(['INCR', `thread:${thread.id}:seq`]);
   await A.kv(['SET', `msg:${message.id}`, JSON.stringify(message)]);
   await A.kv(['ZADD', `thread:${thread.id}:msgs`, String(seq), message.id]);
+
+  // Rang GLOBAL, pour l'ordre des boîtes de réception. Même raisonnement que
+  // ci-dessus, appliqué entre fils plutôt qu'à l'intérieur d'un fil.
+  thread.rank = Number(await A.kv(['INCR', 'threads:rank']));
 
   const dest = otherSide(fromRole);
   thread.lastMessageAt = sentAt;
@@ -1400,7 +1412,7 @@ module.exports = async (req, res) => {
 
 - [ ] **Step 5: Lancer toute la suite**
 
-Run: `node --test test/`
+Run: `node --test test/*.test.js`
 Expected: `# fail 0`, au moins 32 tests passants.
 
 - [ ] **Step 6: Commit**
@@ -1866,7 +1878,7 @@ Dans `goAdmin()`, ajouter `adminMessagesRefresh();` à la fin de la liste d'appe
 
 - [ ] **Step 5: Lancer toute la suite et vérifier la syntaxe du front**
 
-Run: `node --test test/`
+Run: `node --test test/*.test.js`
 Expected: `# fail 0`.
 
 Run:
@@ -1896,7 +1908,7 @@ git commit -m "feat(messages): supervision admin en lecture seule + parcours de 
 
 ## Vérification finale
 
-- [ ] `node --test test/` — toute la suite au vert
+- [ ] `node --test test/*.test.js` — toute la suite au vert
 - [ ] La mention « L'équipe pédagogique peut consulter ces conversations » apparaît côté enseignant **et** côté élève
 - [ ] Aucun `package.json` n'a été créé — l'invariant zéro dépendance tient
 - [ ] Les 12 règles `.tch-msg*` orphelines de `style.css` sont soit réutilisées, soit supprimées

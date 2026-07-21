@@ -64,9 +64,10 @@ thread:<tid>                 JSON du fil
 thread:<tid>:seq             compteur monotone du fil (INCR)
 thread:<tid>:msgs            ZSET { score: numéro de séquence, member: messageId }
 msg:<mid>                    JSON du message
-threads:teacher:<username>   ZSET { score: lastMessageAt } → boîte de l'enseignant
-threads:student:<username>   ZSET { score: lastMessageAt } → boîte de la famille
-threads:all                  ZSET { score: lastMessageAt } → supervision admin
+threads:rank                 compteur monotone global (INCR)
+threads:teacher:<username>   ZSET { score: rang } → boîte de l'enseignant
+threads:student:<username>   ZSET { score: rang } → boîte de la famille
+threads:all                  ZSET { score: rang } → supervision admin
 ```
 
 ### Identifiant de fil
