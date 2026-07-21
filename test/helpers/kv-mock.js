@@ -63,7 +63,11 @@ function kvExec(store, cmd) {
     }
     case 'ZREVRANGE': {
       const z = store.zsets.get(key) || new Map();
-      const all = [...z.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([m]) => m);
+      // ZREVRANGE est l'exact miroir de ZRANGE, départage des égalités inclus :
+      // ZRANGE trie les scores égaux par membre croissant, donc ZREVRANGE doit
+      // les trier par membre DÉCROISSANT (et non réutiliser un tri croissant),
+      // sous peine de diverger des vraies sémantiques Upstash/Redis.
+      const all = [...z.entries()].sort((a, b) => b[1] - a[1] || b[0].localeCompare(a[0])).map(([m]) => m);
       const start = Number(rest[0]) || 0;
       const stop = Number(rest[1]);
       return all.slice(start, stop === -1 ? undefined : stop + 1);
