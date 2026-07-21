@@ -1019,13 +1019,51 @@ git commit -m "feat(messages): e-mail d alerte nommant l enfant concerne"
 
 **Files:**
 - Create: `api/messages.js`
+- Create: `test/helpers/http.js`
 - Create: `test/messages-endpoint.test.js`
 
 **Interfaces:**
 - Consumes: tout `api/_messages.js`, `A.verifyToken`, `A.signToken`, `N.notifyNewMessage`.
 - Produces: le point d'entrée. Actions : `threads.list`, `thread.open`, `message.send`, `contacts.list`.
 
-- [ ] **Step 1: Écrire les tests en échec**
+- [ ] **Step 1: Écrire l'utilitaire d'appel HTTP**
+
+Ce couple `req`/`res` factice sert aux tâches 6 **et** 8 : il vit donc dans un fichier
+partagé plutôt que recopié dans chaque suite.
+
+Create `test/helpers/http.js`:
+
+```js
+// Faux couple req/res compatible avec la signature des fonctions Vercel
+// (res.status().json()), pour appeler un point d'entrée sans serveur HTTP.
+
+function faireRes() {
+  const res = { statusCode: 200, body: null, headers: {} };
+  res.status = (c) => { res.statusCode = c; return res; };
+  res.json = (o) => { res.body = o; return res; };
+  res.setHeader = (k, v) => { res.headers[k] = v; };
+  res.send = (b) => { res.body = b; return res; };
+  return res;
+}
+
+// Appelle un handler Vercel en POST, avec jeton facultatif.
+function appeler(handler) {
+  return async function appel(body, token) {
+    const req = {
+      method: 'POST',
+      headers: token ? { authorization: 'Bearer ' + token } : {},
+      body, query: {}
+    };
+    const res = faireRes();
+    await handler(req, res);
+    return res;
+  };
+}
+
+module.exports = { faireRes, appeler };
+```
+
+- [ ] **Step 2: Écrire les tests en échec**
 
 Create `test/messages-endpoint.test.js`:
 
@@ -1033,27 +1071,14 @@ Create `test/messages-endpoint.test.js`:
 const { test } = require('node:test');
 const assert = require('node:assert');
 const { installHarness } = require('./helpers/harness');
+const { appeler } = require('./helpers/http');
 
 const H = installHarness();
 const A = require('../api/_auth');
 const S = require('../api/_schedule');
 const M = require('../api/_messages');
-const handler = require('../api/messages');
+const appel = appeler(require('../api/messages'));
 
-// Faux couple req/res compatible avec la signature Vercel.
-function faireRes() {
-  const res = { statusCode: 200, body: null, headers: {} };
-  res.status = (c) => { res.statusCode = c; return res; };
-  res.json = (o) => { res.body = o; return res; };
-  res.setHeader = (k, v) => { res.headers[k] = v; };
-  return res;
-}
-async function appel(body, token) {
-  const req = { method: 'POST', headers: token ? { authorization: 'Bearer ' + token } : {}, body };
-  const res = faireRes();
-  await handler(req, res);
-  return res;
-}
 const jeton = (sub, role) => A.signToken({ sub, role, email: '' }, 3600);
 
 async function ecole() {
@@ -1169,12 +1194,12 @@ test('contacts.list ne propose que les interlocuteurs autorises', async () => {
 });
 ```
 
-- [ ] **Step 2: Lancer les tests pour les voir échouer**
+- [ ] **Step 3: Lancer les tests pour les voir échouer**
 
 Run: `node --test test/messages-endpoint.test.js`
 Expected: FAIL — `Cannot find module '../api/messages'`.
 
-- [ ] **Step 3: Implémenter**
+- [ ] **Step 4: Implémenter**
 
 Create `api/messages.js`:
 
@@ -1286,6 +1311,13 @@ module.exports = async (req, res) => {
         return;
       }
 
+      // Garde-fou AVANT toute écriture : placé après la résolution du fil, une
+      // rafale bloquée aurait quand même créé les fils au passage.
+      if (await M.rateLimited(me)) {
+        res.status(429).json({ ok: false, error: 'too_many', message: 'Trop de messages envoyés. Réessaie dans quelques minutes.' });
+        return;
+      }
+
       // Résolution du fil : soit il existe, soit on le crée après contrôle du droit.
       let thread;
       if (body.threadId) {
@@ -1303,11 +1335,6 @@ module.exports = async (req, res) => {
           return;
         }
         thread = await M.ensureThread({ teacherUsername, studentUsername });
-      }
-
-      if (await M.rateLimited(me)) {
-        res.status(429).json({ ok: false, error: 'too_many', message: 'Trop de messages envoyés. Réessaie dans quelques minutes.' });
-        return;
       }
 
       const acct = role === 'teacher' ? await A.getTeacher(me) : await A.getUser(me);
@@ -1336,15 +1363,15 @@ module.exports = async (req, res) => {
 };
 ```
 
-- [ ] **Step 4: Lancer toute la suite**
+- [ ] **Step 5: Lancer toute la suite**
 
 Run: `node --test test/`
 Expected: `# fail 0`, au moins 32 tests passants.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add api/messages.js test/messages-endpoint.test.js
+git add api/messages.js test/helpers/http.js test/messages-endpoint.test.js
 git commit -m "feat(messages): point d entree HTTP avec cloisonnement et supervision"
 ```
 
@@ -1580,7 +1607,33 @@ Ajouter la fonction de navigation près de `goDashboard` :
   function goMessages() { switchView('viewMessages'); KVS_Messages.openInbox('stuMsgHost', 'student'); }
 ```
 
-Déclarer la vue dans `switchView` (tableau des vues à masquer) et dans `NAV_VIEWS`, puis exporter `goMessages` dans `APP`.
+Déclarer la vue aux trois endroits qui l'exigent.
+
+Dans `switchView`, ajouter `'viewMessages'` au tableau des vues masquées :
+
+```js
+    ['viewLanding','viewDashboard','viewSandbox','viewResources','viewCommunity','viewParents','viewReferral','viewProfile','viewLoop','viewTeacher','viewBooking','viewAdmin','viewMessages'].forEach(v => hide(v));
+```
+
+Dans le même `switchView`, ajouter le titre de page — insérer cette ligne dans la
+cascade de ternaires, juste avant la ligne `target === 'viewTeacher' ? …` :
+
+```js
+                     target === 'viewMessages' ? 'Messages — Kodingvillageschool' :
+```
+
+Dans `NAV_VIEWS`, ajouter la vue pour que la barre de navigation mobile reste visible :
+
+```js
+  const NAV_VIEWS = new Set(['viewDashboard','viewSandbox','viewResources','viewCommunity','viewParents','viewReferral','viewProfile','viewLoop','viewMessages']);
+```
+
+Enfin, exporter `goMessages` dans l'objet `APP` retourné en fin d'IIFE, sur la ligne
+qui contient déjà `goResources` :
+
+```js
+    goMessages,
+```
 
 - [ ] **Step 5: Ajouter les styles**
 
@@ -1654,24 +1707,14 @@ const { test } = require('node:test');
 const assert = require('node:assert');
 const { installHarness } = require('./helpers/harness');
 
+const { appeler } = require('./helpers/http');
+
 const H = installHarness();
 const A = require('../api/_auth');
 const S = require('../api/_schedule');
 const M = require('../api/_messages');
-const handler = require('../api/messages');
+const appel = appeler(require('../api/messages'));
 
-function faireRes() {
-  const res = { statusCode: 200, body: null };
-  res.status = (c) => { res.statusCode = c; return res; };
-  res.json = (o) => { res.body = o; return res; };
-  res.setHeader = () => {};
-  return res;
-}
-async function appel(body, token) {
-  const res = faireRes();
-  await handler({ method: 'POST', headers: { authorization: 'Bearer ' + token }, body }, res);
-  return res;
-}
 const jeton = (sub, role) => A.signToken({ sub, role, email: '' }, 3600);
 
 test('parcours complet : la famille ecrit, le prof repond, l admin supervise', async () => {
