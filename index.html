@@ -375,9 +375,10 @@
 
       <form class="booking-form" id="admCreateForm" onsubmit="return APP.adminCreate(event)" novalidate>
         <div class="bk-grid">
-          <div class="bk-field"><label for="admFirst">Prénom *</label><input id="admFirst" type="text" required placeholder="Bilal"></div>
+          <div class="bk-field"><label for="admFirst">Prénom *</label><input id="admFirst" type="text" required placeholder="Bilal" onblur="APP.adminSuggestUsername('student')"></div>
           <div class="bk-field"><label for="admLast">Nom *</label><input id="admLast" type="text" required placeholder="Keita"></div>
-          <div class="bk-field"><label for="admEmail">E-mail de l'élève *</label><input id="admEmail" type="email" required placeholder="bilal@email.com"></div>
+          <div class="bk-field"><label for="admUsername">Identifiant unique <span class="bk-hint">— auto depuis le prénom, modifiable</span></label><input id="admUsername" type="text" placeholder="bilal" autocapitalize="none" spellcheck="false"></div>
+          <div class="bk-field"><label for="admEmail">E-mail de contact *</label><input id="admEmail" type="email" required placeholder="parent@email.com"></div>
           <div class="bk-field"><label for="admPhone">Téléphone <span class="bk-hint">— requis pour les rappels WhatsApp</span></label><input id="admPhone" type="tel" placeholder="+1 604 555 1234"></div>
           <div class="bk-field"><label for="admSlot">Créneau de la session</label><input id="admSlot" type="text" placeholder="Lun 17:00"></div>
         </div>
@@ -393,8 +394,42 @@
       </div>
       <div class="adm-table-wrap">
         <table class="adm-table">
-          <thead><tr><th>Élève</th><th>E-mail</th><th>Téléphone</th><th>Session</th><th>Accès</th><th>Actions</th></tr></thead>
+          <thead><tr><th>Élève</th><th>Identifiant</th><th>E-mail</th><th>Téléphone</th><th>Session</th><th>Accès</th><th>Actions</th></tr></thead>
           <tbody id="admTbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Enseignants — comptes professeurs (rôle 'teacher'), assignables aux séances -->
+    <div class="booking-card adm-card">
+      <div class="booking-head">
+        <div class="booking-step-pill">Espace administration</div>
+        <h1>Enseignants</h1>
+        <p>Crée les comptes professeurs, puis assigne-les à leurs séances. Chaque enseignant reçoit un rappel automatique avant ses cours.</p>
+      </div>
+
+      <form class="booking-form" id="admTeacherForm" onsubmit="return APP.adminTeacherCreate(event)" novalidate>
+        <div class="bk-grid">
+          <div class="bk-field"><label for="admTFirst">Prénom *</label><input id="admTFirst" type="text" required placeholder="Awa" onblur="APP.adminSuggestUsername('teacher')"></div>
+          <div class="bk-field"><label for="admTLast">Nom *</label><input id="admTLast" type="text" required placeholder="Diop"></div>
+          <div class="bk-field"><label for="admTUsername">Identifiant unique <span class="bk-hint">— auto depuis le prénom, modifiable</span></label><input id="admTUsername" type="text" placeholder="awa" autocapitalize="none" spellcheck="false"></div>
+          <div class="bk-field"><label for="admTEmail">E-mail de l'enseignant *</label><input id="admTEmail" type="email" required placeholder="awa@email.com"></div>
+          <div class="bk-field"><label for="admTPhone">Téléphone <span class="bk-hint">— facultatif</span></label><input id="admTPhone" type="tel" placeholder="+1 604 555 1234"></div>
+        </div>
+        <p class="bk-error" id="admTError" style="display:none"></p>
+        <button type="submit" class="btn btn-trial">Créer l'enseignant <span class="ui-icon-container is-sm"><i data-lucide="user-plus"></i></span></button>
+      </form>
+
+      <div class="adm-cred" id="admTCred" style="display:none"></div>
+
+      <div class="adm-table-head">
+        <h2>Enseignants (<span id="admTCount">0</span>)</h2>
+        <button class="btn-ghost" onclick="APP.adminTeachersRefresh()"><span class="ui-icon-container is-sm"><i data-lucide="refresh-cw"></i></span> Rafraîchir</button>
+      </div>
+      <div class="adm-table-wrap">
+        <table class="adm-table">
+          <thead><tr><th>Enseignant</th><th>Identifiant</th><th>E-mail</th><th>Téléphone</th><th>Accès</th><th>Actions</th></tr></thead>
+          <tbody id="admTTbody"></tbody>
         </table>
       </div>
     </div>
@@ -429,6 +464,10 @@
             <label for="admSesDuration">Durée (minutes)</label>
             <input id="admSesDuration" type="number" min="15" max="240" step="15" value="60">
           </div>
+          <div class="bk-field">
+            <label for="admSesTeacher">Enseignant <span class="bk-hint">— reçoit le rappel prof</span></label>
+            <select id="admSesTeacher"><option value="">— Aucun —</option></select>
+          </div>
           <div class="bk-field bk-field-wide">
             <label for="admSesStudents">Élèves inscrits * <span class="bk-hint">— Ctrl/Cmd + clic pour en choisir plusieurs</span></label>
             <select id="admSesStudents" multiple size="5"></select>
@@ -444,7 +483,7 @@
       </div>
       <div class="adm-table-wrap">
         <table class="adm-table">
-          <thead><tr><th>Cours</th><th>Début</th><th>Durée</th><th>Élèves</th><th>Rappel</th><th>Actions</th></tr></thead>
+          <thead><tr><th>Cours</th><th>Enseignant</th><th>Début</th><th>Durée</th><th>Élèves</th><th>Rappel</th><th>Actions</th></tr></thead>
           <tbody id="admSesTbody"></tbody>
         </table>
       </div>
@@ -459,6 +498,7 @@
   <div class="tch">
     <header class="tch-top">
       <div class="logo"><div class="logo-m"><svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M24 8 4 18l20 10 20-10z" fill="#FFC233"/><path d="M13 23v9c0 3 5 6 11 6s11-3 11-6v-9l-11 5.5z" fill="#4F46E5"/><path d="M44 18v15" stroke="#10B981" stroke-width="2.5" stroke-linecap="round"/><circle cx="44" cy="35" r="3" fill="#10B981"/></svg></div><span class="logo-n">KodingvillageSchool · <span class="brand-teal">Espace Enseignant</span></span></div>
+      <button class="btn-outline" onclick="APP.openChangePassword()" style="margin-right:8px"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Mot de passe</button>
       <button class="btn-outline" onclick="APP.confirmLogout()"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>Déconnexion</button>
     </header>
     <main class="tch-main" id="tchMain"></main>
@@ -880,6 +920,7 @@
       <button class="btn-outline" onclick="APP.goDashboard()"><span class="ui-icon-container is-sm"><i data-lucide="arrow-left"></i></span> Retour à l'accueil</button>
       <h1 class="res-title">Mon Profil</h1>
       <div class="prof-actions">
+        <button class="btn-outline" onclick="APP.openChangePassword()"><span class="ui-icon-container is-sm"><i data-lucide="lock"></i></span> Mot de passe</button>
         <button class="btn-outline" onclick="APP.profileCancel()">Annuler</button>
         <button class="btn-submit prof-save" onclick="APP.profileSave()">Enregistrer</button>
       </div>
@@ -1434,7 +1475,7 @@ print("Bonne séance de code, Bilal ! 🚀")
     const body = $('loginBody');
     body.innerHTML = `
         <form class="auth-form" onsubmit="return APP.doSignIn(event)" autocomplete="on">
-          <div class="form-g"><label for="liEmail">E-mail</label><input id="liEmail" type="email" autocomplete="username" required placeholder="vous@exemple.com"></div>
+          <div class="form-g"><label for="liEmail">Veuillez entrer l'e-mail ou le nom d'utilisateur</label><input id="liEmail" type="text" autocomplete="username" required placeholder="prenom  ·  ou  ·  vous@exemple.com"></div>
           <div class="form-g"><label for="liPass">Mot de passe</label><input id="liPass" type="password" autocomplete="current-password" required placeholder="••••••••"></div>
           <p class="auth-error" id="authError" style="display:none"></p>
           <button type="submit" class="btn-submit">Se connecter →</button>
@@ -1489,8 +1530,9 @@ print("Bonne séance de code, Bilal ! 🚀")
   // back-end est indisponible (dev local sans serverless) ou pas encore configuré.
   async function doSignIn(e) {
     if (e) e.preventDefault();
-    const email = $('liEmail').value.trim().toLowerCase(), p = $('liPass').value;
-    if (!email || !p) { _authErr('⚠️ Saisis ton e-mail et ton mot de passe.'); return false; }
+    // L'identifiant accepte le nom d'utilisateur OU l'e-mail (le serveur départage).
+    const identifier = $('liEmail').value.trim().toLowerCase(), p = $('liPass').value;
+    if (!identifier || !p) { _authErr('⚠️ Saisis ton e-mail ou nom d\'utilisateur et ton mot de passe.'); return false; }
     const btn = document.querySelector('#loginBody .btn-submit');
     const oldLabel = btn ? btn.innerHTML : '';
     if (btn) { btn.disabled = true; btn.innerHTML = 'Connexion…'; }
@@ -1498,12 +1540,12 @@ print("Bonne séance de code, Bilal ! 🚀")
     try {
       const res = await fetch('/api/auth', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'login', email, password: p })
+        body: JSON.stringify({ action: 'login', identifier, password: p })
       });
       const data = await res.json().catch(() => null);
       if (res.ok && data && data.ok && data.token) {              // authentifié par le serveur
         if (btn) { btn.disabled = false; btn.innerHTML = oldLabel; }
-        _enterAppFromServer(data, email);
+        _enterAppFromServer(data, identifier);
         return false;
       }
       if (res.status === 401) {                                   // back-end joignable, identifiants refusés
@@ -1518,8 +1560,8 @@ print("Bonne séance de code, Bilal ! 🚀")
 
     if (fallback) {
       // Repli local (démo) : base localStorage historique — utile en dev / avant config back-end.
-      const user = _getUsers().find(u => u.email === email && u.password === p);
-      if (!user) { _authErr('⚠️ E-mail ou mot de passe incorrect.'); return false; }
+      const user = _getUsers().find(u => (u.email === identifier || u.username === identifier) && u.password === p);
+      if (!user) { _authErr('⚠️ E-mail/nom d\'utilisateur ou mot de passe incorrect.'); return false; }
       _enterApp(user, false);
     }
     return false;
@@ -1534,8 +1576,69 @@ print("Bonne séance de code, Bilal ! 🚀")
       toast('Bienvenue, admin 🔐', 'ok', '🔐');
       return;
     }
+    if (data.role === 'teacher') {
+      // Jeton stocké comme pour l'élève : /api/my-sessions renvoie les séances
+      // animées par cet enseignant (filtrage par rôle dans le jeton signé).
+      try { sessionStorage.setItem('kvs_token', data.token); } catch (_) {}
+      closeModal();
+      goTeacher();
+      toast('Bienvenue, ' + (data.firstName || 'professeur') + ' 👨‍🏫', 'ok', '👨‍🏫');
+      _maybePromptPasswordChange(data);
+      return;
+    }
     try { sessionStorage.setItem('kvs_token', data.token); } catch (_) {}
-    _enterApp({ firstName: data.firstName || '', lastName: data.lastName || '', email }, false);
+    _enterApp({ firstName: data.firstName || '', lastName: data.lastName || '', email: data.email || email }, false);
+    _maybePromptPasswordChange(data);
+  }
+
+  // === Changement de mot de passe par l'utilisateur (élève / enseignant) ===
+  // Après une première connexion avec le mot de passe temporaire, on invite
+  // l'utilisateur à définir son propre mot de passe (mustChangePassword).
+  function _maybePromptPasswordChange(data) {
+    if (data && data.mustChangePassword) {
+      setTimeout(() => openChangePassword(true), 600);
+    }
+  }
+
+  function openChangePassword(forced) {
+    const intro = forced
+      ? '<p class="modal-sub">Pour ta sécurité, choisis ton propre mot de passe (le temporaire ne sera plus valable).</p>'
+      : '<p class="modal-sub">Choisis un nouveau mot de passe personnel.</p>';
+    modal('Changer mon mot de passe 🔑', `
+      ${intro}
+      <form onsubmit="return APP.submitChangePassword(event)" novalidate>
+        <div class="form-g"><label for="cpOld">Ancien mot de passe (temporaire)</label><input id="cpOld" type="password" autocomplete="current-password" required placeholder="••••••••"></div>
+        <div class="form-g"><label for="cpNew">Nouveau mot de passe</label><input id="cpNew" type="password" autocomplete="new-password" required placeholder="8 caractères minimum"></div>
+        <div class="form-g"><label for="cpConfirm">Confirme le nouveau mot de passe</label><input id="cpConfirm" type="password" autocomplete="new-password" required placeholder="••••••••"></div>
+        <p class="bk-error" id="cpError" style="display:none"></p>
+        <button type="submit" class="btn-submit">Enregistrer le nouveau mot de passe</button>
+      </form>`);
+  }
+
+  function _cpErr(msg) { const e = $('cpError'); if (e) { e.textContent = msg || ''; e.style.display = msg ? 'block' : 'none'; } }
+
+  async function submitChangePassword(e) {
+    if (e) e.preventDefault();
+    _cpErr('');
+    const oldPassword = $('cpOld').value, newPassword = $('cpNew').value, confirm = $('cpConfirm').value;
+    if (!oldPassword || !newPassword) { _cpErr('⚠️ Renseigne l\'ancien et le nouveau mot de passe.'); return false; }
+    if (newPassword.length < 8) { _cpErr('⚠️ Le nouveau mot de passe doit faire au moins 8 caractères.'); return false; }
+    if (newPassword !== confirm) { _cpErr('⚠️ La confirmation ne correspond pas.'); return false; }
+    let token = ''; try { token = sessionStorage.getItem('kvs_token') || ''; } catch (_) {}
+    if (!token) { _cpErr('🔒 Session expirée — reconnecte-toi.'); return false; }
+    try {
+      const res = await fetch('/api/auth', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'change_password', token, oldPassword, newPassword })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (data && data.ok) { closeModal(); toast('Mot de passe mis à jour ✅', 'ok', '🔑'); return false; }
+      if (data && data.error === 'wrong_password') { _cpErr('⚠️ Ancien mot de passe incorrect.'); return false; }
+      if (data && data.error === 'weak_password') { _cpErr('⚠️ ' + (data.message || 'Mot de passe trop court.')); return false; }
+      if (res.status === 401) { _cpErr('🔒 Session expirée — reconnecte-toi.'); return false; }
+      _cpErr('⚠️ Modification impossible. Réessaie.');
+    } catch (_) { _cpErr('⚠️ Réseau indisponible. Réessaie.'); }
+    return false;
   }
 
   function _enterApp(user, isNew) {
@@ -1608,7 +1711,7 @@ print("Bonne séance de code, Bilal ! 🚀")
   const _admEsc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   function _admErr(msg) { const e = $('admError'); if (e) { e.textContent = msg || ''; e.style.display = msg ? 'block' : 'none'; } }
 
-  function goAdmin() { switchView('viewAdmin'); _admShowTz(); adminLeadsRefresh(); adminRefresh(); adminSessionsRefresh(); }
+  function goAdmin() { switchView('viewAdmin'); _admShowTz(); adminLeadsRefresh(); adminRefresh(); adminTeachersRefresh(); adminSessionsRefresh(); }
   function adminLogout() { _setAdminToken(null); switchView('viewLanding'); }
 
   async function adminCreate(e) {
@@ -1616,25 +1719,42 @@ print("Bonne séance de code, Bilal ! 🚀")
     _admErr('');
     const firstName = $('admFirst').value.trim(), lastName = $('admLast').value.trim();
     const email = $('admEmail').value.trim().toLowerCase(), slot = $('admSlot').value.trim();
-    const phone = $('admPhone').value.trim();
+    const phone = $('admPhone').value.trim(), username = $('admUsername').value.trim().toLowerCase();
     if (!firstName || !lastName || !email) { _admErr('⚠️ Prénom, nom et e-mail sont obligatoires.'); return false; }
-    const { status, data } = await _adminApi('create', { firstName, lastName, email, phone, slot });
+    const { status, data } = await _adminApi('create', { firstName, lastName, email, phone, slot, username });
     if (status === 401) { _admErr('🔒 Session admin expirée — reconnecte-toi.'); return false; }
-    if (status === 409) { _admErr('⚠️ Un compte existe déjà avec cet e-mail.'); return false; }
+    if (status === 409) { _admErr('⚠️ ' + (data.message || 'Cet identifiant est déjà pris.')); return false; }
     if (!data.ok) { _admErr('⚠️ Création impossible (' + (data.error || 'erreur') + ').'); return false; }
-    _admShowCred(`Compte créé pour <strong>${_admEsc(email)}</strong>.`, data.tempPassword);
+    _admShowCred(`Compte créé — identifiant <strong>${_admEsc(data.username)}</strong> (e-mail : ${_admEsc(email)}).`, data.tempPassword);
     $('admCreateForm').reset();
     adminRefresh();
     return false;
   }
 
-  function _admShowCred(prefixHtml, tempPassword) {
-    const box = $('admCred');
-    box.innerHTML = `${prefixHtml}<br>Mot de passe temporaire : <code id="admTempPwd">${_admEsc(tempPassword)}</code> <button class="btn-ghost adm-copy" onclick="APP.adminCopyPwd()">Copier</button><br><span class="adm-cred-hint">⚠️ Note-le : il ne sera plus réaffiché. L'élève le recevra à l'envoi des accès.</span>`;
+  // Suggère un identifiant à partir du prénom quand le champ username est laissé vide.
+  async function adminSuggestUsername(kind) {
+    const firstId = kind === 'teacher' ? 'admTFirst' : 'admFirst';
+    const userId = kind === 'teacher' ? 'admTUsername' : 'admUsername';
+    const firstEl = $(firstId), userEl = $(userId);
+    if (!firstEl || !userEl) return;
+    if (userEl.value.trim()) return;                 // l'admin a déjà saisi un identifiant
+    const firstName = firstEl.value.trim();
+    if (!firstName) return;
+    const { data } = await _adminApi('username.suggest', { firstName });
+    if (data && data.ok && !userEl.value.trim()) userEl.value = data.username;
+  }
+
+  // Affiche un mot de passe temporaire dans un encart donné (élève OU enseignant).
+  function _admShowCredIn(boxId, codeId, prefixHtml, tempPassword) {
+    const box = $(boxId); if (!box) return;
+    box.innerHTML = `${prefixHtml}<br>Mot de passe temporaire : <code id="${codeId}">${_admEsc(tempPassword)}</code> <button class="btn-ghost adm-copy" onclick="APP.adminCopyPwd('${codeId}')">Copier</button><br><span class="adm-cred-hint">⚠️ Note-le : il ne sera plus réaffiché. La personne le recevra à l'envoi des accès.</span>`;
     box.style.display = 'block';
   }
-  function adminCopyPwd() {
-    const el = $('admTempPwd'); if (!el) return;
+  function _admShowCred(prefixHtml, tempPassword) {
+    _admShowCredIn('admCred', 'admTempPwd', prefixHtml, tempPassword);
+  }
+  function adminCopyPwd(codeId) {
+    const el = $(codeId || 'admTempPwd'); if (!el) return;
     try { navigator.clipboard.writeText(el.textContent).then(() => toast('Mot de passe copié 📋', 'ok', '📋')); } catch (_) {}
   }
 
@@ -1646,25 +1766,107 @@ print("Bonne séance de code, Bilal ! 🚀")
     const rows = (data && data.students) || [];
     $('admCount').textContent = rows.length;
     $('admTbody').innerHTML = rows.map(s => {
+      const un = _admEsc(s.username);
       const em = _admEsc(s.email);
       const badge = s.credsSentAt ? '<span class="adm-badge ok">Envoyés</span>' : '<span class="adm-badge no">Non envoyés</span>';
       // Téléphone absent → le rappel WhatsApp sera ignoré pour cet élève.
       const tel = s.phone ? _admEsc(s.phone) : '<span class="adm-muted" title="Sans téléphone, pas de rappel WhatsApp">—</span>';
       return `<tr>
         <td>${_admEsc(s.firstName)} ${_admEsc(s.lastName)}</td>
+        <td><code>${un}</code></td>
         <td>${em}</td>
         <td>${tel}</td>
         <td>${_admEsc(s.slot) || '—'}</td>
         <td>${badge}</td>
         <td class="adm-actions">
-          <button class="btn-ghost adm-send" onclick="APP.adminSend('${em}')">Envoyer les accès</button>
-          <button class="btn-ghost" onclick="APP.adminReset('${em}')">Réinit.</button>
-          <button class="btn-ghost adm-del" onclick="APP.adminDelete('${em}')">Suppr.</button>
+          <button class="btn-ghost adm-send" onclick="APP.adminSend('${un}')">Envoyer les accès</button>
+          <button class="btn-ghost" onclick="APP.adminReset('${un}')">Réinit.</button>
+          <button class="btn-ghost adm-del" onclick="APP.adminDelete('${un}')">Suppr.</button>
         </td></tr>`;
-    }).join('') || '<tr><td colspan="6" class="adm-empty">Aucun élève pour l\'instant.</td></tr>';
+    }).join('') || '<tr><td colspan="7" class="adm-empty">Aucun élève pour l\'instant.</td></tr>';
 
     // La liste des élèves inscriptibles à une séance suit celle des comptes.
     _admFillStudentPicker(rows);
+  }
+
+  // === ADMIN — enseignants (comptes professeurs, assignables aux séances) ===
+
+  function _admTErr(msg) { const e = $('admTError'); if (e) { e.textContent = msg || ''; e.style.display = msg ? 'block' : 'none'; } }
+
+  // Liste des enseignants pour le sélecteur du formulaire de séance (préserve la sélection).
+  let _admTeachers = [];
+  function _admFillTeacherPicker(rows) {
+    const sel = $('admSesTeacher'); if (!sel) return;
+    const keep = sel.value;
+    sel.innerHTML = '<option value="">— Aucun —</option>' + rows.map(t =>
+      `<option value="${_admEsc(t.username)}"${keep === t.username ? ' selected' : ''}>${_admEsc(t.firstName)} ${_admEsc(t.lastName)} — ${_admEsc(t.username)}</option>`
+    ).join('');
+  }
+
+  async function adminTeacherCreate(e) {
+    if (e) e.preventDefault();
+    _admTErr('');
+    const firstName = $('admTFirst').value.trim(), lastName = $('admTLast').value.trim();
+    const email = $('admTEmail').value.trim().toLowerCase(), phone = $('admTPhone').value.trim();
+    const username = $('admTUsername').value.trim().toLowerCase();
+    if (!firstName || !lastName || !email) { _admTErr('⚠️ Prénom, nom et e-mail sont requis.'); return false; }
+    const { status, data } = await _adminApi('teacher.create', { firstName, lastName, email, phone, username });
+    if (status === 401) { _admTErr('🔒 Session admin expirée — reconnecte-toi.'); return false; }
+    if (status === 409) { _admTErr('⚠️ ' + (data.message || 'Cet identifiant est déjà pris.')); return false; }
+    if (!data.ok) { _admTErr('⚠️ ' + (data.message || 'Création impossible (' + (data.error || 'erreur') + ').')); return false; }
+    _admShowCredIn('admTCred', 'admTTempPwd', `Enseignant créé — identifiant <strong>${_admEsc(data.username)}</strong> (e-mail : ${_admEsc(email)}).`, data.tempPassword);
+    $('admTeacherForm').reset();
+    adminTeachersRefresh();
+    return false;
+  }
+
+  let _admTSeq = 0;
+  async function adminTeachersRefresh() {
+    const seq = ++_admTSeq;
+    const { data } = await _adminApi('teacher.list');
+    if (seq !== _admTSeq) return; // résultat périmé
+    const rows = (data && data.teachers) || [];
+    _admTeachers = rows;
+    $('admTCount').textContent = rows.length;
+    $('admTTbody').innerHTML = rows.map(t => {
+      const un = _admEsc(t.username);
+      const em = _admEsc(t.email);
+      const badge = t.credsSentAt ? '<span class="adm-badge ok">Envoyés</span>' : '<span class="adm-badge no">Non envoyés</span>';
+      const tel = t.phone ? _admEsc(t.phone) : '<span class="adm-muted">—</span>';
+      return `<tr>
+        <td>${_admEsc(t.firstName)} ${_admEsc(t.lastName)}</td>
+        <td><code>${un}</code></td>
+        <td>${em}</td>
+        <td>${tel}</td>
+        <td>${badge}</td>
+        <td class="adm-actions">
+          <button class="btn-ghost adm-send" onclick="APP.adminTeacherSend('${un}')">Envoyer les accès</button>
+          <button class="btn-ghost" onclick="APP.adminTeacherReset('${un}')">Réinit.</button>
+          <button class="btn-ghost adm-del" onclick="APP.adminTeacherDelete('${un}')">Suppr.</button>
+        </td></tr>`;
+    }).join('') || '<tr><td colspan="6" class="adm-empty">Aucun enseignant pour l\'instant.</td></tr>';
+    // Le sélecteur d'enseignant du formulaire de séance suit la liste des comptes.
+    _admFillTeacherPicker(rows);
+  }
+
+  async function adminTeacherSend(username) {
+    const { data } = await _adminApi('teacher.send', { username });
+    if (data.ok) { toast('Accès envoyés à ' + username + ' 📩', 'ok', '📩'); adminTeachersRefresh(); }
+    else if (data.error === 'send_failed') { toast('Envoi échoué (Resend) — vérifie la clé et le domaine.', 'err', '⚠️'); }
+    else if (data.error === 'no_temp_password') { toast('Réinitialise le mot de passe avant de renvoyer.', 'err', '⚠️'); }
+    else if (data.error === 'no_email') { toast('Ce compte n\'a pas d\'e-mail de contact valide.', 'err', '⚠️'); }
+    else { toast('Envoi impossible.', 'err', '⚠️'); }
+  }
+  async function adminTeacherReset(username) {
+    const { data } = await _adminApi('teacher.reset', { username });
+    if (data.ok) { _admShowCredIn('admTCred', 'admTTempPwd', `Nouveau mot de passe pour <strong>${_admEsc(username)}</strong>.`, data.tempPassword); adminTeachersRefresh(); }
+    else { toast('Réinitialisation impossible.', 'err', '⚠️'); }
+  }
+  async function adminTeacherDelete(username) {
+    if (!window.confirm('Supprimer définitivement le compte enseignant « ' + username + ' » ?')) return;
+    const { data } = await _adminApi('teacher.delete', { username });
+    if (data.ok) { toast('Enseignant supprimé.', 'ok', '🗑️'); adminTeachersRefresh(); }
+    else { toast('Suppression impossible.', 'err', '⚠️'); }
   }
 
   // === ADMIN — séances planifiées (socle des rappels automatiques) ===
@@ -1677,7 +1879,7 @@ print("Bonne séance de code, Bilal ! 🚀")
     const sel = $('admSesStudents'); if (!sel) return;
     const keep = new Set(Array.from(sel.selectedOptions).map(o => o.value));
     sel.innerHTML = rows.map(s =>
-      `<option value="${_admEsc(s.email)}"${keep.has(s.email) ? ' selected' : ''}>${_admEsc(s.firstName)} ${_admEsc(s.lastName)} — ${_admEsc(s.email)}${s.phone ? '' : ' (sans tél.)'}</option>`
+      `<option value="${_admEsc(s.username)}"${keep.has(s.username) ? ' selected' : ''}>${_admEsc(s.firstName)} ${_admEsc(s.lastName)} — ${_admEsc(s.username)}${s.phone ? '' : ' (sans tél.)'}</option>`
     ).join('');
   }
 
@@ -1706,6 +1908,7 @@ print("Bonne séance de code, Bilal ! 🚀")
     const when = $('admSesWhen').value;
     const durationMin = parseInt($('admSesDuration').value, 10) || 60;
     const students = Array.from($('admSesStudents').selectedOptions).map(o => o.value);
+    const teacherUsername = $('admSesTeacher') ? $('admSesTeacher').value : '';
 
     if (!when) { _admSesErr('⚠️ Choisis une date et une heure de début.'); return false; }
     if (!students.length) { _admSesErr('⚠️ Sélectionne au moins un élève inscrit.'); return false; }
@@ -1717,7 +1920,7 @@ print("Bonne séance de code, Bilal ! 🚀")
     if (d.getTime() <= Date.now()) { _admSesErr('⚠️ La séance doit être dans le futur (sinon aucun rappel ne partira).'); return false; }
 
     const { status, data } = await _adminApi('session.create', {
-      courseId, courseLabel, startsAt: d.toISOString(), durationMin, students
+      courseId, courseLabel, startsAt: d.toISOString(), durationMin, students, teacherUsername
     });
     if (status === 401) { _admSesErr('🔒 Session admin expirée — reconnecte-toi.'); return false; }
     if (!data.ok) { _admSesErr('⚠️ ' + (data.message || 'Planification impossible (' + (data.error || 'erreur') + ').')); return false; }
@@ -1740,8 +1943,12 @@ print("Bonne séance de code, Bilal ! 🚀")
       const rappel = s.remindedAt
         ? `<span class="adm-badge ok">Envoyé</span>`
         : `<span class="adm-badge no">En attente</span>`;
+      const prof = s.teacherName
+        ? _admEsc(s.teacherName)
+        : (s.teacherUsername ? _admEsc(s.teacherUsername) : '<span class="adm-muted">—</span>');
       return `<tr>
         <td>${_admEsc(s.courseLabel || s.courseId)}</td>
+        <td>${prof}</td>
         <td>${_admEsc(_admSesFmt(s.startsAt))}</td>
         <td>${_admEsc(String(s.durationMin || 60))} min</td>
         <td>${(s.students || []).length}</td>
@@ -1749,7 +1956,7 @@ print("Bonne séance de code, Bilal ! 🚀")
         <td class="adm-actions">
           <button class="btn-ghost adm-del" onclick="APP.adminSessionDelete('${_admEsc(s.id)}')">Annuler</button>
         </td></tr>`;
-    }).join('') || '<tr><td colspan="6" class="adm-empty">Aucune séance planifiée.</td></tr>';
+    }).join('') || '<tr><td colspan="7" class="adm-empty">Aucune séance planifiée.</td></tr>';
   }
 
   async function adminSessionDelete(id) {
@@ -1759,21 +1966,22 @@ print("Bonne séance de code, Bilal ! 🚀")
     else { toast('Annulation impossible.', 'err', '⚠️'); }
   }
 
-  async function adminSend(email) {
-    const { data } = await _adminApi('send', { email });
-    if (data.ok) { toast('Accès envoyés à ' + email + ' 📩', 'ok', '📩'); adminRefresh(); }
+  async function adminSend(username) {
+    const { data } = await _adminApi('send', { username });
+    if (data.ok) { toast('Accès envoyés à ' + username + ' 📩', 'ok', '📩'); adminRefresh(); }
     else if (data.error === 'send_failed') { toast('Envoi échoué (Resend) — vérifie la clé et le domaine.', 'err', '⚠️'); }
     else if (data.error === 'no_temp_password') { toast('Réinitialise le mot de passe avant de renvoyer.', 'err', '⚠️'); }
+    else if (data.error === 'no_email') { toast('Ce compte n\'a pas d\'e-mail de contact valide.', 'err', '⚠️'); }
     else { toast('Envoi impossible.', 'err', '⚠️'); }
   }
-  async function adminReset(email) {
-    const { data } = await _adminApi('reset', { email });
-    if (data.ok) { _admShowCred(`Nouveau mot de passe pour <strong>${_admEsc(email)}</strong>.`, data.tempPassword); adminRefresh(); }
+  async function adminReset(username) {
+    const { data } = await _adminApi('reset', { username });
+    if (data.ok) { _admShowCred(`Nouveau mot de passe pour <strong>${_admEsc(username)}</strong>.`, data.tempPassword); adminRefresh(); }
     else { toast('Réinitialisation impossible.', 'err', '⚠️'); }
   }
-  async function adminDelete(email) {
-    if (!window.confirm('Supprimer définitivement le compte de ' + email + ' ?')) return;
-    const { data } = await _adminApi('delete', { email });
+  async function adminDelete(username) {
+    if (!window.confirm('Supprimer définitivement le compte « ' + username + ' » ?')) return;
+    const { data } = await _adminApi('delete', { username });
     if (data.ok) { toast('Compte supprimé.', 'ok', '🗑️'); adminRefresh(); }
     else { toast('Suppression impossible.', 'err', '⚠️'); }
   }
@@ -6157,7 +6365,9 @@ Laboratoire de Codage Vibe|8|fichiers`;
     openLogin, login: loginAndPreload, logout, confirmLogout, modal, closeModal,
     authTab, doSignIn, doSignUp, lpGo, navCourses, lpCourse, bookSlot, joinCommunity, gsSlot, gsCountryChange, bkCountryChange, enrollNow, faqToggle, backToLanding, submitBooking, teacherTab, teacherSortBy, toggleTheme, goTeacher,
     sbActive, mobNav, goSandbox, goDashboard,
-    goAdmin, adminCreate, adminRefresh, adminSend, adminReset, adminDelete, adminCopyPwd, adminLogout,
+    goAdmin, adminCreate, adminRefresh, adminSend, adminReset, adminDelete, adminCopyPwd, adminLogout, adminSuggestUsername,
+    adminTeacherCreate, adminTeachersRefresh, adminTeacherSend, adminTeacherReset, adminTeacherDelete,
+    openChangePassword, submitChangePassword,
     adminLeadsRefresh, adminLeadConvert, adminLeadDelete,
     adminSessionCreate, adminSessionsRefresh, adminSessionDelete,
     goResources, resSelect, resTab, resSearch,

@@ -79,30 +79,118 @@ function verifyToken(token) {
   let body;
   try { body = JSON.parse(unb64url(p).toString('utf8')); } catch (_) { return null; }
   if (!body || typeof body.exp !== 'number' || body.exp < nowSec()) return null;
-  return body; // { email, role, exp }
+  return body; // { sub:username, role, email, exp }
 }
 
-// ---- Comptes élèves en KV ----
-async function getUser(email) {
-  const raw = await kv(['GET', `user:${normEmail(email)}`]);
+// ---- Comptes élèves & enseignants en KV, indexés par IDENTIFIANT UNIQUE (username) ----
+//
+// L'identité de connexion est le `username` (unique GLOBALEMENT, élèves + enseignants
+// confondus), pas l'e-mail. L'e-mail redevient un simple contact, PARTAGEABLE entre
+// plusieurs comptes (fratrie : deux enfants, même e-mail parent, usernames distincts).
+//
+// Clés KV :
+//   user:<username>     → JSON compte élève      ; users:index    → SET des usernames
+//   teacher:<username>  → JSON compte enseignant ; teachers:index → SET des usernames
+//   email:<email>       → SET des usernames ayant cet e-mail (index inverse, login par e-mail)
+//
+// Schéma d'un compte : { username, firstName, lastName, email, phone, slot?,
+//   passHash, tempPassword, mustChangePassword, createdAt, credsSentAt }
+
+// Normalise un username : minuscules, caractères sûrs uniquement, 1..40.
+function normUsername(u) {
+  return String(u == null ? '' : u).trim().toLowerCase()
+    .replace(/[^a-z0-9._-]/g, '').slice(0, 40);
+}
+
+async function _getAccount(prefix, username) {
+  const u = normUsername(username);
+  if (!u) return null;
+  const raw = await kv(['GET', `${prefix}:${u}`]);
   if (!raw) return null;
   try { return JSON.parse(raw); } catch (_) { return null; }
 }
-async function putUser(user) {
-  const email = normEmail(user.email);
-  await kv(['SET', `user:${email}`, JSON.stringify(user)]);
-  await kv(['SADD', 'users:index', email]);
+async function _putAccount(prefix, indexKey, acct) {
+  const username = normUsername(acct.username);
+  if (!username) throw new Error('username requis');
+  const email = normEmail(acct.email);
+  acct.username = username;
+  acct.email = email;
+  // Si l'e-mail a changé lors d'une mise à jour, retire l'ancien lien d'index.
+  const prev = await _getAccount(prefix, username);
+  const prevEmail = prev && normEmail(prev.email);
+  if (prevEmail && prevEmail !== email) await kv(['SREM', `email:${prevEmail}`, username]);
+  await kv(['SET', `${prefix}:${username}`, JSON.stringify(acct)]);
+  await kv(['SADD', indexKey, username]);
+  if (email) await kv(['SADD', `email:${email}`, username]);
 }
-async function listUsers() {
-  const emails = (await kv(['SMEMBERS', 'users:index'])) || [];
+async function _deleteAccount(prefix, indexKey, username) {
+  username = normUsername(username);
+  const prev = await _getAccount(prefix, username);
+  await kv(['DEL', `${prefix}:${username}`]);
+  await kv(['SREM', indexKey, username]);
+  const email = prev && normEmail(prev.email);
+  if (email) await kv(['SREM', `email:${email}`, username]);
+}
+async function _listAccounts(prefix, indexKey) {
+  const usernames = (await kv(['SMEMBERS', indexKey])) || [];
   const out = [];
-  for (const e of emails) { const u = await getUser(e); if (u) out.push(u); }
+  for (const u of usernames) { const a = await _getAccount(prefix, u); if (a) out.push(a); }
   return out;
 }
-async function deleteUser(email) {
-  email = normEmail(email);
-  await kv(['DEL', `user:${email}`]);
-  await kv(['SREM', 'users:index', email]);
+
+// Élèves
+const getUser = (username) => _getAccount('user', username);
+const putUser = (user) => _putAccount('user', 'users:index', user);
+const deleteUser = (username) => _deleteAccount('user', 'users:index', username);
+const listUsers = () => _listAccounts('user', 'users:index');
+
+// Enseignants
+const getTeacher = (username) => _getAccount('teacher', username);
+const putTeacher = (teacher) => _putAccount('teacher', 'teachers:index', teacher);
+const deleteTeacher = (username) => _deleteAccount('teacher', 'teachers:index', username);
+const listTeachers = () => _listAccounts('teacher', 'teachers:index');
+
+// Unicité GLOBALE : un username ne peut pas être à la fois élève et enseignant.
+async function accountExists(username) {
+  const u = normUsername(username);
+  if (!u) return false;
+  return !!(await getUser(u)) || !!(await getTeacher(u));
+}
+
+// Propose un username libre à partir d'une base (ex. prénom) : base, base2, base3…
+async function suggestUsername(base) {
+  let root = normUsername(base);
+  if (!root) root = 'eleve';
+  let candidate = root, i = 2;
+  while (await accountExists(candidate)) {
+    candidate = `${root}${i++}`;
+    if (i > 9999) { candidate = `${root}${nowSec()}`; break; }
+  }
+  return candidate;
+}
+
+// Comptes (élève ou enseignant) partageant un e-mail — pour la connexion par e-mail.
+async function findAccountsByEmail(email) {
+  const e = normEmail(email);
+  if (!e) return [];
+  const usernames = (await kv(['SMEMBERS', `email:${e}`])) || [];
+  const out = [];
+  for (const u of usernames) {
+    const student = await getUser(u);
+    if (student) { out.push({ account: student, role: 'student' }); continue; }
+    const teacher = await getTeacher(u);
+    if (teacher) out.push({ account: teacher, role: 'teacher' });
+  }
+  return out;
+}
+
+// Résout un compte par son username, quel que soit son rôle.
+async function findAccountByUsername(username) {
+  const student = await getUser(username);
+  if (student) return { account: student, role: 'student' };
+  const teacher = await getTeacher(username);
+  if (teacher) return { account: teacher, role: 'teacher' };
+  return null;
 }
 
 // ---- Prospects d'essai (leads) en KV ----
@@ -190,6 +278,8 @@ module.exports = {
   kv, kvConfigured, configured,
   hashPassword, verifyPassword, signToken, verifyToken,
   getUser, putUser, listUsers, deleteUser,
+  getTeacher, putTeacher, listTeachers, deleteTeacher,
+  normUsername, accountExists, suggestUsername, findAccountsByEmail, findAccountByUsername,
   putLead, getLead, listLeads, deleteLead,
   normEmail, nowSec, ADMIN_EMAIL, isAdminCredentials, adminAuthDiagnose, envDiag
 };

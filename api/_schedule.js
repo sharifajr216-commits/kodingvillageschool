@@ -10,7 +10,9 @@
 //     courseLabel: 'Python · Les boucles',  // libellé affiché dans l'e-mail
 //     startsAt:    '2026-07-20T17:00:00.000Z',  // TOUJOURS en UTC (ISO 8601)
 //     durationMin: 60,
-//     students:    ['eleve@example.com', ...],  // e-mails normalisés (clés KV user:<email>)
+//     students:    ['bilal', 'sara2', ...],     // USERNAMES (clés KV user:<username>)
+//     teacherUsername:'awa' | '',               // enseignant assigné (clé KV teacher:<username>)
+//     teacherName: 'Awa Diop' | '',             // dénormalisé pour l'e-mail de rappel
 //     remindedAt:  null | '2026-07-20T16:00:12.000Z',  // garde-fou anti-doublon
 //     createdAt:   '2026-07-19T10:00:00.000Z'
 //   }
@@ -46,7 +48,7 @@ async function putSession(s) {
   return s;
 }
 
-async function createSession({ courseId, courseLabel, startsAt, durationMin, students }) {
+async function createSession({ courseId, courseLabel, startsAt, durationMin, students, teacherUsername, teacherName }) {
   const when = parseWhen(startsAt);
   if (when === null) throw new Error('startsAt invalide (attendu : ISO 8601)');
   const s = {
@@ -55,7 +57,9 @@ async function createSession({ courseId, courseLabel, startsAt, durationMin, stu
     courseLabel: String(courseLabel || '').slice(0, 120),
     startsAt: new Date(when).toISOString(),
     durationMin: Number(durationMin) > 0 ? Number(durationMin) : 60,
-    students: (Array.isArray(students) ? students : []).map(A.normEmail).filter(Boolean),
+    students: (Array.isArray(students) ? students : []).map(A.normUsername).filter(Boolean),
+    teacherUsername: A.normUsername(teacherUsername) || '',
+    teacherName: String(teacherName || '').slice(0, 120),
     remindedAt: null,
     createdAt: new Date().toISOString()
   };
@@ -77,18 +81,32 @@ async function sessionsBetween(fromMs, toMs) {
   return out;
 }
 
-// Séances d'UN élève : celles à venir + celle éventuellement en cours.
+// Séances d'UN élève (par username) : celles à venir + celle éventuellement en cours.
 // On remonte de LOOKBACK_MS pour ne pas masquer un cours déjà commencé mais
 // pas terminé (sinon l'élève perdrait le bouton « Rejoindre » en plein cours).
 const LOOKBACK_MS = 6 * 3600000;
-async function sessionsForStudent(email, limit = 20) {
-  const target = A.normEmail(email);
+async function sessionsForStudent(username, limit = 20) {
+  const target = A.normUsername(username);
   if (!target) return [];
   const now = Date.now();
   const all = await sessionsBetween(now - LOOKBACK_MS, Infinity);
   return all
     .filter(s => (s.students || []).includes(target))
     .filter(s => now < Date.parse(s.startsAt) + (s.durationMin || 60) * 60000) // pas encore terminée
+    .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt))
+    .slice(0, limit);
+}
+
+// Séances d'UN enseignant : à venir + celle éventuellement en cours (miroir de
+// sessionsForStudent, filtré sur teacherUsername). Utilisé par l'espace enseignant.
+async function sessionsForTeacher(username, limit = 20) {
+  const target = A.normUsername(username);
+  if (!target) return [];
+  const now = Date.now();
+  const all = await sessionsBetween(now - LOOKBACK_MS, Infinity);
+  return all
+    .filter(s => A.normUsername(s.teacherUsername) === target)
+    .filter(s => now < Date.parse(s.startsAt) + (s.durationMin || 60) * 60000)
     .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt))
     .slice(0, limit);
 }
@@ -112,5 +130,5 @@ async function purgeOlderThan(days = 30) {
 
 module.exports = {
   createSession, getSession, putSession, deleteSession,
-  sessionsBetween, sessionsForStudent, upcomingSessions, purgeOlderThan, parseWhen
+  sessionsBetween, sessionsForStudent, sessionsForTeacher, upcomingSessions, purgeOlderThan, parseWhen
 };
