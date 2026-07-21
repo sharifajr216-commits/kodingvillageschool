@@ -27,8 +27,17 @@
 // Séances de cours (socle des rappels automatiques — voir api/reminders.js) :
 // POST { action:'session.create', courseId, courseLabel, startsAt, durationMin,
 //        students:[username], teacherUsername? }             → { ok, session }
+// POST { action:'session.createRecurring', courseId, courseLabel, fromDate,
+//        weekdays:[2,3], time:'11:00', weeks, durationMin,
+//        students:[username], teacherUsername?, tz? }        → { ok, seriesId, created, skipped, sessions }
 // POST { action:'session.list' }                             → { ok, sessions:[...] }   (à venir)
 // POST { action:'session.delete', id }                       → { ok }
+// POST { action:'session.deleteSeries', seriesId }           → { ok, deleted }          (occurrences à venir)
+//
+// Demandes de rattrapage (élève absent ayant proposé un nouveau créneau) :
+// POST { action:'resched.list' }                             → { ok, requests:[...] }
+// POST { action:'resched.decide', requestId, decision:'approve'|'refuse', note? }
+//                                                            → { ok, request }
 //
 // Codes : 401 non-admin · 400 invalide · 404 introuvable · 409 existe déjà · 502 envoi échoué
 
@@ -36,6 +45,7 @@ const crypto = require('crypto');
 const A = require('./_auth');
 const B = require('./_brand');
 const S = require('./_schedule');
+const N = require('./_notify');
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM_EMAIL = B.FROM_EMAIL;   // source unique : api/_brand.js
@@ -64,6 +74,34 @@ async function resolveNewUsername(rawUsername, firstName) {
     return { username: wanted };
   }
   return { username: await A.suggestUsername(firstName) };
+}
+
+// Valide les participants d'une séance (élèves + enseignant) une seule fois pour
+// `session.create` ET `session.createRecurring` : une récurrence qui accepterait
+// un élève inconnu produirait 24 séances fantômes, sans rappel possible.
+// Renvoie { students, teacherUsername, teacherName } ou { error: <corps 400> }.
+async function resolveParticipants(body) {
+  const students = Array.isArray(body.students) ? body.students.map(A.normUsername).filter(Boolean) : [];
+  if (!students.length) {
+    return { error: { ok: false, error: 'invalid', message: 'Au moins un élève inscrit est requis.' } };
+  }
+  // Refuse les élèves inconnus : sans compte, le rappel n'aurait ni nom ni e-mail.
+  for (const u of students) {
+    if (!(await A.getUser(u))) {
+      return { error: { ok: false, error: 'unknown_student', message: `Aucun compte élève pour « ${u} ».` } };
+    }
+  }
+  // Enseignant facultatif (par username). S'il est fourni, il doit exister.
+  const teacherUsername = A.normUsername(body.teacherUsername);
+  let teacherName = '';
+  if (teacherUsername) {
+    const teacher = await A.getTeacher(teacherUsername);
+    if (!teacher) {
+      return { error: { ok: false, error: 'unknown_teacher', message: `Aucun compte enseignant pour « ${teacherUsername} ».` } };
+    }
+    teacherName = `${teacher.firstName || ''} ${teacher.lastName || ''}`.trim();
+  }
+  return { students, teacherUsername, teacherName };
 }
 
 async function resendSend(payload) {
@@ -350,48 +388,94 @@ module.exports = async (req, res) => {
         res.status(400).json({ ok: false, error: 'invalid', message: 'startsAt doit être une date ISO 8601 (ex: 2026-07-20T17:00:00Z).' });
         return;
       }
-      // Élèves inscrits, désormais désignés par leur USERNAME (identité unique).
-      const students = Array.isArray(body.students) ? body.students.map(A.normUsername).filter(Boolean) : [];
-      if (!students.length) {
-        res.status(400).json({ ok: false, error: 'invalid', message: 'Au moins un élève inscrit est requis.' });
-        return;
-      }
-      // Refuse les élèves inconnus : sans compte, le rappel n'aurait ni nom ni e-mail.
-      for (const u of students) {
-        if (!(await A.getUser(u))) {
-          res.status(400).json({ ok: false, error: 'unknown_student', message: `Aucun compte élève pour « ${u} ».` });
-          return;
-        }
-      }
-      // Enseignant facultatif (par username). S'il est fourni, il doit exister.
-      const teacherUsername = A.normUsername(body.teacherUsername);
-      let teacherName = '';
-      if (teacherUsername) {
-        const teacher = await A.getTeacher(teacherUsername);
-        if (!teacher) {
-          res.status(400).json({ ok: false, error: 'unknown_teacher', message: `Aucun compte enseignant pour « ${teacherUsername} ».` });
-          return;
-        }
-        teacherName = `${teacher.firstName || ''} ${teacher.lastName || ''}`.trim();
-      }
+      const p = await resolveParticipants(body);
+      if (p.error) { res.status(400).json(p.error); return; }
       const session = await S.createSession({
         courseId: clean(body.courseId, 60),
         courseLabel: clean(body.courseLabel, 120),
-        startsAt, durationMin: body.durationMin, students,
-        teacherUsername, teacherName
+        startsAt, durationMin: body.durationMin,
+        students: p.students, teacherUsername: p.teacherUsername, teacherName: p.teacherName
       });
       res.status(200).json({ ok: true, session });
       return;
     }
 
+    // Récurrence hebdomadaire — « tous les mardis et mercredis à 11h00, 12 semaines ».
+    // Chaque occurrence devient une VRAIE séance : elle peut être annulée seule,
+    // déclenche son propre rappel, et accepte une absence sans toucher aux autres.
+    if (body.action === 'session.createRecurring') {
+      const p = await resolveParticipants(body);
+      if (p.error) { res.status(400).json(p.error); return; }
+
+      const t = /^(\d{1,2}):(\d{2})$/.exec(clean(body.time, 5));
+      if (!t) { res.status(400).json({ ok: false, error: 'invalid', message: 'Heure invalide (attendu : HH:MM).' }); return; }
+      const weekdays = Array.isArray(body.weekdays) ? body.weekdays : [];
+      if (!weekdays.length) { res.status(400).json({ ok: false, error: 'invalid', message: 'Sélectionne au moins un jour de la semaine.' }); return; }
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(clean(body.fromDate, 10))) {
+        res.status(400).json({ ok: false, error: 'invalid', message: 'Date de début invalide (attendu : AAAA-MM-JJ).' });
+        return;
+      }
+
+      let r;
+      try {
+        r = await S.createWeeklySeries({
+          courseId: clean(body.courseId, 60),
+          courseLabel: clean(body.courseLabel, 120),
+          durationMin: body.durationMin,
+          students: p.students, teacherUsername: p.teacherUsername, teacherName: p.teacherName,
+          // L'heure est interprétée dans le fuseau de l'ÉCOLE, pas dans celui du
+          // navigateur de l'admin : « 11h00 » doit signifier 11h00 à Montréal,
+          // que l'admin se connecte depuis Vancouver, Paris ou Conakry.
+          tz: clean(body.tz, 40) || S.DEFAULT_TZ,
+          fromDate: clean(body.fromDate, 10),
+          weekdays, hour: +t[1], minute: +t[2],
+          weeks: body.weeks
+        });
+      } catch (e) {
+        res.status(400).json({ ok: false, error: 'invalid', message: String(e.message || 'Récurrence invalide.') });
+        return;
+      }
+
+      res.status(200).json({
+        ok: true, seriesId: r.seriesId, created: r.created.length, skipped: r.skipped,
+        sessions: r.created.map(s => ({ id: s.id, startsAt: s.startsAt }))
+      });
+      return;
+    }
+
     if (body.action === 'session.list') {
-      res.status(200).json({ ok: true, sessions: await S.upcomingSessions(100) });
+      res.status(200).json({ ok: true, sessions: await S.upcomingSessions(200) });
       return;
     }
 
     if (body.action === 'session.delete') {
       await S.deleteSession(clean(body.id, 40));
       res.status(200).json({ ok: true });
+      return;
+    }
+
+    if (body.action === 'session.deleteSeries') {
+      const deleted = await S.deleteSeriesUpcoming(clean(body.seriesId, 40));
+      res.status(200).json({ ok: true, deleted });
+      return;
+    }
+
+    // ---- Demandes de rattrapage (file de validation, miroir des liens e-mail) ----
+
+    if (body.action === 'resched.list') {
+      res.status(200).json({ ok: true, requests: await S.listReschedules() });
+      return;
+    }
+
+    if (body.action === 'resched.decide') {
+      const decision = body.decision === 'refuse' ? 'refuse' : 'approve';
+      const r = await S.decideReschedule(clean(body.requestId, 40), decision, 'admin', clean(body.note, 400));
+      if (!r.ok) { res.status(404).json({ ok: false, error: 'not_found' }); return; }
+      // Même e-mail de retour que la décision prise depuis le lien du message :
+      // l'élève reçoit exactement la même information, quelle que soit la porte
+      // d'entrée utilisée par l'école.
+      if (!r.alreadyDecided) await N.notifyStudentOfDecision(r.request);
+      res.status(200).json({ ok: true, alreadyDecided: !!r.alreadyDecided, request: r.request });
       return;
     }
 

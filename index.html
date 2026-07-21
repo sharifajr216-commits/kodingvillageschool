@@ -442,6 +442,14 @@
         <p>Chaque séance déclenche un rappel automatique par e-mail (et WhatsApp si configuré) <strong id="admLeadLabel">1 heure</strong> avant le début.</p>
       </div>
 
+      <!-- Deux modes : une séance isolée, ou un cours hebdomadaire récurrent.
+           Le mode récurrent est LE correctif du planning : saisir 24 séances à la
+           main était le point de blocage qui laissait les tableaux de bord vides. -->
+      <div class="adm-modes" role="tablist" aria-label="Type de planification">
+        <button type="button" class="adm-mode is-on" id="admModeOne" role="tab" aria-selected="true" onclick="APP.adminSesMode('one')">Séance unique</button>
+        <button type="button" class="adm-mode" id="admModeRec" role="tab" aria-selected="false" onclick="APP.adminSesMode('rec')">Cours récurrent</button>
+      </div>
+
       <form class="booking-form" id="admSesForm" onsubmit="return APP.adminSessionCreate(event)" novalidate>
         <div class="bk-grid">
           <div class="bk-field">
@@ -455,14 +463,46 @@
               <option value="vibe-coding|Laboratoire de Codage Vibe">Laboratoire de Codage Vibe</option>
             </select>
           </div>
-          <div class="bk-field">
+
+          <!-- Mode « séance unique » -->
+          <div class="bk-field adm-only-one">
             <label for="admSesWhen">Date &amp; heure de début *</label>
-            <input id="admSesWhen" type="datetime-local" required>
+            <input id="admSesWhen" type="datetime-local">
             <span class="bk-hint" id="admSesTzHint"></span>
           </div>
+
+          <!-- Mode « cours récurrent » -->
+          <div class="bk-field adm-only-rec" hidden>
+            <label for="admRecFrom">À partir du *</label>
+            <input id="admRecFrom" type="date" onchange="APP.admRecPreview()">
+            <span class="bk-hint">Première semaine du cycle.</span>
+          </div>
+          <div class="bk-field adm-only-rec" hidden>
+            <label for="admRecTime">Heure de début * <span class="bk-hint">— heure de l’école</span></label>
+            <input id="admRecTime" type="time" value="11:00" step="300" onchange="APP.admRecPreview()">
+            <span class="bk-hint" id="admRecTzHint"></span>
+          </div>
+          <div class="bk-field adm-only-rec" hidden>
+            <label for="admRecWeeks">Nombre de semaines *</label>
+            <input id="admRecWeeks" type="number" min="1" max="52" value="12" oninput="APP.admRecPreview()">
+            <span class="bk-hint">Relancer le cycle à l’échéance.</span>
+          </div>
+          <div class="bk-field bk-field-wide adm-only-rec" hidden>
+            <label>Jours de la semaine *</label>
+            <div class="adm-dows" id="admRecDows" onchange="APP.admRecPreview()">
+              <label><input type="checkbox" value="1"><span>Lun</span></label>
+              <label><input type="checkbox" value="2"><span>Mar</span></label>
+              <label><input type="checkbox" value="3"><span>Mer</span></label>
+              <label><input type="checkbox" value="4"><span>Jeu</span></label>
+              <label><input type="checkbox" value="5"><span>Ven</span></label>
+              <label><input type="checkbox" value="6"><span>Sam</span></label>
+              <label><input type="checkbox" value="0"><span>Dim</span></label>
+            </div>
+          </div>
+
           <div class="bk-field">
             <label for="admSesDuration">Durée (minutes)</label>
-            <input id="admSesDuration" type="number" min="15" max="240" step="15" value="60">
+            <input id="admSesDuration" type="number" min="15" max="240" step="15" value="60" oninput="APP.admRecPreview()">
           </div>
           <div class="bk-field">
             <label for="admSesTeacher">Enseignant <span class="bk-hint">— reçoit le rappel prof</span></label>
@@ -473,8 +513,9 @@
             <select id="admSesStudents" multiple size="5"></select>
           </div>
         </div>
+        <p class="bk-hint adm-only-rec" id="admRecPreview" hidden></p>
         <p class="bk-error" id="admSesError" style="display:none"></p>
-        <button type="submit" class="btn btn-trial">Planifier la séance <span class="ui-icon-container is-sm"><i data-lucide="calendar-plus"></i></span></button>
+        <button type="submit" class="btn btn-trial" id="admSesSubmit">Planifier la séance <span class="ui-icon-container is-sm"><i data-lucide="calendar-plus"></i></span></button>
       </form>
 
       <div class="adm-table-head">
@@ -485,6 +526,27 @@
         <table class="adm-table">
           <thead><tr><th>Cours</th><th>Enseignant</th><th>Début</th><th>Durée</th><th>Élèves</th><th>Rappel</th><th>Actions</th></tr></thead>
           <tbody id="admSesTbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Demandes de rattrapage — miroir des liens de validation envoyés par e-mail.
+         Même décision, même effet : api/admin.js et api/reschedule.js appellent
+         tous deux S.decideReschedule(), donc aucun risque de séance en double. -->
+    <div class="booking-card adm-card">
+      <div class="booking-head">
+        <div class="booking-step-pill">Rattrapages</div>
+        <h1>Demandes de report</h1>
+        <p>Un élève qui annule plus d’1 heure avant son cours peut proposer un créneau de rattrapage. Le professeur reçoit un e-mail avec les boutons de décision ; tu peux aussi trancher ici.</p>
+      </div>
+      <div class="adm-table-head">
+        <h2>Demandes (<span id="admRqCount">0</span>)</h2>
+        <button class="btn-ghost" onclick="APP.adminReschedRefresh()"><span class="ui-icon-container is-sm"><i data-lucide="refresh-cw"></i></span> Rafraîchir</button>
+      </div>
+      <div class="adm-table-wrap">
+        <table class="adm-table">
+          <thead><tr><th>Élève</th><th>Cours</th><th>Séance annulée</th><th>Rattrapage demandé</th><th>Motif</th><th>État</th><th>Actions</th></tr></thead>
+          <tbody id="admRqTbody"></tbody>
         </table>
       </div>
     </div>
@@ -546,11 +608,17 @@
       <div class="tile tile-feature">
         <div class="tile-head">
           <h2>Mes prochains cours</h2>
-          <button class="tz-pill"><span class="ui-icon-container is-sm ic-muted"><i data-lucide="globe"></i></span> Canada (EST) <span class="ui-icon-container is-sm ic-muted"><i data-lucide="chevron-down"></i></span></button>
+          <div class="mc-switch" role="tablist" aria-label="Affichage des cours">
+            <button class="mc-sw-btn is-on" id="mcSwList" role="tab" aria-selected="true" onclick="APP.mcView('list')"><span class="ui-icon-container is-sm"><i data-lucide="list"></i></span> Liste</button>
+            <button class="mc-sw-btn" id="mcSwCal" role="tab" aria-selected="false" onclick="APP.mcView('cal')"><span class="ui-icon-container is-sm"><i data-lucide="calendar-days"></i></span> Calendrier</button>
+          </div>
+          <button class="tz-pill" id="mcTzPill" type="button" title="Les horaires sont affichés dans le fuseau de ton appareil"><span class="ui-icon-container is-sm ic-muted"><i data-lucide="globe"></i></span> <span id="mcTzLabel">Heure locale</span></button>
         </div>
         <div class="classes-grid" id="classesGrid">
       <!-- Cartes rendues dynamiquement depuis /api/my-sessions (renderMyClasses) -->
         </div>
+        <!-- Calendrier — rendu par renderMyCalendar(), masqué tant que l'onglet Liste est actif -->
+        <div class="mc-cal" id="mcCal" hidden></div>
         <div class="tile-actions"><button class="btn-outline" onclick="APP.joinClass()" title="Aperçu de la classe en direct (démo)"><span class="ui-icon-container is-sm"><i data-lucide="flask-conical"></i></span> Tester la classe en direct</button><button class="btn-outline" onclick="APP.comingSoon('Tutoriels de cours')">Tutoriels de cours <span class="ui-icon-container is-sm ic-muted"><i data-lucide="arrow-up-right"></i></span></button><button class="btn-outline" onclick="APP.comingSoon('Plannings')">Voir les plannings <span class="ui-icon-container is-sm ic-muted"><i data-lucide="arrow-up-right"></i></span></button></div>
       </div>
       <!-- Revenez -->
@@ -1417,6 +1485,13 @@ print("Bonne séance de code, Bilal ! 🚀")
     window.scrollTo({ top: 0, behavior: 'smooth' });
     if (target === 'viewDashboard') { loadMySessions(); startCountdowns(); }
     else stopCountdowns();
+    // Espace enseignant : même re-synchronisation périodique que côté élève, pour
+    // qu'une séance ajoutée par l'administration apparaisse sans rechargement.
+    if (target === 'viewTeacher') {
+      if (!_tchPollTimer) _tchPollTimer = setInterval(loadTeacherSessions, 120000);
+    } else if (_tchPollTimer) {
+      clearInterval(_tchPollTimer); _tchPollTimer = null;
+    }
     document.title = target === 'viewDashboard' ? 'Portail Élève — Kodingvillageschool' :
                      target === 'viewSandbox' ? 'Bac à sable — Kodingvillageschool' :
                      target === 'viewResources' ? 'Ressources — Kodingvillageschool' :
@@ -1580,6 +1655,12 @@ print("Bonne séance de code, Bilal ! 🚀")
       // Jeton stocké comme pour l'élève : /api/my-sessions renvoie les séances
       // animées par cet enseignant (filtrage par rôle dans le jeton signé).
       try { sessionStorage.setItem('kvs_token', data.token); } catch (_) {}
+      // Identité réelle du prof : l'écran saluait « Mentor Sarah » en dur.
+      teacherProfile = {
+        username: data.username || '',
+        firstName: data.firstName || '',
+        lastName: data.lastName || ''
+      };
       closeModal();
       goTeacher();
       toast('Bienvenue, ' + (data.firstName || 'professeur') + ' 👨‍🏫', 'ok', '👨‍🏫');
@@ -1711,7 +1792,12 @@ print("Bonne séance de code, Bilal ! 🚀")
   const _admEsc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   function _admErr(msg) { const e = $('admError'); if (e) { e.textContent = msg || ''; e.style.display = msg ? 'block' : 'none'; } }
 
-  function goAdmin() { switchView('viewAdmin'); _admShowTz(); adminLeadsRefresh(); adminRefresh(); adminTeachersRefresh(); adminSessionsRefresh(); }
+  function goAdmin() {
+    switchView('viewAdmin');
+    _admShowTz(); adminSesMode(_admSesMode);
+    adminLeadsRefresh(); adminRefresh(); adminTeachersRefresh();
+    adminSessionsRefresh(); adminReschedRefresh();
+  }
   function adminLogout() { _setAdminToken(null); switchView('viewLanding'); }
 
   async function adminCreate(e) {
@@ -1883,13 +1969,66 @@ print("Bonne séance de code, Bilal ! 🚀")
     ).join('');
   }
 
+  // Fuseau de référence de l'ÉCOLE. En mode récurrent, l'heure saisie est
+  // interprétée dans CE fuseau, pas dans celui du navigateur : « 11h00 » doit
+  // vouloir dire 11h00 à Montréal, que l'admin se connecte de Vancouver ou de
+  // Conakry. Doit rester aligné sur SCHOOL_TIMEZONE / api/_schedule.js.
+  const SCHOOL_SCHEDULE_TZ = 'America/Toronto';
+
   // Affiche le fuseau du navigateur : l'admin saisit en heure locale, le serveur
   // stocke en UTC. Sans ce repère, une erreur de fuseau passe inaperçue.
   function _admShowTz() {
-    const el = $('admSesTzHint'); if (!el) return;
     let tz = '';
     try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (_) {}
-    el.textContent = tz ? `Heure locale (${tz})` : 'Heure locale de ce navigateur';
+    const el = $('admSesTzHint');
+    if (el) el.textContent = tz ? `Heure locale (${tz})` : 'Heure locale de ce navigateur';
+    const rec = $('admRecTzHint');
+    if (rec) {
+      rec.textContent = tz === SCHOOL_SCHEDULE_TZ
+        ? `Heure de Montréal (${SCHOOL_SCHEDULE_TZ})`
+        : `Interprétée en heure de Montréal (${SCHOOL_SCHEDULE_TZ}), pas en heure locale`;
+    }
+  }
+
+  // Bascule séance unique ⇄ cours récurrent.
+  let _admSesMode = 'one';
+  function adminSesMode(mode) {
+    _admSesMode = mode === 'rec' ? 'rec' : 'one';
+    const rec = _admSesMode === 'rec';
+    document.querySelectorAll('#viewAdmin .adm-only-one').forEach(el => { el.hidden = rec; });
+    document.querySelectorAll('#viewAdmin .adm-only-rec').forEach(el => { el.hidden = !rec; });
+    const b1 = $('admModeOne'), b2 = $('admModeRec');
+    if (b1) { b1.classList.toggle('is-on', !rec); b1.setAttribute('aria-selected', String(!rec)); }
+    if (b2) { b2.classList.toggle('is-on', rec); b2.setAttribute('aria-selected', String(rec)); }
+    const btn = $('admSesSubmit');
+    if (btn) btn.innerHTML = (rec ? 'Planifier toute la série' : 'Planifier la séance')
+      + ' <span class="ui-icon-container is-sm"><i data-lucide="calendar-plus"></i></span>';
+    _admRecPreview();
+    refreshIcons();
+  }
+
+  const _DOW_NOMS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+  const _admRecDows = () => Array.from(document.querySelectorAll('#admRecDows input:checked')).map(i => +i.value);
+
+  // Aperçu en clair de ce qui va être créé : « 24 séances · mardi, mercredi ·
+  // 11:00 → 12:30 ». L'admin voit le volume AVANT de générer 24 entrées.
+  function _admRecPreview() {
+    const el = $('admRecPreview'); if (!el) return;
+    if (_admSesMode !== 'rec') { el.hidden = true; return; }
+    const dows = _admRecDows();
+    const weeks = parseInt($('admRecWeeks').value, 10) || 0;
+    const time = $('admRecTime').value || '';
+    const dur = parseInt($('admSesDuration').value, 10) || 60;
+    el.hidden = false;
+    if (!dows.length || !weeks || !time) {
+      el.textContent = 'Choisis au moins un jour, une heure et un nombre de semaines.';
+      return;
+    }
+    const [h, m] = time.split(':').map(Number);
+    const fin = new Date(2000, 0, 1, h, m + dur);
+    const pad = n => String(n).padStart(2, '0');
+    el.textContent = `→ ${dows.length * weeks} séances · ${dows.map(d => _DOW_NOMS[d]).join(', ')}`
+      + ` · ${time} → ${pad(fin.getHours())}:${pad(fin.getMinutes())} (heure de Montréal) · ${weeks} semaines`;
   }
 
   const _admSesFmt = (iso) => {
@@ -1905,13 +2044,43 @@ print("Bonne séance de code, Bilal ! 🚀")
     const sep = raw.indexOf('|');
     const courseId = sep < 0 ? raw : raw.slice(0, sep);
     const courseLabel = sep < 0 ? raw : raw.slice(sep + 1);
-    const when = $('admSesWhen').value;
     const durationMin = parseInt($('admSesDuration').value, 10) || 60;
     const students = Array.from($('admSesStudents').selectedOptions).map(o => o.value);
     const teacherUsername = $('admSesTeacher') ? $('admSesTeacher').value : '';
 
-    if (!when) { _admSesErr('⚠️ Choisis une date et une heure de début.'); return false; }
     if (!students.length) { _admSesErr('⚠️ Sélectionne au moins un élève inscrit.'); return false; }
+
+    // ── Cours récurrent : une occurrence réelle par semaine et par jour coché ──
+    if (_admSesMode === 'rec') {
+      const fromDate = $('admRecFrom').value;
+      const time = $('admRecTime').value;
+      const weeks = parseInt($('admRecWeeks').value, 10) || 0;
+      const weekdays = _admRecDows();
+      if (!fromDate) { _admSesErr('⚠️ Choisis la date de début du cycle.'); return false; }
+      if (!time) { _admSesErr('⚠️ Choisis l’heure de début.'); return false; }
+      if (!weekdays.length) { _admSesErr('⚠️ Coche au moins un jour de la semaine.'); return false; }
+      if (weeks < 1 || weeks > 52) { _admSesErr('⚠️ Le nombre de semaines doit être compris entre 1 et 52.'); return false; }
+
+      const total = weekdays.length * weeks;
+      if (!window.confirm(`Créer ${total} séances (${weekdays.map(d => _DOW_NOMS[d]).join(', ')} à ${time}, heure de Montréal) pour ${students.length} élève(s) ?`)) return false;
+
+      const { status, data } = await _adminApi('session.createRecurring', {
+        courseId, courseLabel, durationMin, students, teacherUsername,
+        // L'heure part telle quelle : c'est le SERVEUR qui la situe dans le fuseau
+        // de l'école, et qui gère les changements d'heure d'été sur tout le cycle.
+        fromDate, time, weeks, weekdays, tz: SCHOOL_SCHEDULE_TZ
+      });
+      if (status === 401) { _admSesErr('🔒 Session admin expirée — reconnecte-toi.'); return false; }
+      if (!data.ok) { _admSesErr('⚠️ ' + (data.message || 'Planification impossible (' + (data.error || 'erreur') + ').')); return false; }
+
+      toast(`${data.created} séances planifiées 🗓️${data.skipped ? ` (${data.skipped} occurrence(s) déjà passée(s) ignorée(s))` : ''}`, 'ok', '🗓️');
+      adminSessionsRefresh();
+      return false;
+    }
+
+    // ── Séance unique ─────────────────────────────────────────────────────────
+    const when = $('admSesWhen').value;
+    if (!when) { _admSesErr('⚠️ Choisis une date et une heure de début.'); return false; }
 
     // `datetime-local` est sans fuseau : Date() l'interprète en heure locale,
     // toISOString() le convertit en UTC — le format attendu par l'API.
@@ -1946,15 +2115,23 @@ print("Bonne séance de code, Bilal ! 🚀")
       const prof = s.teacherName
         ? _admEsc(s.teacherName)
         : (s.teacherUsername ? _admEsc(s.teacherUsername) : '<span class="adm-muted">—</span>');
+      // Absences signalées par les élèves — visibles directement dans le tableau,
+      // sans quoi l'école ne saurait pas qu'une séance est vidée de ses inscrits.
+      const inscrits = (s.students || []).length;
+      const absents = Object.values(s.attendance || {}).filter(a => a && a.status === 'absent').length;
+      const eleves = absents
+        ? `${inscrits - absents}/${inscrits} <span class="adm-badge no">${absents} absent${absents > 1 ? 's' : ''}</span>`
+        : String(inscrits);
       return `<tr>
-        <td>${_admEsc(s.courseLabel || s.courseId)}</td>
+        <td>${_admEsc(s.courseLabel || s.courseId)}${s.origin && s.origin.type === 'makeup' ? ' <span class="adm-badge ok">rattrapage</span>' : ''}</td>
         <td>${prof}</td>
         <td>${_admEsc(_admSesFmt(s.startsAt))}</td>
         <td>${_admEsc(String(s.durationMin || 60))} min</td>
-        <td>${(s.students || []).length}</td>
+        <td>${eleves}</td>
         <td>${rappel}</td>
         <td class="adm-actions">
           <button class="btn-ghost adm-del" onclick="APP.adminSessionDelete('${_admEsc(s.id)}')">Annuler</button>
+          ${s.seriesId ? `<button class="btn-ghost adm-del" onclick="APP.adminSeriesDelete('${_admEsc(s.seriesId)}')" title="Supprime toutes les occurrences à venir de cette récurrence">Toute la série</button>` : ''}
         </td></tr>`;
     }).join('') || '<tr><td colspan="7" class="adm-empty">Aucune séance planifiée.</td></tr>';
   }
@@ -1964,6 +2141,61 @@ print("Bonne séance de code, Bilal ! 🚀")
     const { data } = await _adminApi('session.delete', { id });
     if (data.ok) { toast('Séance annulée.', 'ok', '🗑️'); adminSessionsRefresh(); }
     else { toast('Annulation impossible.', 'err', '⚠️'); }
+  }
+
+  async function adminSeriesDelete(seriesId) {
+    if (!window.confirm('Supprimer TOUTES les occurrences à venir de cette récurrence ? Les séances déjà passées sont conservées.')) return;
+    const { data } = await _adminApi('session.deleteSeries', { seriesId });
+    if (data.ok) { toast(`${data.deleted} séance(s) supprimée(s).`, 'ok', '🗑️'); adminSessionsRefresh(); }
+    else { toast('Suppression impossible.', 'err', '⚠️'); }
+  }
+
+  // === DEMANDES DE RATTRAPAGE (file de validation admin) ======================
+  const _RQ_ETAT = {
+    pending: '<span class="adm-badge no">En attente</span>',
+    approved: '<span class="adm-badge ok">Validé</span>',
+    refused: '<span class="adm-badge">Refusé</span>'
+  };
+
+  let _admRqSeq = 0;
+  async function adminReschedRefresh() {
+    const seq = ++_admRqSeq;
+    const { data } = await _adminApi('resched.list');
+    if (seq !== _admRqSeq) return; // résultat périmé → une requête plus récente a pris la main
+    const rows = (data && data.requests) || [];
+    // Les demandes en attente remontent en tête : c'est la seule ligne qui appelle une action.
+    rows.sort((a, b) => (a.state === 'pending' ? 0 : 1) - (b.state === 'pending' ? 0 : 1));
+    const enAttente = rows.filter(r => r.state === 'pending').length;
+    $('admRqCount').textContent = enAttente ? `${enAttente} en attente / ${rows.length}` : String(rows.length);
+    $('admRqTbody').innerHTML = rows.map(r => `<tr>
+      <td>${_admEsc(r.studentName || r.username)}</td>
+      <td>${_admEsc(r.courseLabel || r.courseId)}</td>
+      <td>${_admEsc(_admSesFmt(r.originalStartsAt))}</td>
+      <td><strong>${_admEsc(_admSesFmt(r.requestedStartsAt))}</strong></td>
+      <td>${r.reason ? _admEsc(r.reason) : '<span class="adm-muted">—</span>'}</td>
+      <td>${_RQ_ETAT[r.state] || _admEsc(r.state)}</td>
+      <td class="adm-actions">
+        ${r.state === 'pending'
+          ? `<button class="btn-ghost" onclick="APP.adminReschedDecide('${_admEsc(r.requestId)}','approve')">Valider</button>
+             <button class="btn-ghost adm-del" onclick="APP.adminReschedDecide('${_admEsc(r.requestId)}','refuse')">Refuser</button>`
+          : `<span class="adm-muted">${r.decidedBy ? 'par ' + _admEsc(r.decidedBy) : 'traité'}</span>`}
+      </td></tr>`).join('') || '<tr><td colspan="7" class="adm-empty">Aucune demande de rattrapage.</td></tr>';
+  }
+
+  async function adminReschedDecide(requestId, decision) {
+    const verbe = decision === 'approve' ? 'Valider' : 'Refuser';
+    if (!window.confirm(`${verbe} cette demande de rattrapage ? L’élève en sera informé par e-mail.`)) return;
+    const { data } = await _adminApi('resched.decide', { requestId, decision });
+    if (data.ok) {
+      toast(data.alreadyDecided
+        ? 'Cette demande avait déjà été traitée.'
+        : (decision === 'approve' ? 'Rattrapage validé — la séance est créée ✅' : 'Rattrapage refusé.'),
+        decision === 'approve' ? 'ok' : 'info', '🗓️');
+      adminReschedRefresh();
+      adminSessionsRefresh();
+    } else {
+      toast('Décision impossible. Réessaie.', 'err', '⚠️');
+    }
   }
 
   async function adminSend(username) {
@@ -2062,96 +2294,180 @@ print("Bonne séance de code, Bilal ! 🚀")
     else { toast('Suppression impossible.', 'err', '⚠️'); }
   }
 
-  // === TEACHER DASHBOARD (complete, simulated) ===
-  const teacherStudents = [
-    { n: 'Bilal Hassan Keita', sub: 'Python', pct: 78, att: '100%', last: '28-06-2026', trend: '▲' },
-    { n: 'Aria Patel', sub: 'Python', pct: 64, att: '92%', last: '27-06-2026', trend: '▲' },
-    { n: 'Diego Martinez', sub: 'Scratch', pct: 52, att: '85%', last: '26-06-2026', trend: '▬' },
-    { n: 'Chloe Smith', sub: 'Python', pct: 90, att: '98%', last: '28-06-2026', trend: '▲' },
-    { n: 'Yuki Tanaka', sub: 'Python', pct: 88, att: '100%', last: '25-06-2026', trend: '▲' },
-    { n: "Liam O'Connor", sub: 'Scratch', pct: 47, att: '80%', last: '24-06-2026', trend: '▼' }
-  ];
-  const teacherClasses = [
-    { t: '10:00', s: 'Bilal Hassan Keita', c: 'Python · Développement de jeux', st: 'live', course: 'dev-jeux-python' },
-    { t: '13:00', s: 'Aria Patel', c: 'Python · Fonctions', st: 'soon', course: 'python-fonctions' },
-    { t: '15:30', s: 'Yuki Tanaka', c: 'Python · Boucles', st: 'soon', course: 'python-boucles' },
-    { t: '17:00', s: 'Chloe Smith', c: 'Scratch · Animations', st: 'soon', course: 'scratch' }
-  ];
-  const teacherMessages = [
-    { f: 'Mohamed Keita', r: 'Parent', m: 'Bilal adore les cours, merci !', t: 'il y a 1h', ic: 'users' },
-    { f: 'KodingvillageSchool', r: 'Admin', m: 'Nouveau programme Python L2 disponible.', t: 'il y a 3h', ic: 'school' },
-    { f: 'Aria Patel', r: 'Élève', m: 'J’ai terminé mon devoir', t: 'hier', ic: 'graduation-cap' }
-  ];
-  const teacherSchedule = {
-    days: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'],
-    slots: ['10:00', '13:00', '15:30', '17:00'],
-    booked: { 'Lun|10:00': 'Bilal', 'Lun|13:00': 'Aria', 'Mar|15:30': 'Yuki', 'Mer|10:00': 'Chloe', 'Jeu|17:00': 'Diego', 'Ven|13:00': 'Liam', 'Sam|10:00': 'Bilal' }
-  };
+  // === TABLEAU DE BORD ENSEIGNANT =============================================
+  //
+  // ⚠️ CAUSE RACINE DU BUG DE SYNCHRONISATION CORRIGÉE ICI.
+  // Cet écran affichait des données EN DUR (« Mentor Sarah », un cours « live » à
+  // 10:00 avec un bouton « Rejoindre » toujours actif) alors que l'élève, lui,
+  // interrogeait /api/my-sessions et voyait « Aucun cours programmé ». Les deux
+  // écrans ne pouvaient donc structurellement PAS être d'accord.
+  //
+  // Le prof et l'élève lisent désormais la MÊME source : /api/my-sessions, filtrée
+  // côté serveur par le rôle porté dans le jeton signé.
+  let teacherSessions = [];        // séances animées par l'enseignant connecté
+  let teacherLoadState = 'idle';   // idle | loading | ready | error | expired
+  let teacherProfile = { username: '', firstName: '', lastName: '' };
+  let _tchPollTimer = null;
   let teacherTabState = 'overview';
-  let teacherSort = { key: 'pct', dir: -1 };
+  let teacherSort = { key: 'when', dir: 1 };
 
-  // Mini sparkline SVG à partir d'une série de valeurs
-  function _spark(points, stroke) {
-    const w = 120, h = 30, pad = 3;
-    const max = Math.max(...points), min = Math.min(...points), rng = (max - min) || 1;
-    const step = (w - pad * 2) / (points.length - 1);
-    const xy = points.map((p, i) => [pad + i * step, h - pad - ((p - min) / rng) * (h - pad * 2)]);
-    const line = xy.map(c => c[0].toFixed(1) + ',' + c[1].toFixed(1)).join(' ');
-    const area = `${pad},${h - pad} ${line} ${(w - pad).toFixed(1)},${h - pad}`;
-    const last = xy[xy.length - 1];
-    return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><polygon points="${area}" fill="${stroke}" fill-opacity=".08"/><polyline points="${line}" fill="none" stroke="${stroke}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="2.6" fill="${stroke}"/></svg>`;
+  async function loadTeacherSessions() {
+    let token = null;
+    try { token = sessionStorage.getItem('kvs_token'); } catch (_) {}
+    if (!token) { teacherSessions = []; teacherLoadState = 'expired'; renderTeacher(); return; }
+    teacherLoadState = 'loading';
+    try {
+      const res = await fetch('/api/my-sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({})
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!data.ok) {
+        teacherSessions = [];
+        teacherLoadState = res.status === 401 ? 'expired' : 'error';
+      } else {
+        if (data.now) _clockSkewMs = Date.parse(data.now) - Date.now();
+        teacherSessions = (data.sessions || []).map(s => ({
+          ...s, startMs: Date.parse(s.startsAt), endMs: Date.parse(s.endsAt)
+        })).sort((a, b) => a.startMs - b.startMs);
+        teacherLoadState = 'ready';
+      }
+    } catch (_) {
+      teacherSessions = []; teacherLoadState = 'error';
+    }
+    renderTeacher();
   }
 
-  function _trendIcon(t) {
-    if (t === '▲') return icon('trending-up', { size: 'sm', color: '#047857' });
-    if (t === '▼') return icon('trending-down', { size: 'sm', color: '#B91C1C' });
-    return icon('minus', { size: 'sm', tone: 'muted' });
+  // Élèves réellement suivis, déduits des séances (plus aucun nom inventé).
+  // Chaque élève est agrégé sur l'ensemble de ses séances à venir.
+  function teacherRoster() {
+    const map = new Map();
+    teacherSessions.forEach(s => {
+      (s.students || []).forEach(st => {
+        const cur = map.get(st.username) || {
+          username: st.username, name: st.name, courses: new Set(),
+          total: 0, absences: 0, next: null, pending: 0
+        };
+        cur.name = st.name || cur.name;
+        cur.courses.add(s.courseLabel);
+        cur.total++;
+        if (st.status === 'absent') cur.absences++;
+        if (st.reschedule && st.reschedule.state === 'pending') cur.pending++;
+        if (st.status !== 'absent' && (cur.next === null || s.startMs < cur.next)) cur.next = s.startMs;
+        map.set(st.username, cur);
+      });
+    });
+    return [...map.values()].map(r => ({ ...r, courses: [...r.courses] }));
+  }
+
+  // Demandes de rattrapage en attente sur les séances de ce prof.
+  function teacherPending() {
+    const out = [];
+    teacherSessions.forEach(s => {
+      (s.students || []).forEach(st => {
+        if (st.reschedule && st.reschedule.state === 'pending') {
+          out.push({ session: s, student: st, rq: st.reschedule });
+        }
+      });
+    });
+    return out.sort((a, b) => Date.parse(a.rq.requestedStartsAt) - Date.parse(b.rq.requestedStartsAt));
+  }
+
+  // (_spark / _trendIcon retirés avec les KPI simulés : ils ne traçaient que des
+  //  séries inventées — progression, revenus, note moyenne — sans source de données.)
+
+  // Bloc « en ce moment » : la PROCHAINE séance réelle. Le bouton « Rejoindre »
+  // n'apparaît que dans la même fenêtre horaire que côté élève (JOIN_WINDOW_BEFORE_MS),
+  // pour que les deux écrans s'ouvrent au même instant.
+  function _tchFocusHtml() {
+    const now = serverNow();
+    const aVenir = teacherSessions.filter(s => now < s.endMs);
+    // On met en avant la prochaine séance où quelqu'un est ATTENDU : une séance
+    // dont tous les élèves se sont désistés n'a pas à occuper le bloc principal
+    // (sinon le prof croit devoir se connecter pour une classe vide).
+    const next = aVenir.find(s => (s.students || []).some(x => x.status !== 'absent')) || aVenir[0];
+    if (!next) {
+      const vide = teacherLoadState === 'loading' ? 'Chargement de ton planning…'
+        : teacherLoadState === 'expired' ? 'Session expirée — reconnecte-toi.'
+          : teacherLoadState === 'error' ? 'Planning indisponible pour le moment.'
+            : 'Aucun cours programmé pour l’instant.';
+      return `<div class="tch-tile tch-focus is-empty">
+        <span class="tch-eyebrow">${icon('calendar-off', { size: 'sm' })} Prochain cours</span>
+        <h2 class="tch-focus-title">${vide}</h2>
+        <p class="tch-focus-sub">Les séances planifiées par l’administration apparaissent ici automatiquement.</p>
+      </div>`;
+    }
+    const diff = next.startMs - now;
+    const ouvert = diff <= JOIN_WINDOW_BEFORE_MS;
+    const qui = (next.students || []).filter(s => s.status !== 'absent').map(s => s.name);
+    const absents = (next.students || []).filter(s => s.status === 'absent').length;
+    return `<div class="tch-tile tch-focus">
+      <span class="tch-eyebrow">${ouvert ? '<span class="tch-live-dot"></span>' : icon('clock', { size: 'sm' })}
+        ${ouvert ? (diff > 0 ? 'Accès ouvert · commence dans ' + humanCountdown(diff) : 'En ce moment · classe en direct')
+        : 'Prochain cours dans ' + humanCountdown(diff)}</span>
+      <h2 class="tch-focus-title">${qui.length ? _admEsc(qui.join(', ')) : 'Aucun élève attendu'}</h2>
+      <p class="tch-focus-sub">${_admEsc(next.courseLabel)} · ${_admEsc(_fmtDateTime(new Date(next.startMs)))}</p>
+      ${ouvert && qui.length
+        ? `<button class="tch-focus-btn" onclick="APP.joinZoomMeeting('${_admEsc(next.courseId)}')">Rejoindre la classe →</button>`
+        : `<button class="tch-focus-btn is-locked" disabled title="Le bouton s’active ${Math.round(JOIN_WINDOW_BEFORE_MS / 60000)} min avant le cours.">${icon('lock', { size: 'sm' })} Accès à l’heure du cours</button>`}
+      <div class="tch-focus-meta">
+        <span><strong>${_tchToday().length}</strong> cours aujourd’hui</span><span class="sep">·</span>
+        <span><strong>${next.durationMin}</strong> min</span>
+        ${absents ? `<span class="sep">·</span><span class="tch-warn">${absents} absence${absents > 1 ? 's' : ''} signalée${absents > 1 ? 's' : ''}</span>` : ''}
+      </div>
+    </div>`;
+  }
+
+  // Séances du jour civil courant (heure locale de l'appareil du prof).
+  function _tchToday() {
+    const k = _dayKey(new Date(serverNow()));
+    return teacherSessions.filter(s => _dayKey(new Date(s.startMs)) === k);
+  }
+
+  function _tchKpi(label, value, foot, tone) {
+    return `<div class="tch-tile tch-kpi">
+      <span class="tch-kpi-l">${label}</span>
+      <span class="tch-kpi-v${tone ? ' ' + tone : ''}">${value}</span>
+      <span class="tch-kpi-foot">${foot}</span>
+    </div>`;
   }
 
   function renderTeacher() {
     const el = $('tchMain'); if (!el) return;
-    const avg = Math.round(teacherStudents.reduce((a, s) => a + s.pct, 0) / teacherStudents.length);
-    const live = teacherClasses.find(c => c.st === 'live') || teacherClasses[0];
-    teacherTabState = 'overview';
+    const roster = teacherRoster();
+    const pending = teacherPending();
+    const absences = teacherSessions.reduce((n, s) => n + (s.students || []).filter(x => x.status === 'absent').length, 0);
+    const prenom = (teacherProfile.firstName || '').trim();
+    const aujourdhui = new Intl.DateTimeFormat('fr-CA', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+      .format(new Date(serverNow()));
+
     el.innerHTML = `
-      <div class="tch-head"><h1>Bonjour, Mentor Sarah</h1><p>Voici ton tableau de bord — 28 juin 2026.</p></div>
+      <div class="tch-head">
+        <h1>Bonjour${prenom ? ', ' + _admEsc(prenom) : ''}</h1>
+        <p>Voici ton tableau de bord — ${_admEsc(aujourdhui)}.
+          <button class="tch-refresh" onclick="APP.teacherRefresh()" title="Recharger le planning">${icon('refresh-cw', { size: 'sm' })} Actualiser</button>
+        </p>
+      </div>
       <div class="tch-bento">
-        <div class="tch-tile tch-focus">
-          <span class="tch-eyebrow"><span class="tch-live-dot"></span>En ce moment · classe en direct</span>
-          <h2 class="tch-focus-title">${live.s}</h2>
-          <p class="tch-focus-sub">${live.c} · ${live.t}</p>
-          <button class="tch-focus-btn" onclick="APP.joinZoomMeeting('${live.course || ''}')">Rejoindre la classe →</button>
-          <div class="tch-focus-meta"><span><strong>4</strong> cours aujourd'hui</span><span class="sep">·</span><span><strong>${teacherStudents.length}</strong> élèves actifs</span></div>
-        </div>
-        <div class="tch-tile tch-kpi">
-          <span class="tch-kpi-l">Taux de présence</span>
-          <span class="tch-kpi-v">96 %<i class="trend up">${icon('trending-up', { size: 'sm' })}2</i></span>
-          ${_spark([88, 90, 92, 91, 94, 95, 96], '#10B981')}
-        </div>
-        <div class="tch-tile tch-kpi">
-          <span class="tch-kpi-l">Progression moyenne</span>
-          <span class="tch-kpi-v">${avg} %<i class="trend up">${icon('trending-up', { size: 'sm' })}4</i></span>
-          ${_spark([61, 64, 66, 68, 69, 70, avg], '#14B8A6')}
-        </div>
-        <div class="tch-tile tch-kpi">
-          <span class="tch-kpi-l">Note moyenne</span>
-          <span class="tch-kpi-v">4,9<i class="tch-stars">${icon('star', { size: 'sm' }).repeat(5)}</i></span>
-          <span class="tch-kpi-foot">312 avis · 30 derniers jours</span>
-        </div>
-        <div class="tch-tile tch-kpi">
-          <span class="tch-kpi-l">Revenus du mois</span>
-          <span class="tch-kpi-v">1 240 $<i class="trend up">${icon('trending-up', { size: 'sm' })}12%</i></span>
-          ${_spark([820, 900, 950, 1010, 1120, 1180, 1240], '#4F46E5')}
-        </div>
+        ${_tchFocusHtml()}
+        ${_tchKpi('Cours à venir', String(teacherSessions.length), teacherSessions.length ? 'planifiés par l’administration' : 'aucune séance planifiée')}
+        ${_tchKpi('Élèves suivis', String(roster.length), roster.length ? 'sur tes séances à venir' : '—')}
+        ${_tchKpi('Absences signalées', String(absences), absences ? 'sur tes prochaines séances' : 'aucune absence')}
+        ${_tchKpi('Rattrapages à valider', String(pending.length),
+          pending.length ? 'en attente de ta décision' : 'rien en attente', pending.length ? 'is-alert' : '')}
       </div>
       <div class="tch-tabs">
-        <button class="tch-tab active" data-tab="overview" onclick="APP.teacherTab('overview')">Vue d’ensemble</button>
-        <button class="tch-tab" data-tab="students" onclick="APP.teacherTab('students')">Mes élèves</button>
-        <button class="tch-tab" data-tab="planning" onclick="APP.teacherTab('planning')">Planning</button>
+        <button class="tch-tab${teacherTabState === 'overview' ? ' active' : ''}" data-tab="overview" onclick="APP.teacherTab('overview')">Vue d’ensemble</button>
+        <button class="tch-tab${teacherTabState === 'students' ? ' active' : ''}" data-tab="students" onclick="APP.teacherTab('students')">Mes élèves</button>
+        <button class="tch-tab${teacherTabState === 'planning' ? ' active' : ''}" data-tab="planning" onclick="APP.teacherTab('planning')">Planning</button>
       </div>
       <div id="tchContent"></div>`;
     renderTeacherTab();
+    refreshIcons();
   }
+
+  function teacherRefresh() { loadTeacherSessions(); }
 
   function teacherTab(t) {
     teacherTabState = t;
@@ -2161,7 +2477,9 @@ print("Bonne séance de code, Bilal ! 🚀")
 
   function teacherSortBy(key) {
     if (teacherSort.key === key) teacherSort.dir *= -1;
-    else { teacherSort.key = key; teacherSort.dir = key === 'n' ? 1 : -1; }
+    // Par défaut : ordre croissant pour un nom ou une date (le plus proche
+    // d'abord), décroissant pour un compteur (le plus d'absences d'abord).
+    else { teacherSort.key = key; teacherSort.dir = key === 'absences' ? -1 : 1; }
     renderTeacherTab();
   }
 
@@ -2220,49 +2538,165 @@ print("Bonne séance de code, Bilal ! 🚀")
     window.addEventListener('load', refreshIcons);
   }
 
+  // Message d'attente / d'erreur partagé par les trois onglets.
+  function _tchEmpty(quoi) {
+    const msg = teacherLoadState === 'loading' ? 'Chargement de ton planning…'
+      : teacherLoadState === 'expired' ? 'Ta session a expiré — reconnecte-toi pour voir ton planning.'
+        : teacherLoadState === 'error' ? 'Planning indisponible. Réessaie dans un instant.'
+          : `Aucun ${quoi} pour l’instant. Les séances planifiées par l’administration apparaissent ici automatiquement.`;
+    return `<div class="tch-none">${icon('calendar-off', { size: 'lg', tone: 'muted' })}<p>${msg}</p></div>`;
+  }
+
+  // Une séance dans une liste (onglet Vue d'ensemble / Planning).
+  function _tchClassRow(s) {
+    const now = serverNow();
+    const diff = s.startMs - now;
+    const ouvert = diff <= JOIN_WINDOW_BEFORE_MS && now < s.endMs;
+    const d = new Date(s.startMs);
+    const hh = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    const presents = (s.students || []).filter(x => x.status !== 'absent');
+    const absents = (s.students || []).filter(x => x.status === 'absent');
+    const noms = presents.length ? presents.map(x => _admEsc(x.name)).join(', ') : '— aucun élève attendu';
+    return `<div class="tch-class${presents.length ? '' : ' is-empty'}">
+      <span class="tch-time">${hh}</span>
+      <div class="tch-class-body">
+        <div class="tch-class-s">${noms}</div>
+        <div class="tch-class-c">${_admEsc(s.courseLabel)} · ${s.durationMin} min${s.isMakeup ? ' · rattrapage' : ''}</div>
+        ${absents.length ? `<div class="tch-class-abs">${icon('user-x', { size: 'sm' })} ${absents.map(x => _admEsc(x.name)).join(', ')} — absence signalée</div>` : ''}
+      </div>
+      ${ouvert && presents.length
+        ? `<button class="tch-join" onclick="APP.joinZoomMeeting('${_admEsc(s.courseId)}')"><span class="cc-live-dot"></span> Rejoindre</button>`
+        : `<span class="tch-soon">${now >= s.endMs ? 'Terminé' : 'À venir'}</span>`}
+    </div>`;
+  }
+
+  // Carte d'une demande de rattrapage — décision en un clic, sans quitter l'app.
+  // Même effet que les boutons de l'e-mail (api/reschedule.js) : les deux chemins
+  // appellent la même logique serveur, donc aucun risque de double séance.
+  function _tchPendingCard(p) {
+    return `<div class="tch-rq">
+      <div class="tch-rq-b">
+        <div class="tch-rq-t">${_admEsc(p.student.name)} <span class="tch-rq-tag">absence signalée</span></div>
+        <div class="tch-rq-m">${_admEsc(p.session.courseLabel)}</div>
+        <div class="tch-rq-d">
+          <s>${_admEsc(_fmtDateTime(new Date(p.session.startMs)))}</s>
+          <span class="tch-rq-arrow">→</span>
+          <strong>${_admEsc(_fmtDateTime(new Date(Date.parse(p.rq.requestedStartsAt))))}</strong>
+        </div>
+        ${p.student.reason ? `<div class="tch-rq-r">Motif : ${_admEsc(p.student.reason)}</div>` : ''}
+      </div>
+      <div class="tch-rq-a">
+        <button class="tch-rq-ok" onclick="APP.teacherDecide('${_admEsc(p.rq.requestId)}','approve')">${icon('check', { size: 'sm' })} Valider</button>
+        <button class="tch-rq-no" onclick="APP.teacherDecide('${_admEsc(p.rq.requestId)}','refuse')">${icon('x', { size: 'sm' })} Refuser</button>
+      </div>
+    </div>`;
+  }
+
   function renderTeacherTab() {
     const c = $('tchContent'); if (!c) return;
+
     if (teacherTabState === 'students') {
+      const roster = teacherRoster();
       const arrow = k => teacherSort.key === k ? (teacherSort.dir < 0 ? ' ↓' : ' ↑') : '';
-      const sorted = [...teacherStudents].sort((a, b) => {
+      const sorted = [...roster].sort((a, b) => {
         const k = teacherSort.key;
-        const va = k === 'att' ? parseInt(a.att) : a[k];
-        const vb = k === 'att' ? parseInt(b.att) : b[k];
-        if (typeof va === 'string') return teacherSort.dir * va.localeCompare(vb);
-        return teacherSort.dir * (va - vb);
+        if (k === 'name') return teacherSort.dir * String(a.name).localeCompare(String(b.name));
+        if (k === 'absences') return teacherSort.dir * (a.absences - b.absences);
+        return teacherSort.dir * ((a.next || Infinity) - (b.next || Infinity));
       });
-      const atRisk = sorted.filter(s => s.pct < 55).length;
-      c.innerHTML = `<section class="card tch-card"><div class="tch-card-head"><h3>Mes élèves <span class="tch-count">${teacherStudents.length}</span></h3>${atRisk ? `<span class="tch-risk-pill">${atRisk} à suivre</span>` : ''}</div>
-        <div class="tch-table">
-          <div class="tch-tr head"><span class="srt${teacherSort.key === 'n' ? ' on' : ''}" onclick="APP.teacherSortBy('n')">Élève${arrow('n')}</span><span>Matière</span><span class="srt${teacherSort.key === 'pct' ? ' on' : ''}" onclick="APP.teacherSortBy('pct')">Progression${arrow('pct')}</span><span class="srt${teacherSort.key === 'att' ? ' on' : ''}" onclick="APP.teacherSortBy('att')">Présence${arrow('att')}</span><span>Dernier cours</span><span>Action</span></div>
-          ${sorted.map(s => `<div class="tch-tr${s.pct < 55 ? ' risk' : ''}"><span data-l="Élève" class="tch-td-n">${s.n}${s.pct < 55 ? '<span class="tch-row-tag">À suivre</span>' : ''}</span><span data-l="Matière">${s.sub}</span><span data-l="Progression"><div class="tch-mini-bar"><i style="width:${s.pct}%"></i></div>${s.pct}% ${_trendIcon(s.trend)}</span><span data-l="Présence">${s.att}</span><span data-l="Dernier cours">${s.last}</span><span data-l="Action"><button class="tch-tbtn" onclick="APP.toast('Ouverture du SPR de ${s.n.split(' ')[0]}…','info','📊')">SPR</button></span></div>`).join('')}
-        </div></section>`;
+      c.innerHTML = `<section class="card tch-card">
+        <div class="tch-card-head">
+          <h3>Mes élèves <span class="tch-count">${roster.length}</span></h3>
+          ${roster.some(r => r.pending) ? `<span class="tch-risk-pill">${roster.reduce((n, r) => n + r.pending, 0)} rattrapage(s) à valider</span>` : ''}
+        </div>
+        ${!roster.length ? _tchEmpty('élève inscrit à tes séances') : `
+        <div class="tch-table is-roster">
+          <div class="tch-tr head">
+            <span class="srt${teacherSort.key === 'name' ? ' on' : ''}" onclick="APP.teacherSortBy('name')">Élève${arrow('name')}</span>
+            <span>Cours</span>
+            <span class="srt${teacherSort.key === 'when' ? ' on' : ''}" onclick="APP.teacherSortBy('when')">Prochaine séance${arrow('when')}</span>
+            <span>Séances à venir</span>
+            <span class="srt${teacherSort.key === 'absences' ? ' on' : ''}" onclick="APP.teacherSortBy('absences')">Absences${arrow('absences')}</span>
+          </div>
+          ${sorted.map(r => `<div class="tch-tr${r.absences ? ' risk' : ''}">
+            <span data-l="Élève" class="tch-td-n">${_admEsc(r.name)}${r.pending ? '<span class="tch-row-tag">rattrapage en attente</span>' : ''}</span>
+            <span data-l="Cours">${_admEsc(r.courses.join(', '))}</span>
+            <span data-l="Prochaine séance">${r.next ? _admEsc(_fmtDateTime(new Date(r.next))) : '<span class="adm-muted">—</span>'}</span>
+            <span data-l="Séances à venir">${r.total}</span>
+            <span data-l="Absences">${r.absences || '—'}</span>
+          </div>`).join('')}
+        </div>`}
+      </section>`;
+
     } else if (teacherTabState === 'planning') {
-      const sc = teacherSchedule;
-      c.innerHTML = `<section class="card tch-card"><h3>Planning de la semaine</h3>
-        <div class="tch-sched" style="grid-template-columns:64px repeat(${sc.days.length},1fr)">
-          <div class="tch-sc-cell corner"></div>${sc.days.map(d => `<div class="tch-sc-cell head">${d}</div>`).join('')}
-          ${sc.slots.map(slot => `<div class="tch-sc-cell time">${slot}</div>${sc.days.map(d => { const b = sc.booked[d + '|' + slot]; return `<div class="tch-sc-cell${b ? ' booked' : ''}" onclick="APP.toast('${b ? 'Cours : ' + b + ' · ' + d + ' ' + slot : 'Créneau libre · ' + d + ' ' + slot}','info','🗓️')">${b || ''}</div>`; }).join('')}`).join('')}
-        </div></section>`;
+      // Agenda réel, groupé par jour — remplace la grille hebdomadaire figée qui
+      // affichait des créneaux inventés sans lien avec les séances en base.
+      const groups = [];
+      teacherSessions.forEach(s => {
+        const k = _dayKey(new Date(s.startMs));
+        const g = groups.find(x => x.k === k);
+        (g ? g.items : (groups.push({ k, d: new Date(s.startMs), items: [] }), groups[groups.length - 1].items)).push(s);
+      });
+      c.innerHTML = `<section class="card tch-card">
+        <div class="tch-card-head"><h3>Mon planning <span class="tch-count">${teacherSessions.length}</span></h3></div>
+        ${!groups.length ? _tchEmpty('cours planifié') : groups.map(g => `
+          <div class="tch-dayblock">
+            <div class="tch-dayhead">${_admEsc(new Intl.DateTimeFormat('fr-CA', { weekday: 'long', day: 'numeric', month: 'long' }).format(g.d))}</div>
+            ${g.items.map(_tchClassRow).join('')}
+          </div>`).join('')}
+      </section>`;
+
     } else {
+      const today = _tchToday();
+      const pending = teacherPending();
       c.innerHTML = `
         <div class="tch-grid">
           <section class="card tch-card">
-            <h3>Mes classes du jour</h3>
-            ${teacherClasses.map(cl => `<div class="tch-class"><span class="tch-time">${cl.t}</span><div class="tch-class-body"><div class="tch-class-s">${cl.s}</div><div class="tch-class-c">${cl.c}</div></div>${cl.st === 'live' ? `<button class="tch-join" onclick="APP.joinZoomMeeting('${cl.course || ''}')"><span class="cc-live-dot"></span> Rejoindre</button>` : '<span class="tch-soon">À venir</span>'}</div>`).join('')}
+            <h3>Mes classes du jour <span class="tch-count">${today.length}</span></h3>
+            ${today.length ? today.map(_tchClassRow).join('') : _tchEmpty('cours aujourd’hui')}
           </section>
           <section class="card tch-card">
-            <h3>Messages récents</h3>
-            ${teacherMessages.map(m => `<div class="tch-msg"><span class="tch-msg-ic">${icon(m.ic)}</span><div class="tch-msg-b"><div class="tch-msg-f">${m.f} <span class="tch-msg-r">${m.r}</span></div><div class="tch-msg-m">${m.m}</div></div><span class="tch-msg-t">${m.t}</span></div>`).join('')}
-            <button class="tch-msg-btn" onclick="APP.toast('Composer un message — bientôt disponible','info','✍️')"><span class="ui-icon-container is-sm"><i data-lucide="pen-line"></i></span> Nouveau message</button>
+            <h3>Rattrapages à valider ${pending.length ? `<span class="tch-count is-alert">${pending.length}</span>` : ''}</h3>
+            ${pending.length
+              ? pending.map(_tchPendingCard).join('')
+              : `<div class="tch-none">${icon('check-circle', { size: 'lg', tone: 'muted' })}<p>Aucune demande en attente. Tu reçois aussi ces demandes par e-mail, avec les mêmes boutons.</p></div>`}
           </section>
         </div>
         <section class="card tch-card" style="margin-top:18px">
-          <h3>Suivi SPR <span class="tch-sub-h">Rapport de progression élève</span></h3>
-          <div class="tch-spr">
-            ${teacherStudents.slice(0, 4).map(s => `<div class="tch-spr-row"><span class="tch-spr-n">${s.n}</span><span class="tch-spr-sub">${s.sub}</span><div class="tch-spr-bar"><div class="tch-spr-fill" style="width:${s.pct}%"></div></div><span class="tch-spr-pct">${s.pct}% ${_trendIcon(s.trend)}</span></div>`).join('')}
-          </div>
+          <h3>Prochaines séances <span class="tch-sub-h">les 5 suivantes</span></h3>
+          ${teacherSessions.length
+            ? teacherSessions.slice(0, 5).map(_tchClassRow).join('')
+            : _tchEmpty('cours planifié')}
         </section>`;
+    }
+    refreshIcons();
+  }
+
+  // Décision du prof depuis l'app. En cas de succès on recharge : la séance de
+  // rattrapage créée côté serveur doit apparaître immédiatement dans son planning.
+  async function teacherDecide(requestId, decision) {
+    if (decision === 'refuse' && !window.confirm('Refuser ce créneau de rattrapage ? L’élève en sera informé par e-mail.')) return;
+    let token = null;
+    try { token = sessionStorage.getItem('kvs_token'); } catch (_) {}
+    if (!token) { toast('Session expirée — reconnecte-toi.', 'err', '🔒'); return; }
+    try {
+      const res = await fetch('/api/session-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ action: 'resched.decide', requestId, decision })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!data.ok) {
+        toast(res.status === 401 ? 'Session expirée — reconnecte-toi.' : 'Décision impossible. Réessaie.', 'err', '⚠️');
+        return;
+      }
+      toast(data.alreadyDecided
+        ? 'Cette demande avait déjà été traitée.'
+        : (decision === 'approve' ? 'Rattrapage validé — la séance est créée ✅' : 'Rattrapage refusé. L’élève est informé.'),
+        decision === 'approve' ? 'ok' : 'info', '🗓️');
+      loadTeacherSessions();
+    } catch (_) {
+      toast('Réseau indisponible. Réessaie dans un instant.', 'err', '⚠️');
     }
   }
 
@@ -2978,7 +3412,9 @@ print("Bonne séance de code, Bilal ! 🚀")
   };
 
   function goParents() { switchView('viewParents'); renderParents(); }
-  function goTeacher() { switchView('viewTeacher'); renderTeacher(); }
+  // renderTeacher() dessine d'abord l'ossature (état « chargement »), puis
+  // loadTeacherSessions() la redessine avec les vraies séances.
+  function goTeacher() { switchView('viewTeacher'); renderTeacher(); loadTeacherSessions(); }
 
   // === PARRAINAGE (referral) — cross-utilisateurs via backend Vercel (KV) ===
   const REF_SIGNUP_PATH = '/signup';   // route d'inscription (le SPA gère aussi /?ref=… en repli)
@@ -4819,13 +5255,17 @@ Laboratoire de Codage Vibe|8|fichiers`;
   // qui ne renvoie QUE les séances du porteur du jeton (filtrage côté serveur —
   // masquer côté client laisserait les données des autres élèves lisibles).
   //
-  // Le bouton « Rejoindre » n'est actif qu'entre le début et la fin du cours.
-  // Passer JOIN_WINDOW_BEFORE_MS à 10*60*1000 pour rouvrir l'accès 10 min avant.
-  const JOIN_WINDOW_BEFORE_MS = 0;
+  // Le bouton « Rejoindre » s'ouvre JOIN_WINDOW_BEFORE_MS avant le début.
+  // Il valait 0 : l'élève ne pouvait cliquer qu'à la seconde exacte du début, et
+  // se retrouvait devant un bouton verrouillé alors que le prof l'attendait déjà.
+  // 10 minutes d'avance = le temps d'installer son casque.
+  const JOIN_WINDOW_BEFORE_MS = 10 * 60 * 1000;
 
   let mySessions = [];          // séances de l'élève, triées par date croissante
   let _clockSkewMs = 0;         // horloge serveur − horloge locale
   let _sessionsPollTimer = null;
+  let _cancelLeadMin = 60;      // délai minimal d'annulation, imposé par le serveur
+  let _makeupMaxDays = 60;      // horizon maximal d'un créneau de rattrapage
 
   // Heure de référence : corrigée du décalage d'horloge du poste. Sans ça, un
   // navigateur en avance activerait « Rejoindre » avant le début réel du cours.
@@ -4872,6 +5312,8 @@ Laboratoire de Codage Vibe|8|fichiers`;
       const data = await res.json().catch(() => ({}));
       if (!data.ok) { mySessions = []; renderMyClasses(res.status === 401 ? 'expired' : 'error'); return; }
       if (data.now) _clockSkewMs = Date.parse(data.now) - Date.now();
+      if (data.cancelLeadMin) _cancelLeadMin = data.cancelLeadMin;
+      if (data.makeupMaxAheadDays) _makeupMaxDays = data.makeupMaxAheadDays;
       mySessions = (data.sessions || []).map(s => ({
         ...s, startMs: Date.parse(s.startsAt), endMs: Date.parse(s.endsAt)
       })).sort((a, b) => a.startMs - b.startMs);
@@ -4882,9 +5324,24 @@ Laboratoire de Codage Vibe|8|fichiers`;
     }
   }
 
+  // Étiquette d'état affichée sur la carte et dans le calendrier.
+  // `reschedule.state` prime sur le simple « absent » : ce que l'élève veut
+  // savoir, c'est où en est SA demande de rattrapage.
+  function _sessionBadge(s) {
+    if (s.status !== 'absent') {
+      return s.isMakeup ? { cls: 'is-makeup', ic: 'repeat', txt: 'Séance de rattrapage' } : null;
+    }
+    const st = s.reschedule && s.reschedule.state;
+    if (st === 'pending') return { cls: 'is-pending', ic: 'hourglass', txt: 'Rattrapage en attente de validation' };
+    if (st === 'approved') return { cls: 'is-ok', ic: 'check-circle', txt: 'Rattrapage validé' };
+    if (st === 'refused') return { cls: 'is-no', ic: 'x-circle', txt: 'Rattrapage refusé — contacte l’école' };
+    return { cls: 'is-absent', ic: 'user-x', txt: 'Absence signalée' };
+  }
+
   function renderMyClasses(state) {
     const grid = $('classesGrid');
     if (!grid) return;
+    _syncTzLabel();
 
     if (!mySessions.length) {
       const msg = state === 'expired'
@@ -4893,6 +5350,7 @@ Laboratoire de Codage Vibe|8|fichiers`;
           ? 'Impossible de charger tes cours pour le moment. Réessaie dans un instant.'
           : 'Aucun cours programmé pour l’instant. Ton mentor planifiera ta prochaine séance très bientôt.';
       grid.innerHTML = `<div class="cc-empty"><span class="ui-icon-container is-lg ic-muted"><i data-lucide="calendar-off"></i></span><p>${msg}</p></div>`;
+      renderMyCalendar();
       refreshIcons();
       return;
     }
@@ -4900,24 +5358,314 @@ Laboratoire de Codage Vibe|8|fichiers`;
     grid.innerHTML = mySessions.map((s, i) => {
       const icon = COURSE_ICONS[s.courseId] || 'code-2';
       const when = _fmtDateTime(new Date(s.startMs));
-      return `<div class="cc" data-idx="${i}" data-course="${_admEsc(s.courseId)}">
+      const badge = _sessionBadge(s);
+      const prof = s.teacherName ? ` · ${_admEsc(s.teacherName)}` : '';
+      return `<div class="cc${s.status === 'absent' ? ' is-cancelled' : ''}" data-idx="${i}" data-course="${_admEsc(s.courseId)}">
         <div class="cc-top">
           <div class="cc-logo"><span class="ui-icon-container is-lg"><i data-lucide="${icon}"></i></span></div>
           <div class="cc-info">
             <p class="cc-dt">${_admEsc(when)}</p>
-            <p class="cc-sub">${_admEsc(s.courseLabel)}</p>
+            <p class="cc-sub">${_admEsc(s.courseLabel)}${prof}</p>
+            ${badge ? `<span class="cc-badge ${badge.cls}"><span class="ui-icon-container is-sm"><i data-lucide="${badge.ic}"></i></span> ${badge.txt}</span>` : ''}
           </div>
           <div class="cc-cd">…</div>
         </div>
         <div class="cc-bottom">
           <span class="cc-session"><span class="ui-icon-container is-sm ic-muted"><i data-lucide="clock"></i></span> ${s.durationMin} min</span>
+          ${_manageBtnHtml(s)}
           <button class="btn-outline" type="button"></button>
         </div>
       </div>`;
     }).join('');
 
+    renderMyCalendar();
     refreshIcons();
     updateCountdowns();
+  }
+
+  // Bouton « Signaler une absence ». Rendu inerte dès que la fenêtre d'1 h est
+  // passée : `canCancel` vient du SERVEUR, seule horloge non falsifiable.
+  function _manageBtnHtml(s) {
+    if (s.status === 'absent') return '';
+    if (!s.canCancel) {
+      return `<button class="cc-manage is-locked" type="button" disabled title="L’annulation n’est plus possible à moins de ${_cancelLeadMin} minutes du cours.">`
+        + `<span class="ui-icon-container is-sm"><i data-lucide="lock"></i></span> Annulation close</button>`;
+    }
+    return `<button class="cc-manage" type="button" onclick="APP.openAbsence('${_admEsc(s.id)}')">`
+      + `<span class="ui-icon-container is-sm"><i data-lucide="calendar-x"></i></span> Signaler une absence</button>`;
+  }
+
+  // Le bandeau annonçait « Canada (EST) » en dur, y compris pour un élève à
+  // Conakry. On affiche le fuseau RÉEL de l'appareil, puisque c'est dans celui-là
+  // que toutes les heures de cette page sont rendues.
+  function _syncTzLabel() {
+    const el = $('mcTzLabel');
+    if (!el) return;
+    let tz = '';
+    try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (_) {}
+    const ville = tz ? tz.split('/').pop().replace(/_/g, ' ') : '';
+    let abbr = '';
+    try {
+      abbr = (new Intl.DateTimeFormat('fr-CA', { timeZoneName: 'short' })
+        .formatToParts(new Date()).find(p => p.type === 'timeZoneName') || {}).value || '';
+    } catch (_) {}
+    el.textContent = ville ? `${ville}${abbr ? ' · ' + abbr : ''}` : 'Heure locale';
+  }
+
+  // === CALENDRIER « MES COURS » ===============================================
+  // Vue mensuelle des séances de l'élève. Elle lit exactement le même tableau
+  // `mySessions` que les cartes : impossible que les deux se contredisent —
+  // c'était précisément le défaut du tableau de bord enseignant, alimenté par
+  // des données figées pendant que l'élève, lui, interrogeait l'API.
+  let _mcMode = 'list';
+  let _mcCursor = null;   // 1er jour du mois affiché
+  let _mcPickedDay = null;
+
+  const _JOURS_COURT = ['lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.', 'dim.'];
+  const _MOIS_LONG = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+    'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+
+  // Clé de jour en heure LOCALE (pas toISOString, qui bascule en UTC et ferait
+  // sauter un cours de 20 h au lendemain).
+  const _dayKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+  function mcView(mode) {
+    _mcMode = mode === 'cal' ? 'cal' : 'list';
+    const list = $('classesGrid'), cal = $('mcCal');
+    if (list) list.hidden = _mcMode !== 'list';
+    if (cal) cal.hidden = _mcMode !== 'cal';
+    const bl = $('mcSwList'), bc = $('mcSwCal');
+    if (bl) { bl.classList.toggle('is-on', _mcMode === 'list'); bl.setAttribute('aria-selected', String(_mcMode === 'list')); }
+    if (bc) { bc.classList.toggle('is-on', _mcMode === 'cal'); bc.setAttribute('aria-selected', String(_mcMode === 'cal')); }
+    if (_mcMode === 'cal') renderMyCalendar();
+  }
+
+  function mcShiftMonth(delta) {
+    const base = _mcCursor || new Date();
+    _mcCursor = new Date(base.getFullYear(), base.getMonth() + delta, 1);
+    _mcPickedDay = null;
+    renderMyCalendar();
+  }
+
+  function mcPickDay(key) {
+    _mcPickedDay = (_mcPickedDay === key) ? null : key;
+    renderMyCalendar();
+  }
+
+  function renderMyCalendar() {
+    const host = $('mcCal');
+    if (!host) return;
+
+    // Par défaut on ouvre sur le mois du PROCHAIN cours, pas sur le mois courant :
+    // une série qui démarre en septembre ne doit pas s'afficher comme un mois vide.
+    if (!_mcCursor) {
+      const first = mySessions[0] ? new Date(mySessions[0].startMs) : new Date();
+      _mcCursor = new Date(first.getFullYear(), first.getMonth(), 1);
+    }
+
+    const y = _mcCursor.getFullYear(), m = _mcCursor.getMonth();
+    const byDay = {};
+    mySessions.forEach((s, i) => {
+      const k = _dayKey(new Date(s.startMs));
+      (byDay[k] = byDay[k] || []).push(i);
+    });
+
+    // Grille lundi → dimanche (convention francophone).
+    const firstDow = (new Date(y, m, 1).getDay() + 6) % 7;
+    const nbDays = new Date(y, m + 1, 0).getDate();
+    const todayKey = _dayKey(new Date(serverNow()));
+
+    let cells = '';
+    for (let i = 0; i < firstDow; i++) cells += '<div class="mc-day is-void"></div>';
+    for (let d = 1; d <= nbDays; d++) {
+      const key = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const idxs = byDay[key] || [];
+      const dots = idxs.slice(0, 3).map(i => {
+        const s = mySessions[i];
+        const cls = s.status === 'absent'
+          ? (s.reschedule && s.reschedule.state === 'pending' ? 'p' : 'a')
+          : (s.isMakeup ? 'r' : 'o');
+        return `<span class="mc-dot ${cls}"></span>`;
+      }).join('');
+      const cls = [
+        'mc-day',
+        idxs.length ? 'has' : '',
+        key === todayKey ? 'is-today' : '',
+        key === _mcPickedDay ? 'is-picked' : ''
+      ].filter(Boolean).join(' ');
+      cells += idxs.length
+        ? `<button type="button" class="${cls}" onclick="APP.mcPickDay('${key}')" aria-label="${idxs.length} cours le ${d} ${_MOIS_LONG[m]}"><span class="mc-num">${d}</span><span class="mc-dots">${dots}</span></button>`
+        : `<div class="${cls}"><span class="mc-num">${d}</span></div>`;
+    }
+
+    // Détail : le jour sélectionné, sinon tout le mois affiché.
+    const shown = _mcPickedDay
+      ? (byDay[_mcPickedDay] || [])
+      : mySessions.map((s, i) => i).filter(i => {
+        const d = new Date(mySessions[i].startMs);
+        return d.getFullYear() === y && d.getMonth() === m;
+      });
+
+    const detail = shown.length
+      ? shown.map(i => _mcRow(mySessions[i])).join('')
+      : `<p class="mc-none">Aucun cours ${_mcPickedDay ? 'ce jour-là' : 'ce mois-ci'}.</p>`;
+
+    host.innerHTML = `
+      <div class="mc-head">
+        <button type="button" class="mc-nav" onclick="APP.mcShiftMonth(-1)" aria-label="Mois précédent"><span class="ui-icon-container is-sm"><i data-lucide="chevron-left"></i></span></button>
+        <strong class="mc-title">${_MOIS_LONG[m]} ${y}</strong>
+        <button type="button" class="mc-nav" onclick="APP.mcShiftMonth(1)" aria-label="Mois suivant"><span class="ui-icon-container is-sm"><i data-lucide="chevron-right"></i></span></button>
+      </div>
+      <div class="mc-grid">
+        ${_JOURS_COURT.map(j => `<div class="mc-dow">${j}</div>`).join('')}
+        ${cells}
+      </div>
+      <div class="mc-legend">
+        <span><i class="mc-dot o"></i> Cours prévu</span>
+        <span><i class="mc-dot r"></i> Rattrapage</span>
+        <span><i class="mc-dot p"></i> En attente</span>
+        <span><i class="mc-dot a"></i> Absence signalée</span>
+      </div>
+      <div class="mc-detail">
+        <div class="mc-detail-head">${_mcPickedDay
+          ? `Cours du ${new Date(_mcPickedDay + 'T12:00:00').getDate()} ${_MOIS_LONG[m]} <button type="button" class="mc-clear" onclick="APP.mcPickDay('${_mcPickedDay}')">tout le mois</button>`
+          : `Tous les cours de ${_MOIS_LONG[m]}`}</div>
+        ${detail}
+      </div>`;
+    refreshIcons();
+  }
+
+  // Une ligne du détail : horaire, cours, état, et l'action d'annulation —
+  // l'élève gère donc son planning DEPUIS le calendrier, sans repasser par la liste.
+  function _mcRow(s) {
+    const badge = _sessionBadge(s);
+    const d = new Date(s.startMs);
+    const hh = `${String(d.getHours()).padStart(2, '0')}h${String(d.getMinutes()).padStart(2, '0')}`;
+    const fin = new Date(s.endMs);
+    const hf = `${String(fin.getHours()).padStart(2, '0')}h${String(fin.getMinutes()).padStart(2, '0')}`;
+    return `<div class="mc-row${s.status === 'absent' ? ' is-cancelled' : ''}">
+      <span class="mc-row-h">${hh}<small>→ ${hf}</small></span>
+      <span class="mc-row-b">
+        <strong>${_admEsc(s.courseLabel)}</strong>
+        ${s.teacherName ? `<small>avec ${_admEsc(s.teacherName)}</small>` : ''}
+        ${badge ? `<span class="cc-badge ${badge.cls}"><span class="ui-icon-container is-sm"><i data-lucide="${badge.ic}"></i></span> ${badge.txt}</span>` : ''}
+      </span>
+      ${_manageBtnHtml(s)}
+    </div>`;
+  }
+
+  // === SIGNALER UNE ABSENCE + DEMANDER UN RATTRAPAGE ==========================
+  // Règle métier : possible jusqu'à `_cancelLeadMin` minutes avant le cours.
+  // Le contrôle ci-dessous n'est qu'un garde-fou de confort — c'est le SERVEUR
+  // qui refuse pour de bon (api/session-action.js), horloge locale non fiable.
+  function openAbsence(sessionId) {
+    const s = mySessions.find(x => x.id === sessionId);
+    if (!s) return;
+    if (!s.canCancel || (s.startMs - serverNow()) <= _cancelLeadMin * 60000) {
+      toast(`Trop tard : l’annulation ferme ${_cancelLeadMin} min avant le cours. Contacte l’école.`, 'err', '⏰');
+      return;
+    }
+
+    // Créneau proposé par défaut : même heure, 7 jours plus tard — le cas le plus
+    // fréquent, et l'élève n'a plus qu'à ajuster.
+    const suggestion = new Date(s.startMs + 7 * 864e5);
+    const pad = n => String(n).padStart(2, '0');
+    const toLocalInput = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    const min = new Date(serverNow() + 61 * 60000);
+    const max = new Date(serverNow() + _makeupMaxDays * 864e5);
+
+    modal('Signaler une absence', `
+      <p class="modal-sub">
+        <strong>${_admEsc(s.courseLabel)}</strong><br>
+        ${_admEsc(_fmtDateTime(new Date(s.startMs)))} · ${s.durationMin} min
+      </p>
+      <form onsubmit="return APP.submitAbsence(event,'${_admEsc(s.id)}')" novalidate>
+        <div class="form-g">
+          <label for="abReason">Motif <span class="bk-hint">— facultatif</span></label>
+          <input id="abReason" type="text" maxlength="200" placeholder="Ex. rendez-vous médical">
+        </div>
+        <label class="ab-check">
+          <input id="abWantMakeup" type="checkbox" checked onchange="APP.abToggleMakeup()">
+          <span>Je souhaite un cours de rattrapage</span>
+        </label>
+        <div class="form-g" id="abSlotWrap">
+          <label for="abSlot">Créneau de rattrapage souhaité</label>
+          <input id="abSlot" type="datetime-local" value="${toLocalInput(suggestion)}" min="${toLocalInput(min)}" max="${toLocalInput(max)}">
+          <span class="bk-hint">Ton professeur reçoit ta proposition par e-mail et la valide (ou propose autre chose).</span>
+        </div>
+        <p class="bk-error" id="abError" style="display:none"></p>
+        <button type="submit" class="btn-submit" id="abSubmit">Confirmer mon absence</button>
+      </form>
+      <p class="modal-sub" style="margin-top:12px;font-size:.82rem">
+        La séance restera visible dans ton planning, marquée « absence signalée ».
+        Annulation possible jusqu’à ${_cancelLeadMin} min avant le début.
+      </p>`);
+    refreshIcons();
+  }
+
+  function abToggleMakeup() {
+    const on = $('abWantMakeup') && $('abWantMakeup').checked;
+    const wrap = $('abSlotWrap');
+    if (wrap) wrap.style.display = on ? '' : 'none';
+    const btn = $('abSubmit');
+    if (btn) btn.textContent = on ? 'Confirmer mon absence' : 'Confirmer mon absence (sans rattrapage)';
+  }
+
+  function _abErr(msg) {
+    const e = $('abError');
+    if (e) { e.textContent = msg || ''; e.style.display = msg ? 'block' : 'none'; }
+  }
+
+  async function submitAbsence(e, sessionId) {
+    if (e) e.preventDefault();
+    _abErr('');
+    const btn = $('abSubmit');
+    const wantMakeup = $('abWantMakeup') && $('abWantMakeup').checked;
+    const slot = $('abSlot') ? $('abSlot').value : '';
+
+    let makeupStartsAt = null;
+    if (wantMakeup) {
+      if (!slot) { _abErr('⚠️ Choisis un créneau de rattrapage (ou décoche la case).'); return false; }
+      const d = new Date(slot);              // datetime-local → heure locale de l'élève
+      if (isNaN(d.getTime())) { _abErr('⚠️ Créneau invalide.'); return false; }
+      if (d.getTime() <= serverNow() + 3600000) { _abErr('⚠️ Le rattrapage doit être au moins 1 heure après maintenant.'); return false; }
+      makeupStartsAt = d.toISOString();      // envoyé en UTC — le serveur fait foi
+    }
+
+    let token = null;
+    try { token = sessionStorage.getItem('kvs_token'); } catch (_) {}
+    if (!token) { _abErr('🔒 Session expirée — reconnecte-toi.'); return false; }
+
+    if (btn) { btn.disabled = true; btn.textContent = 'Envoi…'; }
+    try {
+      const res = await fetch('/api/session-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({
+          action: 'cancel', sessionId,
+          reason: $('abReason') ? $('abReason').value : '',
+          makeupStartsAt
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!data.ok) {
+        if (btn) { btn.disabled = false; abToggleMakeup(); }
+        if (res.status === 401) { _abErr('🔒 Session expirée — reconnecte-toi.'); return false; }
+        _abErr('⚠️ ' + (data.message || 'Impossible d’enregistrer ton absence. Réessaie.'));
+        return false;
+      }
+      closeModal();
+      toast(makeupStartsAt
+        ? (data.notified
+          ? 'Absence enregistrée. Ton professeur a reçu ta demande de rattrapage 📩'
+          : 'Absence enregistrée. Ta demande de rattrapage est en attente de validation.')
+        : 'Absence enregistrée. Ton professeur est informé.', 'ok', '🗓️');
+      loadMySessions();
+    } catch (_) {
+      if (btn) { btn.disabled = false; abToggleMakeup(); }
+      _abErr('⚠️ Réseau indisponible. Réessaie dans un instant.');
+    }
+    return false;
   }
 
   function startCountdowns() {
@@ -4941,18 +5689,35 @@ Laboratoire de Codage Vibe|8|fichiers`;
       const s = mySessions[parseInt(card.dataset.idx, 10)];
       if (!s) return;
       const cd = card.querySelector('.cc-cd');
-      const btn = card.querySelector('.cc-bottom button');
+      // `:last-of-type` : la carte peut aussi porter le bouton « Signaler une
+      // absence » — sans ce sélecteur on transformerait celui-ci en « Rejoindre ».
+      const btn = card.querySelector('.cc-bottom button:last-of-type');
       const diff = s.startMs - now;
+
+      // Marqué AVANT le branchement : une séance annulée doit elle aussi quitter
+      // la liste une fois son horaire passé, sinon elle s'y incruste.
+      if (now >= s.endMs) expired = true;
+
+      // Absence signalée → aucun accès au direct, quel que soit l'horaire.
+      if (s.status === 'absent') {
+        cd.innerHTML = 'Annulé';
+        cd.classList.remove('live');
+        makeCancelledButton(btn);
+        return;
+      }
 
       if (now >= s.endMs) {
         // Séance terminée → on la retire au prochain cycle et la suivante remonte.
         cd.innerHTML = 'Terminé';
         cd.classList.remove('live');
         makeFinishedButton(btn);
-        expired = true;
       } else if (diff <= JOIN_WINDOW_BEFORE_MS) {
-        // Le cours a commencé (ou la fenêtre anticipée est ouverte) → accès Zoom.
-        cd.innerHTML = '<span class="cc-live-dot"></span> EN COURS';
+        // Accès Zoom ouvert. Tant que l'heure de début n'est pas atteinte on
+        // annonce « bientôt » : afficher « EN COURS » 10 min trop tôt ferait
+        // croire à l'élève qu'il est déjà en retard.
+        cd.innerHTML = diff > 0
+          ? `<span class="cc-live-dot"></span> DANS ${humanCountdown(diff)}`
+          : '<span class="cc-live-dot"></span> EN COURS';
         cd.classList.add('live');
         makeJoinButton(btn, s.courseId);
       } else {
@@ -5007,6 +5772,16 @@ Laboratoire de Codage Vibe|8|fichiers`;
     btn.className = 'btn-outline';
     btn.disabled = true;
     btn.innerHTML = '<span class="ui-icon-container is-sm"><i data-lucide="check-circle"></i></span> Cours terminé';
+    btn.onclick = null;
+  }
+
+  // Séance dont l'élève a signalé l'absence : le direct lui reste fermé.
+  function makeCancelledButton(btn) {
+    if (btn.dataset.role === 'cancelled') return;
+    btn.dataset.role = 'cancelled';
+    btn.className = 'btn-outline';
+    btn.disabled = true;
+    btn.innerHTML = '<span class="ui-icon-container is-sm"><i data-lucide="user-x"></i></span> Absence signalée';
     btn.onclick = null;
   }
 
@@ -6363,13 +7138,14 @@ Laboratoire de Codage Vibe|8|fichiers`;
   // === PUBLIC API ===
   return {
     openLogin, login: loginAndPreload, logout, confirmLogout, modal, closeModal,
-    authTab, doSignIn, doSignUp, lpGo, navCourses, lpCourse, bookSlot, joinCommunity, gsSlot, gsCountryChange, bkCountryChange, enrollNow, faqToggle, backToLanding, submitBooking, teacherTab, teacherSortBy, toggleTheme, goTeacher,
+    authTab, doSignIn, doSignUp, lpGo, navCourses, lpCourse, bookSlot, joinCommunity, gsSlot, gsCountryChange, bkCountryChange, enrollNow, faqToggle, backToLanding, submitBooking, teacherTab, teacherSortBy, teacherRefresh, teacherDecide, toggleTheme, goTeacher,
     sbActive, mobNav, goSandbox, goDashboard,
     goAdmin, adminCreate, adminRefresh, adminSend, adminReset, adminDelete, adminCopyPwd, adminLogout, adminSuggestUsername,
     adminTeacherCreate, adminTeachersRefresh, adminTeacherSend, adminTeacherReset, adminTeacherDelete,
     openChangePassword, submitChangePassword,
     adminLeadsRefresh, adminLeadConvert, adminLeadDelete,
-    adminSessionCreate, adminSessionsRefresh, adminSessionDelete,
+    adminSessionCreate, adminSessionsRefresh, adminSessionDelete, adminSeriesDelete,
+    adminSesMode, adminReschedRefresh, adminReschedDecide, admRecPreview: _admRecPreview,
     goResources, resSelect, resTab, resSearch,
     goCommunity, comSubjectTab, comFilter, comClearFilters, comLike, comUpvote, comShareEvent, comSharePost,
     goParents, goReferral, refSubmit, refRedeem, refCopy, refShare, refHowItWorks, refRequestUpdate,
@@ -6384,6 +7160,7 @@ Laboratoire de Codage Vibe|8|fichiers`;
     llmSetModel, llmSend,
     folderOpen, folderBack, folderNew, fileNew, fileOpen,
     editClass, joinClass, joinZoomMeeting, leaveClass, sendChat,
+    mcView, mcShiftMonth, mcPickDay, openAbsence, abToggleMakeup, submitAbsence,
     openBuyCredits, buyCredits,
     openAddClass, addClass,
     openAddScore, addScore, openAddExam, addExam,
