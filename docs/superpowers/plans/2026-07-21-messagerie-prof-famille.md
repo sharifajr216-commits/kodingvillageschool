@@ -387,7 +387,8 @@ Create `api/_messages.js`:
 //
 // Clés KV :
 //   thread:<tid>                JSON du fil
-//   thread:<tid>:msgs           ZSET { score: epoch_ms, member: messageId }
+//   thread:<tid>:seq            compteur monotone du fil (INCR)
+//   thread:<tid>:msgs           ZSET { score: numéro de séquence, member: messageId }
 //   msg:<mid>                   JSON du message
 //   threads:teacher:<username>  ZSET trié par dernier message → boîte enseignant
 //   threads:student:<username>  ZSET trié par dernier message → boîte famille
@@ -469,8 +470,14 @@ async function appendMessage(thread, { fromRole, fromUsername, fromName, body })
     fromName: String(fromName || '').slice(0, 120),
     body: texte, sentAt
   };
+  // Score = numéro de SÉQUENCE du fil, pas l'horodatage. Deux messages envoyés
+  // dans la même milliseconde partageraient le même score, et Redis départage
+  // alors par ordre lexicographique du membre — c'est-à-dire au hasard, nos
+  // identifiants étant aléatoires. La séquence garantit l'ordre d'insertion.
+  // `sentAt` reste dans le message : c'est lui qu'on affiche.
+  const seq = await A.kv(['INCR', `thread:${thread.id}:seq`]);
   await A.kv(['SET', `msg:${message.id}`, JSON.stringify(message)]);
-  await A.kv(['ZADD', `thread:${thread.id}:msgs`, String(Date.parse(sentAt)), message.id]);
+  await A.kv(['ZADD', `thread:${thread.id}:msgs`, String(seq), message.id]);
 
   const dest = otherSide(fromRole);
   thread.lastMessageAt = sentAt;
