@@ -248,7 +248,9 @@ git commit -m "test: harnais rejouable (KV en memoire + Resend intercepte)"
   - `putThread(thread)` → `Promise<thread>`
   - `ensureThread({ teacherUsername, studentUsername })` → `Promise<thread>`
   - `appendMessage(thread, { fromRole, fromUsername, fromName, body })` → `Promise<{ thread, message }>`
-  - `getMessages(tid, { limit, before })` → `Promise<message[]>` (ordre chronologique croissant)
+  - `getMessages(tid, { limit, before })` → `Promise<message[]>` (ordre chronologique croissant).
+    `before` est un **identifiant de message** (pas un horodatage) : on renvoie les `limit`
+    messages qui le précèdent.
   - `listThreads(role, username, limit)` → `Promise<thread[]>` (plus récent d'abord ; `role === 'admin'` → tous)
   - `MAX_BODY`, `SNIPPET_LEN`
 
@@ -324,6 +326,24 @@ test('getMessages rend l ordre chronologique et pagine', async () => {
   assert.deepEqual(tous.map(m => m.body), ['un', 'deux', 'trois']);
   const derniers = await M.getMessages(th.id, { limit: 2 });
   assert.deepEqual(derniers.map(m => m.body), ['deux', 'trois']);
+
+  // Traversee de frontiere : la page suivante reprend juste avant le curseur,
+  // sans sauter ni repeter de message.
+  const precedents = await M.getMessages(th.id, { limit: 2, before: derniers[0].id });
+  assert.deepEqual(precedents.map(m => m.body), ['un']);
+});
+
+test('le curseur ne saute aucun message a horodatage identique', async () => {
+  H.reset(); await comptes();
+  let th = await M.ensureThread({ teacherUsername: 'blaise', studentUsername: 'mohamedjr' });
+  // Trois messages ecrits d affilee : leurs scores peuvent coincider a la ms.
+  for (const mot of ['a', 'b', 'c']) {
+    th = (await M.appendMessage(th, { fromRole: 'teacher', fromUsername: 'blaise', fromName: 'B', body: mot })).thread;
+  }
+  const tous = await M.getMessages(th.id, { limit: 50 });
+  const page2 = await M.getMessages(th.id, { limit: 50, before: tous[2].id });
+  assert.deepEqual(page2.map(m => m.body), ['a', 'b'],
+    'paginer depuis le dernier message doit rendre TOUS les precedents');
 });
 
 test('listThreads cloisonne par role et par identifiant', async () => {
@@ -464,11 +484,18 @@ async function appendMessage(thread, { fromRole, fromUsername, fromName, body })
 }
 
 // Messages du fil, du plus ancien au plus récent. `limit` s'applique à la FIN
-// (les plus récents), `before` remonte l'historique depuis un horodatage.
+// (les plus récents), `before` remonte l'historique.
+//
+// Le curseur est un IDENTIFIANT de message, pas un horodatage : deux messages
+// envoyés dans la même milliseconde ont le même score, et un curseur temporel
+// en sauterait un définitivement — sur aucune page. Chercher la position de
+// l'identifiant dans la liste est exact par construction.
 async function getMessages(tid, { limit = 50, before = null } = {}) {
-  const max = before ? String(Date.parse(before) - 1) : '+inf';
-  const ids = (await A.kv(['ZRANGEBYSCORE', `thread:${tid}:msgs`, '-inf', max])) || [];
-  const retenus = ids.slice(Math.max(0, ids.length - limit));
+  const ids = (await A.kv(['ZRANGEBYSCORE', `thread:${tid}:msgs`, '-inf', '+inf'])) || [];
+  // Curseur inconnu (message supprimé, identifiant fabriqué) → on repart de la fin.
+  const pos = before ? ids.indexOf(before) : -1;
+  const fin = pos >= 0 ? pos : ids.length;
+  const retenus = ids.slice(Math.max(0, fin - limit), fin);
   const out = [];
   for (const id of retenus) {
     const raw = await A.kv(['GET', `msg:${id}`]);
@@ -500,7 +527,7 @@ module.exports = {
 - [ ] **Step 4: Lancer les tests pour les voir passer**
 
 Run: `node --test test/messages-model.test.js`
-Expected: `# pass 6`, `# fail 0`.
+Expected: `# pass 7`, `# fail 0`.
 
 - [ ] **Step 5: Commit**
 
@@ -1213,6 +1240,7 @@ Create `api/messages.js`:
 //
 // POST { action:'threads.list' }                          → { ok, role, threads:[…] }
 // POST { action:'thread.open', threadId, before? }        → { ok, thread, messages:[…] }
+//        `before` = identifiant de message (curseur d'historique), pas un horodatage.
 // POST { action:'message.send', threadId|to, body }       → { ok, message, notified }
 // POST { action:'contacts.list' }                         → { ok, contacts:[…] }
 //
