@@ -108,11 +108,18 @@ async function appendMessage(thread, { fromRole, fromUsername, fromName, body })
 }
 
 // Messages du fil, du plus ancien au plus récent. `limit` s'applique à la FIN
-// (les plus récents), `before` remonte l'historique depuis un horodatage.
+// (les plus récents), `before` remonte l'historique.
+//
+// Le curseur est un IDENTIFIANT de message, pas un horodatage : deux messages
+// envoyés dans la même milliseconde ont le même score, et un curseur temporel
+// en sauterait un définitivement — sur aucune page. Chercher la position de
+// l'identifiant dans la liste est exact par construction.
 async function getMessages(tid, { limit = 50, before = null } = {}) {
-  const max = before ? String(Date.parse(before) - 1) : '+inf';
-  const ids = (await A.kv(['ZRANGEBYSCORE', `thread:${tid}:msgs`, '-inf', max])) || [];
-  const retenus = ids.slice(Math.max(0, ids.length - limit));
+  const ids = (await A.kv(['ZRANGEBYSCORE', `thread:${tid}:msgs`, '-inf', '+inf'])) || [];
+  // Curseur inconnu (message supprimé, identifiant fabriqué) → on repart de la fin.
+  const pos = before ? ids.indexOf(before) : -1;
+  const fin = pos >= 0 ? pos : ids.length;
+  const retenus = ids.slice(Math.max(0, fin - limit), fin);
   const out = [];
   for (const id of retenus) {
     const raw = await A.kv(['GET', `msg:${id}`]);

@@ -53,7 +53,7 @@ function kvExec(store, cmd) {
       const lo = rest[0] === '-inf' ? -Infinity : Number(rest[0]);
       const hi = rest[1] === '+inf' ? Infinity : Number(rest[1]);
       let out = [...z.entries()].filter(([, sc]) => sc >= lo && sc <= hi)
-        .sort((a, b) => a[1] - b[1]).map(([m]) => m);
+        .sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0])).map(([m]) => m);
       const li = rest.findIndex(r => String(r).toUpperCase() === 'LIMIT');
       if (li >= 0) {
         const off = Number(rest[li + 1]) || 0;
@@ -63,7 +63,7 @@ function kvExec(store, cmd) {
     }
     case 'ZREVRANGE': {
       const z = store.zsets.get(key) || new Map();
-      const all = [...z.entries()].sort((a, b) => b[1] - a[1]).map(([m]) => m);
+      const all = [...z.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([m]) => m);
       const start = Number(rest[0]) || 0;
       const stop = Number(rest[1]);
       return all.slice(start, stop === -1 ? undefined : stop + 1);

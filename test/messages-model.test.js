@@ -65,6 +65,23 @@ test('getMessages rend l ordre chronologique et pagine', async () => {
   assert.deepEqual(tous.map(m => m.body), ['un', 'deux', 'trois']);
   const derniers = await M.getMessages(th.id, { limit: 2 });
   assert.deepEqual(derniers.map(m => m.body), ['deux', 'trois']);
+  // Traversee de frontiere : la page suivante reprend juste avant le curseur,
+  // sans sauter ni repeter de message.
+  const precedents = await M.getMessages(th.id, { limit: 2, before: derniers[0].id });
+  assert.deepEqual(precedents.map(m => m.body), ['un']);
+});
+
+test('le curseur ne saute aucun message a horodatage identique', async () => {
+  H.reset(); await comptes();
+  let th = await M.ensureThread({ teacherUsername: 'blaise', studentUsername: 'mohamedjr' });
+  // Trois messages ecrits d affilee : leurs scores peuvent coincider a la ms.
+  for (const mot of ['a', 'b', 'c']) {
+    th = (await M.appendMessage(th, { fromRole: 'teacher', fromUsername: 'blaise', fromName: 'B', body: mot })).thread;
+  }
+  const tous = await M.getMessages(th.id, { limit: 50 });
+  const page2 = await M.getMessages(th.id, { limit: 50, before: tous[2].id });
+  assert.deepEqual(page2.map(m => m.body), ['a', 'b'],
+    'paginer depuis le dernier message doit rendre TOUS les precedents');
 });
 
 test('listThreads cloisonne par role et par identifiant', async () => {
