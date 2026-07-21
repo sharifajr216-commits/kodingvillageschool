@@ -1,5 +1,8 @@
 {
   "rewrites": [
     { "source": "/signup", "destination": "/index.html" }
+  ],
+  "crons": [
+    { "path": "/api/reminders", "schedule": "*/15 * * * *" }
   ]
 }

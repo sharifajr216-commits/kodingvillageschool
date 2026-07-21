@@ -4,11 +4,20 @@
 //
 // En-tête : Authorization: Bearer <token admin>   (ou body.token en repli)
 //
-// POST { action:'create', firstName, lastName, email, phone, slot } → { ok, email, tempPassword }
+// Identité = USERNAME unique (l'e-mail est un contact partageable par une fratrie).
+// POST { action:'username.suggest', firstName }              → { ok, username }         (suggestion libre)
+// POST { action:'create', firstName, lastName, email, phone, slot, username? } → { ok, username, email, tempPassword }
 // POST { action:'list' }                                     → { ok, students:[...] }   (sans secrets)
-// POST { action:'send',   email }                            → { ok, sentAt }           (envoie l'e-mail)
-// POST { action:'reset',  email }                            → { ok, tempPassword }
-// POST { action:'delete', email }                            → { ok }
+// POST { action:'send',   username }                         → { ok, sentAt }           (envoie l'e-mail)
+// POST { action:'reset',  username }                         → { ok, tempPassword }
+// POST { action:'delete', username }                         → { ok }
+//
+// Enseignants (comptes provisionnés par l'admin, rôle 'teacher' au login) :
+// POST { action:'teacher.create', firstName, lastName, email, phone, username? } → { ok, username, email, tempPassword }
+// POST { action:'teacher.list' }                             → { ok, teachers:[...] }  (sans secrets)
+// POST { action:'teacher.send',   username }                 → { ok, sentAt }
+// POST { action:'teacher.reset',  username }                 → { ok, tempPassword }
+// POST { action:'teacher.delete', username }                 → { ok }
 //
 // Prospects d'essai (leads, reçus via api/booking) :
 // POST { action:'leads.list' }                               → { ok, leads:[...] }
@@ -16,8 +25,8 @@
 // POST { action:'leads.delete',  id }                        → { ok }
 //
 // Séances de cours (socle des rappels automatiques — voir api/reminders.js) :
-// POST { action:'session.create', courseId, courseLabel, startsAt, durationMin, students:[email] }
-//                                                            → { ok, session }
+// POST { action:'session.create', courseId, courseLabel, startsAt, durationMin,
+//        students:[username], teacherUsername? }             → { ok, session }
 // POST { action:'session.list' }                             → { ok, sessions:[...] }   (à venir)
 // POST { action:'session.delete', id }                       → { ok }
 //
@@ -45,6 +54,18 @@ function genTempPassword() {
   return `Kvs-${pick(UP, 1)}${pick(lo, 3)}-${pick(num, 4)}`;
 }
 
+// Résout le username d'un NOUVEAU compte : celui fourni par l'admin (validé unique),
+// sinon une suggestion à partir du prénom (prenom, prenom2, prenom3…).
+// Renvoie { username } ou { error:'username_taken' }.
+async function resolveNewUsername(rawUsername, firstName) {
+  const wanted = A.normUsername(rawUsername);
+  if (wanted) {
+    if (await A.accountExists(wanted)) return { error: 'username_taken' };
+    return { username: wanted };
+  }
+  return { username: await A.suggestUsername(firstName) };
+}
+
 async function resendSend(payload) {
   const r = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -56,23 +77,29 @@ async function resendSend(payload) {
   return d.id;
 }
 
-// Envoie l'e-mail d'accès (identifiant + mot de passe temporaire) à un élève.
-// Partagé par l'action `send` et par la conversion d'un prospect (`leads.convert`).
-async function sendCredsEmail(user) {
+// Envoie l'e-mail d'accès (identifiant + mot de passe temporaire) à un élève OU
+// un enseignant. `kind` adapte le vocabulaire ('student' par défaut, ou 'teacher').
+// Partagé par les actions `send` / `teacher.send` et la conversion (`leads.convert`).
+async function sendCredsEmail(user, kind) {
+  const isTeacher = kind === 'teacher';
+  const espace = isTeacher ? 'ton espace enseignant' : 'ton espace élève';
+  const subject = isTeacher
+    ? 'Tes accès à ton espace enseignant KodingvillageSchool 👨‍🏫'
+    : 'Tes accès à ton espace KodingvillageSchool 🎓';
   return resendSend({
     from: `KodingvillageSchool <${FROM_EMAIL}>`,
     to: [user.email],
     reply_to: A.ADMIN_EMAIL || undefined,
-    subject: 'Tes accès à ton espace KodingvillageSchool 🎓',
+    subject,
     html: `
       <p style="font-family:Arial,sans-serif;font-size:15px">Bonjour ${esc(user.firstName)},</p>
-      <p style="font-family:Arial,sans-serif;font-size:15px">Voici tes accès personnels à ton espace élève${user.slot ? ` (session du <b>${esc(user.slot)}</b>)` : ''} :</p>
+      <p style="font-family:Arial,sans-serif;font-size:15px">Voici tes accès personnels à ${espace}${!isTeacher && user.slot ? ` (session du <b>${esc(user.slot)}</b>)` : ''} :</p>
       <table cellpadding="6" style="font-family:Arial,sans-serif;font-size:14px;border-collapse:collapse">
         <tr><td><b>Adresse</b></td><td><a href="${esc(PUBLIC_URL)}">${esc(PUBLIC_URL)}</a></td></tr>
-        <tr><td><b>Identifiant</b></td><td>${esc(user.email)}</td></tr>
+        <tr><td><b>Identifiant</b></td><td><code>${esc(user.username)}</code></td></tr>
         <tr><td><b>Mot de passe</b></td><td><code>${esc(user.tempPassword)}</code></td></tr>
       </table>
-      <p style="font-family:Arial,sans-serif;font-size:13px;color:#666">Connecte-toi et garde ces identifiants confidentiels.</p>
+      <p style="font-family:Arial,sans-serif;font-size:13px;color:#666">Tu peux te connecter avec ton identifiant <b>ou</b> ton e-mail. Change ton mot de passe après la première connexion, depuis ton espace.</p>
       ${B.emailFooter()}`
   });
 }
@@ -106,13 +133,21 @@ module.exports = async (req, res) => {
   if (!requireAdmin(req, body)) { res.status(401).json({ ok: false, error: 'unauthorized' }); return; }
 
   try {
+    // Suggestion de username en direct pour le formulaire admin (depuis le prénom).
+    if (body.action === 'username.suggest') {
+      const username = await A.suggestUsername(clean(body.firstName, 60));
+      res.status(200).json({ ok: true, username });
+      return;
+    }
+
     if (body.action === 'list') {
       const users = await A.listUsers();
       const students = users.map(u => ({
-        firstName: u.firstName || '', lastName: u.lastName || '', email: u.email,
+        username: u.username, firstName: u.firstName || '', lastName: u.lastName || '', email: u.email,
         phone: u.phone || '', slot: u.slot || '', createdAt: u.createdAt || null,
         credsSentAt: u.credsSentAt || null, hasCreds: !!u.tempPassword
       }));
+      students.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
       res.status(200).json({ ok: true, students });
       return;
     }
@@ -123,42 +158,44 @@ module.exports = async (req, res) => {
       // Téléphone facultatif — requis uniquement pour les rappels WhatsApp.
       const phone = clean(body.phone, 40);
       if (!firstName || !lastName || !isEmail(email)) { res.status(400).json({ ok: false, error: 'invalid' }); return; }
-      if (await A.getUser(email)) { res.status(409).json({ ok: false, error: 'exists' }); return; }
+      // L'e-mail n'a plus à être unique (fratrie). L'unicité porte sur le USERNAME.
+      const r = await resolveNewUsername(body.username, firstName);
+      if (r.error) { res.status(409).json({ ok: false, error: 'username_taken', message: 'Cet identifiant est déjà pris.' }); return; }
       const tempPassword = genTempPassword();
       await A.putUser({
-        firstName, lastName, email, phone, slot,
-        passHash: A.hashPassword(tempPassword), tempPassword,
+        username: r.username, firstName, lastName, email, phone, slot,
+        passHash: A.hashPassword(tempPassword), tempPassword, mustChangePassword: true,
         createdAt: new Date().toISOString(), credsSentAt: null
       });
-      // tempPassword renvoyé UNE fois à l'admin pour affichage/copie (aucun e-mail encore envoyé)
-      res.status(200).json({ ok: true, email, tempPassword });
+      // username + tempPassword renvoyés UNE fois à l'admin (aucun e-mail encore envoyé)
+      res.status(200).json({ ok: true, username: r.username, email, tempPassword });
       return;
     }
 
     if (body.action === 'reset') {
-      const email = A.normEmail(body.email);
-      const user = await A.getUser(email);
+      const user = await A.getUser(body.username);
       if (!user) { res.status(404).json({ ok: false, error: 'not_found' }); return; }
       const tempPassword = genTempPassword();
       user.passHash = A.hashPassword(tempPassword);
       user.tempPassword = tempPassword;
+      user.mustChangePassword = true;
       user.credsSentAt = null;
       await A.putUser(user);
-      res.status(200).json({ ok: true, email, tempPassword });
+      res.status(200).json({ ok: true, username: user.username, email: user.email, tempPassword });
       return;
     }
 
     if (body.action === 'delete') {
-      await A.deleteUser(A.normEmail(body.email));
+      await A.deleteUser(body.username);
       res.status(200).json({ ok: true });
       return;
     }
 
     if (body.action === 'send') {
-      const email = A.normEmail(body.email);
-      const user = await A.getUser(email);
+      const user = await A.getUser(body.username);
       if (!user) { res.status(404).json({ ok: false, error: 'not_found' }); return; }
       if (!user.tempPassword) { res.status(400).json({ ok: false, error: 'no_temp_password', message: 'Réinitialise le mot de passe avant de (r)envoyer.' }); return; }
+      if (!isEmail(user.email)) { res.status(400).json({ ok: false, error: 'no_email', message: 'Ce compte n\'a pas d\'e-mail de contact valide.' }); return; }
       if (!RESEND_API_KEY) { res.status(500).json({ ok: false, error: 'not_configured' }); return; }
       try {
         await sendCredsEmail(user);
@@ -172,6 +209,75 @@ module.exports = async (req, res) => {
       user.credsSentAt = new Date().toISOString();
       await A.putUser(user);
       res.status(200).json({ ok: true, sentAt: user.credsSentAt });
+      return;
+    }
+
+    // ---- Enseignants (comptes provisionnés par l'admin, en KV) ----
+
+    if (body.action === 'teacher.list') {
+      const teachers = await A.listTeachers();
+      const rows = teachers.map(t => ({
+        username: t.username, firstName: t.firstName || '', lastName: t.lastName || '', email: t.email,
+        phone: t.phone || '', createdAt: t.createdAt || null,
+        credsSentAt: t.credsSentAt || null, hasCreds: !!t.tempPassword
+      }));
+      // Plus récents en premier.
+      rows.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+      res.status(200).json({ ok: true, teachers: rows });
+      return;
+    }
+
+    if (body.action === 'teacher.create') {
+      const firstName = clean(body.firstName, 60), lastName = clean(body.lastName, 60);
+      const email = A.normEmail(body.email), phone = clean(body.phone, 40);
+      if (!firstName || !lastName || !isEmail(email)) { res.status(400).json({ ok: false, error: 'invalid' }); return; }
+      // Unicité sur le USERNAME (globale élèves + enseignants), plus sur l'e-mail.
+      const r = await resolveNewUsername(body.username, firstName);
+      if (r.error) { res.status(409).json({ ok: false, error: 'username_taken', message: 'Cet identifiant est déjà pris.' }); return; }
+      const tempPassword = genTempPassword();
+      await A.putTeacher({
+        username: r.username, firstName, lastName, email, phone,
+        passHash: A.hashPassword(tempPassword), tempPassword, mustChangePassword: true,
+        createdAt: new Date().toISOString(), credsSentAt: null
+      });
+      res.status(200).json({ ok: true, username: r.username, email, tempPassword });
+      return;
+    }
+
+    if (body.action === 'teacher.reset') {
+      const teacher = await A.getTeacher(body.username);
+      if (!teacher) { res.status(404).json({ ok: false, error: 'not_found' }); return; }
+      const tempPassword = genTempPassword();
+      teacher.passHash = A.hashPassword(tempPassword);
+      teacher.tempPassword = tempPassword;
+      teacher.mustChangePassword = true;
+      teacher.credsSentAt = null;
+      await A.putTeacher(teacher);
+      res.status(200).json({ ok: true, username: teacher.username, email: teacher.email, tempPassword });
+      return;
+    }
+
+    if (body.action === 'teacher.send') {
+      const teacher = await A.getTeacher(body.username);
+      if (!teacher) { res.status(404).json({ ok: false, error: 'not_found' }); return; }
+      if (!teacher.tempPassword) { res.status(400).json({ ok: false, error: 'no_temp_password', message: 'Réinitialise le mot de passe avant de (r)envoyer.' }); return; }
+      if (!isEmail(teacher.email)) { res.status(400).json({ ok: false, error: 'no_email', message: 'Ce compte n\'a pas d\'e-mail de contact valide.' }); return; }
+      if (!RESEND_API_KEY) { res.status(500).json({ ok: false, error: 'not_configured' }); return; }
+      try {
+        await sendCredsEmail(teacher, 'teacher');
+      } catch (e) {
+        res.status(502).json({ ok: false, error: 'send_failed', message: sendFailedMessage(e) });
+        return;
+      }
+      teacher.credsSentAt = new Date().toISOString();
+      await A.putTeacher(teacher);
+      res.status(200).json({ ok: true, sentAt: teacher.credsSentAt });
+      return;
+    }
+
+    if (body.action === 'teacher.delete') {
+      await A.deleteTeacher(body.username);
+      res.status(200).json({ ok: true });
       return;
     }
 
@@ -198,19 +304,18 @@ module.exports = async (req, res) => {
       if (!lead) { res.status(404).json({ ok: false, error: 'not_found' }); return; }
       const email = A.normEmail(lead.email);
       if (!isEmail(email)) { res.status(400).json({ ok: false, error: 'invalid', message: 'E-mail du prospect invalide.' }); return; }
-      // Compte déjà existant → on ne réécrase pas : l'admin le gère dans le tableau élèves.
-      if (await A.getUser(email)) {
-        res.status(409).json({ ok: false, error: 'exists', message: 'Un compte existe déjà pour cet e-mail — gère-le dans le tableau des élèves.' });
-        return;
-      }
       if (!RESEND_API_KEY) { res.status(500).json({ ok: false, error: 'not_configured' }); return; }
 
+      // Plusieurs enfants d'une même famille peuvent partager l'e-mail parent :
+      // on ne bloque plus sur l'e-mail, l'unicité porte sur le username auto-généré.
+      const firstName = clean(lead.childFirst, 60) || clean(lead.parentFirst, 60);
       const tempPassword = genTempPassword();
       const user = {
-        firstName: clean(lead.childFirst, 60) || clean(lead.parentFirst, 60),
+        username: await A.suggestUsername(firstName),
+        firstName,
         lastName: clean(lead.childLast, 60) || clean(lead.parentLast, 60),
         email, phone: clean(lead.phone, 40), slot: clean(lead.slot, 80),
-        passHash: A.hashPassword(tempPassword), tempPassword,
+        passHash: A.hashPassword(tempPassword), tempPassword, mustChangePassword: true,
         createdAt: new Date().toISOString(), credsSentAt: null
       };
       await A.putUser(user);
@@ -220,7 +325,7 @@ module.exports = async (req, res) => {
       try {
         await sendCredsEmail(user);
       } catch (e) {
-        res.status(502).json({ ok: false, error: 'send_failed', email, tempPassword, message: sendFailedMessage(e) });
+        res.status(502).json({ ok: false, error: 'send_failed', username: user.username, email, tempPassword, message: sendFailedMessage(e) });
         return;
       }
       user.credsSentAt = new Date().toISOString();
@@ -230,9 +335,10 @@ module.exports = async (req, res) => {
       lead.status = 'converted';
       lead.convertedAt = user.credsSentAt;
       lead.studentEmail = email;
+      lead.studentUsername = user.username;
       await A.putLead(lead);
 
-      res.status(200).json({ ok: true, email, tempPassword, sentAt: user.credsSentAt });
+      res.status(200).json({ ok: true, username: user.username, email, tempPassword, sentAt: user.credsSentAt });
       return;
     }
 
@@ -244,22 +350,35 @@ module.exports = async (req, res) => {
         res.status(400).json({ ok: false, error: 'invalid', message: 'startsAt doit être une date ISO 8601 (ex: 2026-07-20T17:00:00Z).' });
         return;
       }
-      const students = Array.isArray(body.students) ? body.students.map(A.normEmail).filter(isEmail) : [];
+      // Élèves inscrits, désormais désignés par leur USERNAME (identité unique).
+      const students = Array.isArray(body.students) ? body.students.map(A.normUsername).filter(Boolean) : [];
       if (!students.length) {
         res.status(400).json({ ok: false, error: 'invalid', message: 'Au moins un élève inscrit est requis.' });
         return;
       }
-      // Refuse les élèves inconnus : sans compte, le rappel n'aurait ni nom ni téléphone.
-      for (const e of students) {
-        if (!(await A.getUser(e))) {
-          res.status(400).json({ ok: false, error: 'unknown_student', message: `Aucun compte pour ${e}.` });
+      // Refuse les élèves inconnus : sans compte, le rappel n'aurait ni nom ni e-mail.
+      for (const u of students) {
+        if (!(await A.getUser(u))) {
+          res.status(400).json({ ok: false, error: 'unknown_student', message: `Aucun compte élève pour « ${u} ».` });
           return;
         }
+      }
+      // Enseignant facultatif (par username). S'il est fourni, il doit exister.
+      const teacherUsername = A.normUsername(body.teacherUsername);
+      let teacherName = '';
+      if (teacherUsername) {
+        const teacher = await A.getTeacher(teacherUsername);
+        if (!teacher) {
+          res.status(400).json({ ok: false, error: 'unknown_teacher', message: `Aucun compte enseignant pour « ${teacherUsername} ».` });
+          return;
+        }
+        teacherName = `${teacher.firstName || ''} ${teacher.lastName || ''}`.trim();
       }
       const session = await S.createSession({
         courseId: clean(body.courseId, 60),
         courseLabel: clean(body.courseLabel, 120),
-        startsAt, durationMin: body.durationMin, students
+        startsAt, durationMin: body.durationMin, students,
+        teacherUsername, teacherName
       });
       res.status(200).json({ ok: true, session });
       return;

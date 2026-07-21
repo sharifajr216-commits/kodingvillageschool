@@ -1,8 +1,9 @@
-// Fonction serverless Vercel — LES SÉANCES DE L'ÉLÈVE CONNECTÉ.
+// Fonction serverless Vercel — LES SÉANCES DE L'UTILISATEUR CONNECTÉ.
+// Élève  → ses séances inscrites ; Enseignant → les séances qu'il anime.
 //
 // 🔒 CLOISONNEMENT : l'e-mail filtrant est lu dans le JETON SIGNÉ, jamais dans le
-//    corps de la requête. Un élève ne peut donc pas demander les séances d'un autre
-//    en changeant un paramètre — il faudrait forger une signature HMAC.
+//    corps de la requête. Un utilisateur ne peut donc pas demander les séances d'un
+//    autre en changeant un paramètre — il faudrait forger une signature HMAC.
 //
 // En-tête : Authorization: Bearer <token>   (ou body.token en repli)
 //
@@ -38,24 +39,28 @@ module.exports = async (req, res) => {
   body = body || {};
 
   const payload = A.verifyToken(readToken(req, body));
-  if (!payload || !payload.email) {
+  if (!payload || !payload.sub) {
     res.status(401).json({ ok: false, error: 'unauthorized' });
     return;
   }
 
   try {
-    const list = await S.sessionsForStudent(payload.email, 20);
+    const isTeacher = payload.role === 'teacher';
+    const list = isTeacher
+      ? await S.sessionsForTeacher(payload.sub, 20)
+      : await S.sessionsForStudent(payload.sub, 20);
     const sessions = list.map(s => ({
       id: s.id,
       courseId: s.courseId,
       courseLabel: s.courseLabel || s.courseId,
       startsAt: s.startsAt,
       durationMin: s.durationMin || 60,
-      endsAt: new Date(Date.parse(s.startsAt) + (s.durationMin || 60) * 60000).toISOString()
-      // `students` n'est délibérément PAS exposé : la liste des camarades
-      // inscrits n'a pas à circuler côté navigateur.
+      endsAt: new Date(Date.parse(s.startsAt) + (s.durationMin || 60) * 60000).toISOString(),
+      // L'enseignant a besoin de savoir QUI il reçoit ; l'élève, non (cloisonnement).
+      ...(isTeacher ? { studentCount: (s.students || []).length } : {})
+      // Pour un élève, `students` n'est délibérément PAS exposé.
     }));
-    res.status(200).json({ ok: true, now: new Date().toISOString(), sessions });
+    res.status(200).json({ ok: true, role: payload.role, now: new Date().toISOString(), sessions });
   } catch (e) {
     console.error('[my-sessions]', e.message);
     res.status(500).json({ ok: false, error: 'server_error' });
