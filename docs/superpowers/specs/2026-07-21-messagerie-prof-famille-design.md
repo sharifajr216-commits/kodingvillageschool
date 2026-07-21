@@ -61,7 +61,8 @@ après la suppression de l'ancien panneau.
 
 ```
 thread:<tid>                 JSON du fil
-thread:<tid>:msgs            ZSET { score: epoch_ms, member: messageId }
+thread:<tid>:seq             compteur monotone du fil (INCR)
+thread:<tid>:msgs            ZSET { score: numéro de séquence, member: messageId }
 msg:<mid>                    JSON du message
 threads:teacher:<username>   ZSET { score: lastMessageAt } → boîte de l'enseignant
 threads:student:<username>   ZSET { score: lastMessageAt } → boîte de la famille
