@@ -654,6 +654,20 @@ test('la lecture rearme l alerte', async () => {
     'apres lecture, le message suivant doit re-alerter');
 });
 
+test('lecture et alerte dans la meme milliseconde : l alerte se rearme', async () => {
+  H.reset();
+  let th = await filPret();
+  th = (await ecrire(th, 'un')).thread;
+  // On force l egalite parfaite des deux horodatages : c est le cas limite que
+  // `>=` doit trancher en faveur du rearmement. Avec `>`, le destinataire ne
+  // serait plus JAMAIS alerte sur ce fil.
+  const instant = new Date().toISOString();
+  th.alerted.student = instant;
+  th.lastReadAt.student = instant;
+  assert.equal(M.shouldAlert(th, 'student'), true,
+    'a egalite stricte, on realerte plutot que de laisser le destinataire dans le noir');
+});
+
 test('shouldAlert n ecrit rien', async () => {
   H.reset();
   let th = await filPret();
@@ -724,7 +738,7 @@ module.exports = {
 - [ ] **Step 4: Lancer les tests**
 
 Run: `node --test test/messages-read.test.js`
-Expected: `# pass 4`, `# fail 0`.
+Expected: `# pass 5`, `# fail 0`.
 
 - [ ] **Step 5: Commit**
 
@@ -901,7 +915,7 @@ module.exports = {
 - [ ] **Step 4: Lancer les tests**
 
 Run: `node --test test/messages-acl.test.js`
-Expected: `# pass 4`, `# fail 0`.
+Expected: `# pass 5`, `# fail 0`.
 
 - [ ] **Step 5: Commit**
 
@@ -1076,7 +1090,7 @@ Mettre à jour le commentaire d'en-tête du fichier : ajouter `api/messages.js` 
 - [ ] **Step 4: Lancer les tests**
 
 Run: `node --test test/messages-mail.test.js`
-Expected: `# pass 4`, `# fail 0`.
+Expected: `# pass 5`, `# fail 0`.
 
 - [ ] **Step 5: Commit**
 
