@@ -163,8 +163,44 @@ async function listThreads(role, username, limit = 50) {
   return out;
 }
 
+// ── Lecture et alertes ──────────────────────────────────────────────────────
+
+// Marque le fil lu pour un côté. L'accusé de lecture affiché à l'expéditeur se
+// déduit ensuite de lastReadAt[autre] : aucun champ par message à maintenir.
+async function markRead(thread, side) {
+  if (!SIDES.includes(side)) throw new Error('Côté invalide.');
+  thread.unread = thread.unread || { teacher: 0, student: 0 };
+  thread.lastReadAt = thread.lastReadAt || { teacher: null, student: null };
+  thread.unread[side] = 0;
+  thread.lastReadAt[side] = new Date().toISOString();
+  await putThread(thread);
+  return thread;
+}
+
+// Faut-il envoyer une alerte e-mail à `side` ?
+//
+// Règle : on alerte si aucune alerte n'a encore été envoyée, OU si le
+// destinataire a lu depuis la dernière. Autrement dit une seule alerte tant
+// qu'il n'a pas ouvert le fil — trois messages d'affilée ne font qu'un e-mail.
+// Fonction PURE : elle n'écrit rien, c'est noteAlerted qui horodate.
+function shouldAlert(thread, side) {
+  const alerted = (thread.alerted || {})[side];
+  if (!alerted) return true;
+  const lu = (thread.lastReadAt || {})[side];
+  if (!lu) return false;
+  return Date.parse(lu) >= Date.parse(alerted);
+}
+
+async function noteAlerted(thread, side) {
+  thread.alerted = thread.alerted || { teacher: null, student: null };
+  thread.alerted[side] = new Date().toISOString();
+  await putThread(thread);
+  return thread;
+}
+
 module.exports = {
   threadId, parseThreadId, getThread, putThread, ensureThread,
   appendMessage, getMessages, listThreads,
+  markRead, shouldAlert, noteAlerted,
   otherSide, MAX_BODY, SNIPPET_LEN, SIDES
 };
