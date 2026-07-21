@@ -8,7 +8,9 @@
 //
 // Variables d'environnement :
 //   SESSION_SECRET                        secret de signature des jetons (obligatoire)
-//   ADMIN_EMAIL / ADMIN_PASSWORD_HASH     identifiants admin (hors KV) ; hash au format "salt:hash"
+//   ADMIN_EMAIL                           e-mail admin (obligatoire pour le login admin)
+//   ADMIN_PASSWORD_HASH                   mot de passe admin haché "salt:hash" (recommandé), OU
+//   ADMIN_PASSWORD                        mot de passe admin EN CLAIR (repli plus simple)
 //   KV_REST_API_URL / KV_REST_API_TOKEN   (ou UPSTASH_REDIS_REST_*) — déjà présents (parrainage)
 
 const crypto = require('crypto');
@@ -17,7 +19,12 @@ const KV_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL
 const KV_TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
 const SESSION_SECRET = process.env.SESSION_SECRET || '';
 const ADMIN_EMAIL_RAW = process.env.ADMIN_EMAIL || '';
-const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH || '';
+// Deux façons de fournir le mot de passe admin (au choix) :
+//   - ADMIN_PASSWORD_HASH : hash PBKDF2 au format "salt:hash" (recommandé en prod).
+//   - ADMIN_PASSWORD      : mot de passe EN CLAIR (repli simple, plus facile à configurer).
+// On nettoie les artefacts de copier-coller (espaces / retours à la ligne parasites de Vercel).
+const ADMIN_PASSWORD_HASH = (process.env.ADMIN_PASSWORD_HASH || '').trim();
+const ADMIN_PASSWORD = (process.env.ADMIN_PASSWORD || '').replace(/[\r\n]+$/, '');
 
 const nowSec = () => Math.floor(Date.now() / 1000);
 const normEmail = (e) => String(e == null ? '' : e).trim().toLowerCase().slice(0, 120);
@@ -131,13 +138,58 @@ async function deleteLead(id) {
 }
 
 // ---- Admin (identifiants via env, jamais en KV) ----
-const isAdminCredentials = (email, password) =>
-  !!ADMIN_EMAIL && normEmail(email) === ADMIN_EMAIL && verifyPassword(password, ADMIN_PASSWORD_HASH);
+
+// Comparaison de chaînes à temps constant (mot de passe en clair).
+function timingEqStr(a, b) {
+  const ba = Buffer.from(String(a == null ? '' : a), 'utf8');
+  const bb = Buffer.from(String(b == null ? '' : b), 'utf8');
+  if (ba.length !== bb.length) return false;
+  return crypto.timingSafeEqual(ba, bb);
+}
+
+const hasAdminHash = () => !!ADMIN_PASSWORD_HASH && ADMIN_PASSWORD_HASH.indexOf(':') > 0;
+const hasAdminPlain = () => !!ADMIN_PASSWORD;
+
+// Vérifie le mot de passe admin : hash PBKDF2 en priorité, sinon mot de passe en clair.
+// Renvoie { ok, method } — `method` sert au diagnostic (jamais renvoyé au navigateur).
+function checkAdminPassword(password) {
+  if (hasAdminHash()) return { ok: verifyPassword(password, ADMIN_PASSWORD_HASH), method: 'hash' };
+  if (hasAdminPlain()) return { ok: timingEqStr(password, ADMIN_PASSWORD), method: 'plain' };
+  return { ok: false, method: 'none' };
+}
+
+// Diagnostic complet de la tentative de connexion admin, avec une RAISON explicite
+// (utilisée pour les logs serveur uniquement — aucune valeur secrète n'y figure).
+function adminAuthDiagnose(email, password) {
+  if (!ADMIN_EMAIL) return { ok: false, reason: 'ADMIN_EMAIL_absent' };
+  if (normEmail(email) !== ADMIN_EMAIL) return { ok: false, reason: 'email_ne_correspond_pas' };
+  const pw = checkAdminPassword(password);
+  if (pw.method === 'none') return { ok: false, reason: 'aucun_mot_de_passe_configure' };
+  if (pw.method === 'hash' && !ADMIN_PASSWORD_HASH.split(':')[1]) {
+    return { ok: false, reason: 'ADMIN_PASSWORD_HASH_format_invalide (attendu "salt:hash")' };
+  }
+  if (!pw.ok) return { ok: false, reason: `mot_de_passe_incorrect (methode=${pw.method})` };
+  return { ok: true, method: pw.method };
+}
+
+const isAdminCredentials = (email, password) => adminAuthDiagnose(email, password).ok;
+
+// État de configuration (booléens uniquement, JAMAIS de secret) — pour l'endpoint de diagnostic.
+function envDiag() {
+  return {
+    sessionSecret: !!SESSION_SECRET,
+    adminEmail: !!ADMIN_EMAIL,
+    adminPasswordHash: hasAdminHash(),
+    adminPasswordHashFormatOk: hasAdminHash() && !!ADMIN_PASSWORD_HASH.split(':')[1],
+    adminPasswordPlain: hasAdminPlain(),
+    kv: kvConfigured()
+  };
+}
 
 module.exports = {
   kv, kvConfigured, configured,
   hashPassword, verifyPassword, signToken, verifyToken,
   getUser, putUser, listUsers, deleteUser,
   putLead, getLead, listLeads, deleteLead,
-  normEmail, nowSec, ADMIN_EMAIL, isAdminCredentials
+  normEmail, nowSec, ADMIN_EMAIL, isAdminCredentials, adminAuthDiagnose, envDiag
 };
