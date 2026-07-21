@@ -346,6 +346,29 @@ test('le curseur ne saute aucun message a horodatage identique', async () => {
     'paginer depuis le dernier message doit rendre TOUS les precedents');
 });
 
+test('putThread ne modifie pas le rang : une lecture ne remonte pas le fil', async () => {
+  H.reset(); await comptes();
+  let th = await M.ensureThread({ teacherUsername: 'blaise', studentUsername: 'mohamedjr' });
+  th = (await M.appendMessage(th, { fromRole: 'teacher', fromUsername: 'blaise', fromName: 'B', body: 'coucou' })).thread;
+  const rangApres1erMessage = th.rank;
+  assert.ok(rangApres1erMessage > 0, 'un message doit attribuer un rang');
+  // markRead / noteAlerted (taches suivantes) passent par putThread : le rang
+  // ne doit pas bouger, sinon ouvrir un fil le ferait remonter en tete de boite.
+  await M.putThread(th);
+  await M.putThread(th);
+  assert.equal((await M.getThread(th.id)).rank, rangApres1erMessage);
+});
+
+test('un fil sans message se range en bas, pas en haut', async () => {
+  H.reset(); await comptes();
+  const vide = await M.ensureThread({ teacherUsername: 'blaise', studentUsername: 'bilal' });
+  let actif = await M.ensureThread({ teacherUsername: 'blaise', studentUsername: 'mohamedjr' });
+  await M.appendMessage(actif, { fromRole: 'teacher', fromUsername: 'blaise', fromName: 'B', body: 'coucou' });
+  const boite = await M.listThreads('teacher', 'blaise', 50);
+  assert.equal(boite[0].id, actif.id, 'le fil actif doit passer devant le fil vide');
+  assert.equal(boite[boite.length - 1].id, vide.id);
+});
+
 test('listThreads cloisonne par role et par identifiant', async () => {
   H.reset(); await comptes();
   const a = await M.ensureThread({ teacherUsername: 'blaise', studentUsername: 'mohamedjr' });
@@ -434,9 +457,12 @@ async function getThread(tid) {
 //     seraient départagés au hasard par Redis (ordre lexicographique du membre) ;
 //   - putThread est aussi appelé par markRead / noteAlerted, et une simple
 //     LECTURE ne doit pas faire remonter le fil en tête de la boîte.
-// Repli sur l'horodatage pour un fil créé avant l'introduction du rang.
+// Un fil sans message n'a pas encore de rang : il vaut 0 et se range donc EN BAS
+// de la boîte, ce qui est exact — il n'a aucune activité. Surtout, ne pas replier
+// sur l'horodatage : un epoch en millisecondes (~1,8e12) écraserait des rangs
+// valant 1, 2, 3…, et le fil vide resterait épinglé en tête à jamais.
 async function putThread(t) {
-  const score = String(t.rank || Date.parse(t.lastMessageAt || t.createdAt));
+  const score = String(t.rank || 0);
   await A.kv(['SET', `thread:${t.id}`, JSON.stringify(t)]);
   await A.kv(['ZADD', `threads:teacher:${t.teacherUsername}`, score, t.id]);
   await A.kv(['ZADD', `threads:student:${t.studentUsername}`, score, t.id]);
@@ -546,7 +572,7 @@ module.exports = {
 - [ ] **Step 4: Lancer les tests pour les voir passer**
 
 Run: `node --test test/messages-model.test.js`
-Expected: `# pass 7`, `# fail 0`.
+Expected: `# pass 9`, `# fail 0`.
 
 - [ ] **Step 5: Commit**
 
