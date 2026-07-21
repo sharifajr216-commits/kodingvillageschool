@@ -21,6 +21,7 @@
 
 const crypto = require('crypto');
 const A = require('./_auth');
+const S = require('./_schedule');
 
 const MAX_BODY = 2000;
 const SNIPPET_LEN = 140;
@@ -198,9 +199,69 @@ async function noteAlerted(thread, side) {
   return thread;
 }
 
+// ── Droits d'accès, déduits des séances ─────────────────────────────────────
+//
+// Aucune table de permissions à maintenir : le droit d'échanger découle du fait
+// d'avoir cours ensemble. On balaie tout le ZSET des séances (passé conservé +
+// futur), le volume d'une école privée le permet.
+
+const RATE_MAX = 20;
+const RATE_WINDOW_S = 300;
+
+async function sharesSession(teacherUsername, studentUsername) {
+  const t = A.normUsername(teacherUsername);
+  const s = A.normUsername(studentUsername);
+  if (!t || !s) return false;
+  const toutes = await S.sessionsBetween(0, Infinity);
+  return toutes.some(x =>
+    A.normUsername(x.teacherUsername) === t && (x.students || []).includes(s));
+}
+
+// Seule la CRÉATION d'un fil exige une séance commune. Un fil déjà ouvert le
+// reste : sinon le canal se fermerait pendant les vacances ou à l'échéance d'un
+// cycle, précisément quand une famille écrit pour organiser la suite.
+async function canOpen(teacherUsername, studentUsername) {
+  if (await getThread(threadId(teacherUsername, studentUsername))) return true;
+  return sharesSession(teacherUsername, studentUsername);
+}
+
+async function contactsFor(role, username) {
+  const u = A.normUsername(username);
+  if (!u || !SIDES.includes(role)) return [];
+  const toutes = await S.sessionsBetween(0, Infinity);
+  const vus = new Set();
+  for (const s of toutes) {
+    if (role === 'teacher') {
+      if (A.normUsername(s.teacherUsername) !== u) continue;
+      for (const e of s.students || []) vus.add(e);
+    } else {
+      if (!(s.students || []).includes(u)) continue;
+      const t = A.normUsername(s.teacherUsername);
+      if (t) vus.add(t);
+    }
+  }
+  const out = [];
+  for (const nom of [...vus].sort()) {
+    const acct = role === 'teacher' ? await A.getUser(nom) : await A.getTeacher(nom);
+    out.push({ username: nom, name: fullName(acct, nom) });
+  }
+  return out;
+}
+
+// Compteur à fenêtre glissante grossière : sans lui, un enfant qui découvre le
+// bouton peut écrire trois cents messages en deux minutes. Le groupement des
+// alertes plafonne les e-mails, pas les écritures en base.
+async function rateLimited(username) {
+  const key = `rate:msg:${A.normUsername(username)}`;
+  const n = await A.kv(['INCR', key]);
+  if (Number(n) === 1) await A.kv(['EXPIRE', key, String(RATE_WINDOW_S)]);
+  return Number(n) > RATE_MAX;
+}
+
 module.exports = {
   threadId, parseThreadId, getThread, putThread, ensureThread,
   appendMessage, getMessages, listThreads,
   markRead, shouldAlert, noteAlerted,
-  otherSide, MAX_BODY, SNIPPET_LEN, SIDES
+  sharesSession, canOpen, contactsFor, rateLimited,
+  otherSide, MAX_BODY, SNIPPET_LEN, SIDES, RATE_MAX, RATE_WINDOW_S
 };
