@@ -4379,7 +4379,13 @@ print("Bonne séance de code, Bilal ! 🚀")
         <div class="sbx-widget">
           <div class="sbx-w-title"><span class="ui-icon-container is-sm"><i data-lucide="calendar"></i></span> Prochain cours</div>
           <div class="sbx-next"><div class="sbx-next-ic"><span class="ui-icon-container is-sm"><i data-lucide="gamepad-2"></i></span></div><div><div class="sbx-next-name">Développement de jeux</div><div class="sbx-next-time">28 juin, 13h00</div></div></div>
-          <button class="btn-join-now" onclick="APP.joinZoomMeeting('dev-jeux-python')"><span class="ui-icon-container is-sm" style="color:#10B981"><i data-lucide="circle"></i></span> Rejoindre</button>
+          <!-- Widget « Bac à sable » : carte de démonstration statique (date et cours
+               codés en dur, non alimentée par /api/my-sessions), accessible aussi via
+               la connexion démo locale (sans jeton). Depuis que /api/zoom exige un
+               jeton + une séance réelle en cours, la faire passer par joinZoomMeeting
+               afficherait à tort « reconnecte-toi » à un visiteur en simple démo. Elle
+               ouvre donc directement la salle de classe démo, comme avant ce correctif. -->
+          <button class="btn-join-now" onclick="KVS_ZoomManager.join()"><span class="ui-icon-container is-sm" style="color:#10B981"><i data-lucide="circle"></i></span> Rejoindre</button>
         </div>
         <div class="sbx-widget sbx-streak">
           <div class="sbx-flame"><span class="ui-icon-container is-sm"><i data-lucide="flame"></i></span></div>
@@ -6447,24 +6453,34 @@ Laboratoire de Codage Vibe|8|fichiers`;
   function leaveClass() { KVS_ZoomManager.leave(); }
 
   // =============================================================
-  //  joinZoomMeeting(courseId) — point d'entrée du bouton élève
-  //  « REJOINDRE LA CLASSE EN DIRECT ».
+  //  joinZoomMeeting(courseId) — point d'entrée du bouton élève ET
+  //  enseignant « REJOINDRE LA CLASSE EN DIRECT » (une seule implémentation
+  //  pour les deux écrans — voir makeJoinButton / _tchFocusHtml / _tchClassRow).
   //
   //  OPTION A (primaire) : interroge le backend Zoom (Server-to-Server
-  //  OAuth), récupère le vrai `join_url` de la réunion planifiée du cours,
-  //  puis redirige proprement vers l'application native Zoom de l'élève.
+  //  OAuth, authentifié — voir api/zoom.js), récupère le vrai `join_url`
+  //  de la réunion planifiée du cours, puis redirige proprement vers
+  //  l'application native Zoom de l'élève.
   //
-  //  Repli automatique : si le backend n'est pas encore configuré
-  //  (404 = cours non mappé, 501 = clés absentes) ou en cas de coupure
-  //  réseau, on rebascule sur la salle de classe premium démo existante
-  //  (KVS_ZoomManager) — l'expérience n'est jamais cassée.
+  //  Le backend exige désormais un jeton de session (élève/enseignant avec
+  //  une séance de ce cours EN COURS) — c'est la faille corrigée : on
+  //  envoie donc systématiquement le jeton, et on distingue les réponses :
+  //    404 / 501 → intégration non configurée pour ce cours → repli SILENCIEUX
+  //                sur la salle de classe démo (KVS_ZoomManager).
+  //    401       → jeton absent/expiré → on NE bascule PAS en démo (ça
+  //                masquerait le vrai problème) : on invite à se reconnecter.
+  //    403       → classe pas encore ouverte / absence déclarée → on affiche
+  //                le message du serveur, sans repli démo.
   // =============================================================
   async function joinZoomMeeting(courseId) {
     toast('Connexion à ta classe Zoom…', 'info', '🎥');
+    let token = ''; try { token = sessionStorage.getItem('kvs_token') || ''; } catch (_) {}
     try {
-      const res = await fetch(`/api/zoom?action=meeting&courseId=${encodeURIComponent(courseId || '')}`);
+      const res = await fetch(`/api/zoom?action=meeting&courseId=${encodeURIComponent(courseId || '')}`, {
+        headers: token ? { 'Authorization': 'Bearer ' + token } : {}
+      });
 
-      // Backend absent / non configuré → mode démo
+      // Backend absent / non configuré pour ce cours → mode démo, silencieux.
       if (res.status === 404 || res.status === 501) {
         console.info('[Zoom] Backend non configuré (' + res.status + ') — salle de classe démo.');
         return KVS_ZoomManager.join();
@@ -6472,7 +6488,14 @@ Laboratoire de Codage Vibe|8|fichiers`;
 
       const data = await res.json().catch(() => ({}));
 
-      // Hors fenêtre horaire (contrôle serveur) ou autre erreur métier
+      // Jeton absent/expiré : NE PAS basculer en démo, ça masquerait le problème.
+      if (res.status === 401) {
+        toast('🔒 Ta session a expiré — reconnecte-toi pour rejoindre la classe.', 'warn', '🔒');
+        return;
+      }
+
+      // Hors fenêtre horaire / absence déclarée (contrôle serveur) : message
+      // du serveur, pas de repli démo non plus.
       if (!res.ok) {
         toast(data.error || 'Impossible de rejoindre la classe pour le moment.', 'warn', '⚠️');
         return;
