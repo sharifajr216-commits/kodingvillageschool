@@ -139,11 +139,20 @@ module.exports = async (req, res) => {
       const r = await M.appendMessage(thread, { fromRole: role, fromUsername: me, fromName, body: texte });
 
       // Alerte best-effort, et seulement si le destinataire n'en a pas déjà une en attente.
+      //
+      // Le try/catch est indispensable : `sendSafe` protège l'appel à Resend, mais
+      // pas les lectures de compte qui le précèdent. Sans lui, une panne KV APRÈS
+      // la persistance du message renverrait 500 alors que le message est bien
+      // enregistré — le client réessaierait et le publierait en double.
       const dest = M.otherSide(role);
       let notified = false;
       if (M.shouldAlert(r.thread, dest)) {
-        const envoi = await N.notifyNewMessage(r.thread, r.message, dest);
-        if (envoi && envoi.sent) { await M.noteAlerted(r.thread, dest); notified = true; }
+        try {
+          const envoi = await N.notifyNewMessage(r.thread, r.message, dest);
+          if (envoi && envoi.sent) { await M.noteAlerted(r.thread, dest); notified = true; }
+        } catch (e) {
+          console.error('[messages] alerte non envoyée:', e.message);
+        }
       }
 
       res.status(200).json({ ok: true, message: r.message, notified });

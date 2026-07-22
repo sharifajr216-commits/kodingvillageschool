@@ -98,6 +98,34 @@ test('la deuxieme alerte est retenue puis rearmee apres lecture', async () => {
   assert.equal(H.mails.length, 2, 'apres lecture, l alerte se rearme');
 });
 
+test('un tiers ne peut pas ECRIRE dans un fil dont il n est pas participant', async () => {
+  H.reset(); await ecole();
+  await appel({ action: 'message.send', to: 'blaise', body: 'a' }, jeton('mohamedjr', 'student'));
+  const tid = M.threadId('blaise', 'mohamedjr');
+  // Les identifiants de fil sont deterministes donc devinables : le chemin
+  // d ecriture doit etre garde aussi solidement que le chemin de lecture.
+  const r = await appel({ action: 'message.send', threadId: tid, body: 'intrusion' }, jeton('bilal', 'student'));
+  assert.equal(r.statusCode, 403);
+  assert.equal(r.body.error, 'not_a_participant');
+  assert.equal((await M.getMessages(tid, { limit: 50 })).length, 1, 'aucun message ne doit avoir ete ajoute');
+});
+
+test('un 429 sur un premier message ne cree aucun fil', async () => {
+  H.reset(); await ecole();
+  const t = jeton('blaise', 'teacher');
+  // On epuise le quota sur un fil existant...
+  await appel({ action: 'message.send', to: 'mohamedjr', body: 'depart' }, t);
+  for (let i = 0; i < M.RATE_MAX; i++) {
+    await appel({ action: 'message.send', to: 'mohamedjr', body: 'm' + i }, t);
+  }
+  // ...puis on tente un PREMIER message vers un autre eleve : refuse, et surtout
+  // aucun fil ne doit avoir ete cree au passage.
+  const r = await appel({ action: 'message.send', to: 'bilal', body: 'nouveau' }, t);
+  assert.equal(r.statusCode, 429);
+  assert.equal(await M.getThread(M.threadId('blaise', 'bilal')), null,
+    'le garde-fou doit s appliquer AVANT toute ecriture');
+});
+
 test('corps vide ou trop long refuse', async () => {
   H.reset(); await ecole();
   const t = jeton('blaise', 'teacher');
