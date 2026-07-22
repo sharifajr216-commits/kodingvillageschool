@@ -1543,7 +1543,7 @@ Un seul module de rendu sert les deux rôles : la boîte de réception est ident
 
 **Files:**
 - Modify: `index.html` — nouveau module `KVS_Messages` après `KVS_ZoomManager` ; onglet « Messages » dans `renderTeacher` ; entrée « Messages » dans la barre latérale du tableau de bord élève ; exports `APP`
-- Modify: `style.css` — réutiliser les 12 règles `.tch-msg*` orphelines, compléter
+- Modify: `style.css` — ajouter les styles `.msg-*` ; supprimer les règles `.tch-msg*` orphelines
 
 **Interfaces:**
 - Consumes: `POST /api/messages` (Task 6), `sessionStorage.kvs_token`, helpers existants `$`, `toast`, `modal`, `_admEsc`, `icon`, `refreshIcons`.
@@ -2024,4 +2024,4 @@ git commit -m "feat(messages): supervision admin en lecture seule + parcours de 
 - [ ] `node --test test/*.test.js` — toute la suite au vert
 - [ ] La mention « L'équipe pédagogique peut consulter ces conversations » apparaît côté enseignant **et** côté élève
 - [ ] Aucun `package.json` n'a été créé — l'invariant zéro dépendance tient
-- [ ] Les 12 règles `.tch-msg*` orphelines de `style.css` sont soit réutilisées, soit supprimées
+- [ ] Les règles `.tch-msg*` orphelines de `style.css` sont supprimées

@@ -52,8 +52,10 @@ Trois unités, une responsabilité chacune.
 | `api/messages.js` | Point d'entrée HTTP : authentification, routage des actions | `_auth`, `_messages`, `_notify` |
 | `api/_notify.js` | Ajout de `notifyNewMessage()`, aux côtés des e-mails de rattrapage | `_auth`, `_brand`, `_mail` |
 
-Le front reprend les 12 règles CSS `.tch-msg*` restées orphelines dans `style.css`
-après la suppression de l'ancien panneau.
+Les règles CSS `.tch-msg*` restées orphelines après la suppression de l'ancien
+panneau ont été **supprimées** plutôt que réemployées : le nouvel écran a ses propres
+classes `.msg-*`, et recycler des sélecteurs nommés d'après un composant disparu
+n'aurait fait qu'égarer le prochain lecteur.
 
 ## Modèle de données
 
