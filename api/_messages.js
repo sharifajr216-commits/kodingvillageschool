@@ -253,9 +253,13 @@ async function contactsFor(role, username) {
 // alertes plafonne les e-mails, pas les écritures en base.
 async function rateLimited(username) {
   const key = `rate:msg:${A.normUsername(username)}`;
-  const n = await A.kv(['INCR', key]);
-  if (Number(n) === 1) await A.kv(['EXPIRE', key, String(RATE_WINDOW_S)]);
-  return Number(n) > RATE_MAX;
+  // La clé et son expiration naissent ensemble (SET … EX … NX). Avec un INCR
+  // suivi d'un EXPIRE conditionnel, un processus qui meurt entre les deux
+  // laisserait une clé SANS expiration : le compteur ne repasserait jamais par 1,
+  // EXPIRE ne serait plus jamais appelé, et l'utilisateur resterait bloqué À VIE.
+  const cree = await A.kv(['SET', key, '1', 'EX', String(RATE_WINDOW_S), 'NX']);
+  const n = cree ? 1 : Number(await A.kv(['INCR', key]));
+  return n > RATE_MAX;
 }
 
 module.exports = {

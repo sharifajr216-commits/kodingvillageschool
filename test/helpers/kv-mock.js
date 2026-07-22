@@ -24,7 +24,19 @@ function kvExec(store, cmd) {
 
   switch (op) {
     case 'GET': return store.strings.has(key) ? store.strings.get(key) : null;
-    case 'SET': store.strings.set(key, rest[0]); return 'OK';
+    case 'SET': {
+      // Options gérées : `EX <s>` (expiration) et `NX` (ne pas écraser).
+      // `SET k v EX n NX` est la seule façon de créer une clé ET son expiration
+      // en UNE opération — indispensable au garde-fou de fréquence, qui sinon
+      // peut laisser une clé sans TTL si le processus meurt entre INCR et EXPIRE.
+      const opts = rest.slice(1).map(o => String(o).toUpperCase());
+      const nx = opts.includes('NX');
+      if (nx && store.strings.has(key)) return null;
+      store.strings.set(key, rest[0]);
+      const ex = opts.indexOf('EX');
+      if (ex >= 0) store.expiries.set(key, Date.now() + Number(rest[1 + ex + 1]) * 1000);
+      return 'OK';
+    }
     case 'DEL': {
       const had = store.strings.delete(key) || store.sets.delete(key) || store.zsets.delete(key);
       store.expiries.delete(key);
