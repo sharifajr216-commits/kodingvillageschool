@@ -72,7 +72,19 @@ function kvExec(store, cmd) {
 
   switch (op) {
     case 'GET': return store.strings.has(key) ? store.strings.get(key) : null;
-    case 'SET': store.strings.set(key, rest[0]); return 'OK';
+    case 'SET': {
+      // Options gérées : `EX <s>` (expiration) et `NX` (ne pas écraser).
+      // `SET k v EX n NX` est la seule façon de créer une clé ET son expiration
+      // en UNE opération — indispensable au garde-fou de fréquence, qui sinon
+      // peut laisser une clé sans TTL si le processus meurt entre INCR et EXPIRE.
+      const opts = rest.slice(1).map(o => String(o).toUpperCase());
+      const nx = opts.includes('NX');
+      if (nx && store.strings.has(key)) return null;
+      store.strings.set(key, rest[0]);
+      const ex = opts.indexOf('EX');
+      if (ex >= 0) store.expiries.set(key, Date.now() + Number(rest[1 + ex + 1]) * 1000);
+      return 'OK';
+    }
     case 'DEL': {
       const had = store.strings.delete(key) || store.sets.delete(key) || store.zsets.delete(key);
       store.expiries.delete(key);
@@ -814,13 +826,33 @@ test('contactsFor liste les interlocuteurs autorises avec leur nom', async () =>
   assert.deepEqual(await M.contactsFor('student', 'bilal'), []);
 });
 
-test('le garde-fou bloque au-dela de la limite puis se relache', async () => {
+test('le garde-fou bloque au-dela de la limite, par auteur', async () => {
   H.reset();
   for (let i = 0; i < M.RATE_MAX; i++) {
     assert.equal(await M.rateLimited('bavard'), false, `message ${i + 1} doit passer`);
   }
   assert.equal(await M.rateLimited('bavard'), true, 'le 21e doit etre bloque');
   assert.equal(await M.rateLimited('quelqu-un-dautre'), false, 'la limite est par auteur');
+});
+
+test('la fenetre se relache une fois ecoulee', async () => {
+  H.reset();
+  for (let i = 0; i < M.RATE_MAX; i++) await M.rateLimited('bavard');
+  assert.equal(await M.rateLimited('bavard'), true);
+  // On force l echeance plutot que d attendre cinq minutes.
+  await A.kv(['EXPIRE', 'rate:msg:bavard', '-1']);
+  assert.equal(await M.rateLimited('bavard'), false,
+    'la fenetre ecoulee doit rendre le droit d ecrire');
+});
+
+test('la toute premiere ecriture pose deja une expiration', async () => {
+  H.reset();
+  await M.rateLimited('bavard');
+  // Garde-fou anti-blocage a vie : si la cle pouvait exister sans echeance,
+  // le compteur ne repasserait jamais par 1 et l auteur serait bloque pour
+  // toujours. L expiration doit donc naitre AVEC la cle.
+  assert.ok(H.store.expiries.has('rate:msg:bavard'),
+    'la cle de comptage ne doit jamais exister sans expiration');
 });
 ```
 
@@ -894,9 +926,13 @@ async function contactsFor(role, username) {
 // alertes plafonne les e-mails, pas les écritures en base.
 async function rateLimited(username) {
   const key = `rate:msg:${A.normUsername(username)}`;
-  const n = await A.kv(['INCR', key]);
-  if (Number(n) === 1) await A.kv(['EXPIRE', key, String(RATE_WINDOW_S)]);
-  return Number(n) > RATE_MAX;
+  // La clé et son expiration naissent ensemble (SET … EX … NX). Avec un INCR
+  // suivi d'un EXPIRE conditionnel, un processus qui meurt entre les deux
+  // laisserait une clé SANS expiration : le compteur ne repasserait jamais par 1,
+  // EXPIRE ne serait plus jamais appelé, et l'utilisateur resterait bloqué À VIE.
+  const cree = await A.kv(['SET', key, '1', 'EX', String(RATE_WINDOW_S), 'NX']);
+  const n = cree ? 1 : Number(await A.kv(['INCR', key]));
+  return n > RATE_MAX;
 }
 ```
 
