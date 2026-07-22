@@ -24,4 +24,19 @@ function appeler(handler) {
   };
 }
 
-module.exports = { faireRes, appeler };
+// Appelle un handler Vercel en GET, avec query string et jeton facultatifs
+// (ex : api/zoom.js?action=meeting&courseId=…, authentifié par en-tête).
+function appelerGet(handler) {
+  return async function appel(query, token) {
+    const req = {
+      method: 'GET',
+      headers: token ? { authorization: 'Bearer ' + token } : {},
+      body: {}, query: query || {}
+    };
+    const res = faireRes();
+    await handler(req, res);
+    return res;
+  };
+}
+
+module.exports = { faireRes, appeler, appelerGet };
