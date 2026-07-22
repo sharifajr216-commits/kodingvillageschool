@@ -1,6 +1,6 @@
 // Fonction serverless Vercel — RAPPELS AUTOMATIQUES avant les cours.
 //
-// Balaye les séances qui commencent dans moins de LEAD_MINUTES (60 par défaut),
+// Balaye les séances qui commencent dans moins de LEAD_MINUTES (120 par défaut),
 // puis pour chaque séance :
 //   - envoie un e-mail de rappel à chaque ÉLÈVE inscrit (+ WhatsApp si Meta configuré) ;
 //   - envoie un e-mail de rappel au PROFESSEUR assigné (session.teacherUsername), le cas échéant.
@@ -21,7 +21,13 @@
 // Variables d'environnement :
 //   CRON_SECRET          (obligatoire) secret partagé protégeant l'endpoint
 //   RESEND_API_KEY       (obligatoire) envoi des e-mails
-//   REMINDER_LEAD_MIN    (optionnel)   délai avant le cours, en minutes. Défaut : 60
+//   REMINDER_LEAD_MIN    (optionnel)   délai avant le cours, en minutes. Défaut : 120
+//                         ⚠️ Doit rester STRICTEMENT SUPÉRIEUR à la fenêtre d'annulation
+//                         (S.CANCEL_LEAD_MS, api/_schedule.js — 60 min actuellement) :
+//                         le rappel promet « tu peux encore annuler », et cette promesse
+//                         doit encore être vraie au moment où le destinataire le lit.
+//                         Avec un délai ≤ à la fenêtre, le rappel arrive après (ou pile à)
+//                         l'échéance et le serveur refuse l'annulation qu'il vient d'annoncer.
 //   BOOKING_FROM_EMAIL   (optionnel)   expéditeur (domaine vérifié dans Resend)
 //   + variables WHATSAPP_* (optionnel) — voir api/_whatsapp.js
 //
@@ -39,7 +45,39 @@ const WA = require('./_whatsapp');
 const CRON_SECRET = process.env.CRON_SECRET || '';
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM_EMAIL = B.FROM_EMAIL;   // source unique : api/_brand.js
-const LEAD_MINUTES = Number(process.env.REMINDER_LEAD_MIN) > 0 ? Number(process.env.REMINDER_LEAD_MIN) : 60;
+// Défaut 120 (et non 60) : le rappel doit arriver AVANT l'échéance d'annulation
+// (S.CANCEL_LEAD_MS = 60 min), sinon il annonce une annulation déjà refusée par
+// le serveur au moment où on le lit. Voir l'en-tête du fichier pour le détail.
+const LEAD_MINUTES = Number(process.env.REMINDER_LEAD_MIN) > 0 ? Number(process.env.REMINDER_LEAD_MIN) : 120;
+
+// ── Délais dérivés — jamais de durée codée en dur dans les e-mails ─────────
+// Fenêtre d'annulation (voir api/_schedule.js), en minutes.
+const CANCEL_LEAD_MIN = S.CANCEL_LEAD_MS / 60000;
+// Temps qu'il reste au destinataire pour annuler AU MOMENT où le rappel arrive
+// (LEAD_MINUTES avant le cours) par rapport à l'échéance (CANCEL_LEAD_MIN avant
+// le cours). Doit rester > 0 — sinon le rappel ment sur ce qui est encore possible.
+const CANCEL_REMAINING_MIN = LEAD_MINUTES - CANCEL_LEAD_MIN;
+if (CANCEL_REMAINING_MIN <= 0) {
+  console.warn(`[reminders] REMINDER_LEAD_MIN (${LEAD_MINUTES}) <= fenêtre d'annulation ` +
+    `(${CANCEL_LEAD_MIN} min) : le rappel arrivera après l'échéance. Augmenter REMINDER_LEAD_MIN.`);
+}
+
+// Formule d'une durée en minutes → texte FR lisible ("1 heure", "1 h 30", "45 minutes").
+function formatDurationFr(minutes) {
+  const m = Math.max(0, Math.round(minutes));
+  if (m === 0) return '0 minute';
+  if (m % 60 === 0) {
+    const h = m / 60;
+    return h === 1 ? '1 heure' : `${h} heures`;
+  }
+  if (m < 60) return `${m} minutes`;
+  return `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')}`;
+}
+
+// Fenêtre d'annulation, en toutes lettres — ex. « 1 heure ».
+const CANCEL_LEAD_TEXT = formatDurationFr(CANCEL_LEAD_MIN);
+// Temps restant pour annuler au moment où le rappel arrive — ex. « 1 heure ».
+const CANCEL_REMAINING_TEXT = formatDurationFr(CANCEL_REMAINING_MIN);
 
 // Comparaison à temps constant : évite de divulguer le secret par timing.
 function secretOk(req) {
@@ -96,18 +134,26 @@ function humanTime(iso) {
 function studentReminderHtml(user, session) {
   const eleve = B.esc(`${user.firstName || ''} ${user.lastName || ''}`.trim() || user.firstName || '');
   const cours = B.esc(session.courseLabel || session.courseId || 'ton cours');
-  const heure = B.esc(timeWithTz(session.startsAt));
+  const dureeMin = Number(session.durationMin) > 0 ? Number(session.durationMin) : 60;
+  const heureDebut = B.esc(timeWithTz(session.startsAt));
+  const finIso = new Date(Date.parse(session.startsAt) + dureeMin * 60000).toISOString();
+  const heureFin = B.esc(timeWithTz(finIso));
+  const prof = session.teacherName ? B.esc(session.teacherName) : '';
   const url = B.esc(B.PUBLIC_URL);
+  const profLigne = prof
+    ? `<p style="font-family:Arial,sans-serif;font-size:15px">Avec ton professeur : <b>${prof}</b>.</p>`
+    : '';
   return `
     <p style="font-family:Arial,sans-serif;font-size:15px">Bonjour ! ☀️</p>
     <p style="font-family:Arial,sans-serif;font-size:15px">
       Voici ton cours Koding Village prévu aujourd'hui pour <b>${eleve}</b> :
     </p>
     <p style="font-family:Arial,sans-serif;font-size:16px;margin:12px 0">
-      <b>${cours}</b> à <b>${heure}</b>.
+      <b>${cours}</b> de <b>${heureDebut}</b> à <b>${heureFin}</b> (${dureeMin} minutes).
     </p>
+    ${profLigne}
     <p style="font-family:Arial,sans-serif;font-size:15px">
-      Pour te connecter, annuler ou reporter ta séance (possible jusqu'à 1 heure avant le cours),
+      Pour te connecter, annuler ou reporter ta séance (possible jusqu'à ${CANCEL_LEAD_TEXT} avant le cours),
       connecte-toi à ton espace élève :<br>
       <a href="${url}" style="color:#4F46E5">${url}</a>
     </p>
@@ -115,9 +161,13 @@ function studentReminderHtml(user, session) {
       Une fois connecté, utilise ton calendrier pour gérer tes séances ou clique directement
       sur le lien de cours le moment venu.
     </p>
+    <p style="font-family:Arial,sans-serif;font-size:15px">
+      Ce rappel t'arrive avant l'heure du cours : il te reste encore <b>${CANCEL_REMAINING_TEXT}</b>
+      pour annuler ou reporter si besoin.
+    </p>
     <p style="font-family:Arial,sans-serif;font-size:13px;color:#666">
       <i>Remarque : les annulations ou reports de cours ne sont autorisés que s'ils sont faits
-      au moins 1 heure avant le cours.</i>
+      au moins ${CANCEL_LEAD_TEXT} avant le cours.</i>
     </p>
     ${B.emailFooter()}`;
 }
@@ -126,7 +176,12 @@ function studentReminderHtml(user, session) {
 function teacherReminderHtml(session, studentNames) {
   const prof = B.esc(session.teacherName || '');
   const cours = B.esc(session.courseLabel || session.courseId || 'ton cours');
-  const heure = B.esc(timeWithTz(session.startsAt));
+  const dureeMin = Number(session.durationMin) > 0 ? Number(session.durationMin) : 60;
+  const startMs = Date.parse(session.startsAt);
+  const heureDebut = B.esc(timeWithTz(session.startsAt));
+  const heureFin = B.esc(timeWithTz(new Date(startMs + dureeMin * 60000).toISOString()));
+  // Échéance réelle d'annulation : début du cours moins la fenêtre (S.CANCEL_LEAD_MS).
+  const heureLimite = B.esc(timeWithTz(new Date(startMs - S.CANCEL_LEAD_MS).toISOString()));
   const eleves = B.esc(studentNames.join(', '));
   const url = B.esc(B.PUBLIC_URL);
   return `
@@ -134,11 +189,16 @@ function teacherReminderHtml(session, studentNames) {
     <p style="font-family:Arial,sans-serif;font-size:15px">Voici ton cours Koding Village prévu aujourd'hui :</p>
     <table cellpadding="6" style="font-family:Arial,sans-serif;font-size:15px;border-collapse:collapse;margin:8px 0">
       <tr><td><b>Élève</b></td><td>${eleves}</td></tr>
-      <tr><td><b>Cours</b></td><td>${cours} à <b>${heure}</b></td></tr>
+      <tr><td><b>Cours</b></td><td>${cours} de <b>${heureDebut}</b> à <b>${heureFin}</b> (${dureeMin} minutes)</td></tr>
     </table>
     <p style="font-family:Arial,sans-serif;font-size:15px">
       Pense à te connecter à ton espace pour lancer la session Zoom avec l'élève :<br>
       <a href="${url}" style="color:#4F46E5">${url}</a>
+    </p>
+    <p style="font-family:Arial,sans-serif;font-size:13px;color:#666">
+      <i>L'élève peut encore annuler ou demander un report jusqu'à ${heureLimite}
+      (soit ${CANCEL_LEAD_TEXT} avant le cours) — une annulation de dernière minute reste
+      donc possible jusque-là.</i>
     </p>
     ${B.emailFooter()}`;
 }
