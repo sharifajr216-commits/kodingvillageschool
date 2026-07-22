@@ -2154,11 +2154,15 @@ print("Bonne séance de code, Bilal ! 🚀")
   }
 
   let _admSesSeq = 0;
+  // Dernière liste reçue de session.list — sert de cache pour pré-remplir la
+  // modale d'édition sans refaire un aller-retour réseau.
+  let _admSesRows = [];
   async function adminSessionsRefresh() {
     const seq = ++_admSesSeq;
     const { data } = await _adminApi('session.list');
     if (seq !== _admSesSeq) return; // résultat périmé → une requête plus récente a pris la main
     const rows = (data && data.sessions) || [];
+    _admSesRows = rows;
     $('admSesCount').textContent = rows.length;
     $('admSesTbody').innerHTML = rows.map(s => {
       const rappel = s.remindedAt
@@ -2182,6 +2186,7 @@ print("Bonne séance de code, Bilal ! 🚀")
         <td>${eleves}</td>
         <td>${rappel}</td>
         <td class="adm-actions">
+          <button class="btn-ghost" onclick="APP.adminSessionEditOpen('${_admEsc(s.id)}')">Modifier</button>
           <button class="btn-ghost adm-del" onclick="APP.adminSessionDelete('${_admEsc(s.id)}')">Annuler</button>
           ${s.seriesId ? `<button class="btn-ghost adm-del" onclick="APP.adminSeriesDelete('${_admEsc(s.seriesId)}')" title="Supprime toutes les occurrences à venir de cette récurrence">Toute la série</button>` : ''}
         </td></tr>`;
@@ -2200,6 +2205,136 @@ print("Bonne séance de code, Bilal ! 🚀")
     const { data } = await _adminApi('session.deleteSeries', { seriesId });
     if (data.ok) { toast(`${data.deleted} séance(s) supprimée(s).`, 'ok', '🗑️'); adminSessionsRefresh(); }
     else { toast('Suppression impossible.', 'err', '⚠️'); }
+  }
+
+  // === ADMIN — modifier une séance existante ==================================
+  // Avant cette modale, corriger une heure, un cours, un prof ou un élève exigeait
+  // de supprimer puis recréer la séance — 24 fois pour une récurrence entière.
+  function _admEditErr(msg) { const e = $('admEditError'); if (e) { e.textContent = msg || ''; e.style.display = msg ? 'block' : 'none'; } }
+
+  // Même liste de cours que le formulaire de création (id ci-dessus, ligne
+  // admSesCourse) : un seul endroit à tenir à jour si l'offre de cours change.
+  const _ADM_COURSES = [
+    ['python-boucles', 'Python · Les boucles'],
+    ['python-fonctions', 'Python · Les fonctions'],
+    ['python-poo', 'Python · POO'],
+    ['dev-jeux-python', 'Développement de jeux (Python)'],
+    ['scratch', 'Scratch'],
+    ['vibe-coding', 'Laboratoire de Codage Vibe']
+  ];
+
+  async function adminSessionEditOpen(id) {
+    const s = _admSesRows.find(x => x.id === id);
+    if (!s) { toast('Séance introuvable — rafraîchis la liste.', 'err', '⚠️'); return; }
+
+    // Élèves + enseignants à jour pour les menus déroulants (l'admin a pu ne
+    // pas encore ouvert l'onglet « Enseignants » ou « Élèves » cette session-ci).
+    const [{ data: stuData }, { data: teaData }] = await Promise.all([
+      _adminApi('list'), _adminApi('teacher.list')
+    ]);
+    const students = (stuData && stuData.students) || [];
+    const teachers = (teaData && teaData.teachers) || [];
+    const studentsSet = new Set(s.students || []);
+
+    const pad = n => String(n).padStart(2, '0');
+    const toLocalInput = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+    const courseValue = `${s.courseId}|${s.courseLabel}`;
+    const hasCustomCourse = !_ADM_COURSES.some(([cid, clabel]) => `${cid}|${clabel}` === courseValue);
+
+    modal('Modifier la séance', `
+      <form onsubmit="return APP.adminSessionEditSubmit(event,'${_admEsc(s.id)}')" novalidate>
+        <div class="bk-grid">
+          <div class="bk-field">
+            <label for="admEditCourse">Cours *</label>
+            <select id="admEditCourse" required>
+              ${_ADM_COURSES.map(([cid, clabel]) =>
+                `<option value="${_admEsc(cid)}|${_admEsc(clabel)}"${courseValue === `${cid}|${clabel}` ? ' selected' : ''}>${_admEsc(clabel)}</option>`
+              ).join('')}
+              ${hasCustomCourse ? `<option value="${_admEsc(courseValue)}" selected>${_admEsc(s.courseLabel || s.courseId)}</option>` : ''}
+            </select>
+          </div>
+          <div class="bk-field">
+            <label for="admEditWhen">Date &amp; heure de début *</label>
+            <input id="admEditWhen" type="datetime-local" value="${toLocalInput(new Date(s.startsAt))}">
+          </div>
+          <div class="bk-field">
+            <label for="admEditDuration">Durée (minutes)</label>
+            <input id="admEditDuration" type="number" min="15" max="240" step="15" value="${s.durationMin || 60}">
+          </div>
+          <div class="bk-field">
+            <label for="admEditTeacher">Enseignant</label>
+            <select id="admEditTeacher">
+              <option value="">— Aucun —</option>
+              ${teachers.map(t => `<option value="${_admEsc(t.username)}"${t.username === s.teacherUsername ? ' selected' : ''}>${_admEsc(t.firstName)} ${_admEsc(t.lastName)} — ${_admEsc(t.username)}</option>`).join('')}
+            </select>
+          </div>
+          <div class="bk-field bk-field-wide">
+            <label for="admEditStudents">Élèves inscrits * <span class="bk-hint">— Ctrl/Cmd + clic pour en choisir plusieurs</span></label>
+            <select id="admEditStudents" multiple size="5">
+              ${students.map(st => `<option value="${_admEsc(st.username)}"${studentsSet.has(st.username) ? ' selected' : ''}>${_admEsc(st.firstName)} ${_admEsc(st.lastName)} — ${_admEsc(st.username)}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        ${s.seriesId ? `
+        <div class="bk-field bk-field-wide">
+          <label>Portée de la modification</label>
+          <label class="ab-check"><input type="radio" name="admEditScope" value="one" checked><span>Cette séance seulement</span></label>
+          <label class="ab-check"><input type="radio" name="admEditScope" value="series"><span>Cette séance et toutes les suivantes</span></label>
+          <span class="bk-hint">Sur toute la série, seule l'heure est reportée sur les séances suivantes : chaque occurrence garde sa propre date.</span>
+        </div>` : ''}
+        <p class="bk-error" id="admEditError" style="display:none"></p>
+        <button type="submit" class="btn-submit">Enregistrer <span class="ui-icon-container is-sm"><i data-lucide="check"></i></span></button>
+      </form>`);
+    refreshIcons();
+  }
+
+  async function adminSessionEditSubmit(e, id) {
+    if (e) e.preventDefault();
+    _admEditErr('');
+    const raw = $('admEditCourse').value || '';
+    const sep = raw.indexOf('|');
+    const courseId = sep < 0 ? raw : raw.slice(0, sep);
+    const courseLabel = sep < 0 ? raw : raw.slice(sep + 1);
+    const durationMin = parseInt($('admEditDuration').value, 10) || 60;
+    const students = Array.from($('admEditStudents').selectedOptions).map(o => o.value);
+    const teacherUsername = $('admEditTeacher') ? $('admEditTeacher').value : '';
+    const when = $('admEditWhen').value;
+
+    if (!students.length) { _admEditErr('⚠️ Sélectionne au moins un élève inscrit.'); return false; }
+    if (!when) { _admEditErr('⚠️ Choisis une date et une heure de début.'); return false; }
+    // `datetime-local` est sans fuseau : Date() l'interprète en heure locale du
+    // navigateur, toISOString() le convertit en UTC — comme à la création.
+    const d = new Date(when);
+    if (isNaN(d.getTime())) { _admEditErr('⚠️ Date invalide.'); return false; }
+
+    const scopeEl = document.querySelector('input[name="admEditScope"]:checked');
+    const scope = scopeEl ? scopeEl.value : 'one';
+
+    // Confirmation avant une édition de série : l'admin doit voir COMBIEN de
+    // séances vont changer avant de valider (miroir de la prévisualisation à
+    // la création). Compte approximatif à partir du cache local — la réponse
+    // du serveur (data.updated) reste la valeur qui fait foi, affichée ensuite.
+    if (scope === 'series') {
+      const s = _admSesRows.find(x => x.id === id);
+      const n = s
+        ? _admSesRows.filter(x => x.seriesId === s.seriesId && Date.parse(x.startsAt) >= Date.parse(s.startsAt)).length
+        : null;
+      const label = n ? `${n} séance(s) (celle-ci comprise)` : 'cette séance et les suivantes';
+      if (!window.confirm(`Modifier ${label} de la série ? Les séances déjà passées ne sont pas touchées.`)) return false;
+    }
+
+    const { status, data } = await _adminApi('session.update', {
+      id, scope, courseId, courseLabel, durationMin, students, teacherUsername,
+      startsAt: d.toISOString()
+    });
+    if (status === 401) { _admEditErr('🔒 Session admin expirée — reconnecte-toi.'); return false; }
+    if (!data.ok) { _admEditErr('⚠️ ' + (data.message || 'Modification impossible (' + (data.error || 'erreur') + ').')); return false; }
+
+    closeModal();
+    toast(scope === 'series' ? `${data.updated} séance(s) modifiée(s) ✏️` : 'Séance modifiée ✏️', 'ok', '✏️');
+    adminSessionsRefresh();
+    return false;
   }
 
   // === DEMANDES DE RATTRAPAGE (file de validation admin) ======================
@@ -7451,6 +7586,7 @@ Laboratoire de Codage Vibe|8|fichiers`;
     openChangePassword, submitChangePassword,
     adminLeadsRefresh, adminLeadConvert, adminLeadDelete,
     adminSessionCreate, adminSessionsRefresh, adminSessionDelete, adminSeriesDelete,
+    adminSessionEditOpen, adminSessionEditSubmit,
     adminSesMode, adminReschedRefresh, adminReschedDecide, admRecPreview: _admRecPreview,
     adminMessagesRefresh, admMsgOpen,
     goMessages,

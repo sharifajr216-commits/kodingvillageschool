@@ -31,6 +31,9 @@
 //        weekdays:[2,3], time:'11:00', weeks, durationMin,
 //        students:[username], teacherUsername?, tz? }        → { ok, seriesId, created, skipped, sessions }
 // POST { action:'session.list' }                             → { ok, sessions:[...] }   (à venir)
+// POST { action:'session.update', id, scope:'one'|'series',
+//        courseId?, courseLabel?, startsAt?, durationMin?,
+//        students?, teacherUsername? }                       → { ok, updated, session }
 // POST { action:'session.delete', id }                       → { ok }
 // POST { action:'session.deleteSeries', seriesId }           → { ok, deleted }          (occurrences à venir)
 //
@@ -445,6 +448,58 @@ module.exports = async (req, res) => {
 
     if (body.action === 'session.list') {
       res.status(200).json({ ok: true, sessions: await S.upcomingSessions(200) });
+      return;
+    }
+
+    // Correction d'une séance (mauvaise heure, mauvais cours, mauvais prof ou
+    // mauvais élève) : avant cette action, la seule option était de supprimer
+    // et recréer — 24 fois pour une récurrence entière mal saisie.
+    // `scope:'one'` ne touche qu'à cette occurrence ; `scope:'series'` la
+    // reporte aussi sur toutes les occurrences ULTÉRIEURES de la même série
+    // (les passées sont préservées comme historique).
+    if (body.action === 'session.update') {
+      const id = clean(body.id, 40);
+      const existing = await S.getSession(id);
+      if (!existing) { res.status(404).json({ ok: false, error: 'not_found' }); return; }
+
+      const patch = {};
+      if (body.courseId !== undefined) patch.courseId = clean(body.courseId, 60);
+      if (body.courseLabel !== undefined) patch.courseLabel = clean(body.courseLabel, 120);
+      if (body.durationMin !== undefined) patch.durationMin = body.durationMin;
+      if (body.startsAt !== undefined) {
+        const startsAt = clean(body.startsAt, 40);
+        if (S.parseWhen(startsAt) === null) {
+          res.status(400).json({ ok: false, error: 'invalid', message: 'startsAt doit être une date ISO 8601 (ex: 2026-07-20T17:00:00Z).' });
+          return;
+        }
+        patch.startsAt = startsAt;
+      }
+      // Élèves / enseignant validés EXACTEMENT comme à la création (même
+      // helper) : un élève ou un enseignant inconnu produirait une séance sans
+      // rappel possible. On retombe sur les valeurs actuelles pour la partie
+      // non modifiée, pour que resolveParticipants voie toujours un jeu complet.
+      if (body.students !== undefined || body.teacherUsername !== undefined) {
+        const p = await resolveParticipants({
+          students: body.students !== undefined ? body.students : existing.students,
+          teacherUsername: body.teacherUsername !== undefined ? body.teacherUsername : existing.teacherUsername
+        });
+        if (p.error) { res.status(400).json(p.error); return; }
+        if (body.students !== undefined) patch.students = p.students;
+        if (body.teacherUsername !== undefined) { patch.teacherUsername = p.teacherUsername; patch.teacherName = p.teacherName; }
+      }
+
+      const scope = body.scope === 'series' ? 'series' : 'one';
+      let result;
+      try {
+        result = scope === 'series'
+          ? await S.updateSeriesFrom(id, patch)
+          : { updated: 1, session: await S.updateSession(id, patch) };
+      } catch (e) {
+        res.status(400).json({ ok: false, error: 'invalid', message: String(e.message || 'Modification invalide.') });
+        return;
+      }
+      if (!result.session) { res.status(404).json({ ok: false, error: 'not_found' }); return; }
+      res.status(200).json({ ok: true, updated: result.updated, session: result.session });
       return;
     }
 
