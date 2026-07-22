@@ -1,79 +1,147 @@
-# Déclencheur externe des rappels de cours (plan Vercel Hobby).
-# Le cron Vercel est limité à 1 exécution/jour en Hobby — insuffisant pour un
-# rappel « 1 h avant ». GitHub Actions appelle donc /api/reminders toutes les 10 min.
+# Déclencheur des rappels de cours (élèves + enseignants).
+#
+# ─── POURQUOI CE WORKFLOW BOUCLE AU LIEU D'ÊTRE PLANIFIÉ SOUVENT ───────────────
+#
+# La version précédente était planifiée toutes les 10 à 15 minutes. Mesuré sur
+# 24 h de production, l'écart RÉEL entre deux passages était :
+#     médiane  22 min      maximum  185 min
+# Les crons GitHub sont « au mieux » : sous charge ils sont décalés, parfois
+# sautés. Avec une fenêtre de rappel de 120 minutes, un trou de 185 minutes ne
+# retarde pas le rappel — il le PERD : la séance sort de la fenêtre sans qu'aucun
+# passage ne l'ait vue, et personne n'est prévenu.
+#
+# On ne dépend donc plus de la ponctualité du planificateur. Un seul passage est
+# déclenché chaque heure, et ce passage BOUCLE en interne en appelant l'endpoint
+# toutes les 5 minutes pendant près de 6 heures (plafond d'un job GitHub).
+# Conséquences :
+#   - la granularité réelle est de 5 minutes, garantie, quelle que soit la charge
+#     du planificateur ;
+#   - même si un déclenchement horaire est décalé de 3 heures, le passage
+#     PRÉCÉDENT boucle encore et couvre le trou ;
+#   - `concurrency` empêche deux boucles simultanées ; les déclenchements
+#     surnuméraires sont mis en file plutôt qu'exécutés en double.
+#
+# Le dépôt étant PUBLIC, les minutes GitHub Actions sont gratuites et illimitées :
+# une boucle longue ne coûte rien.
 #
 # ─── CONFIGURATION (une seule fois) ────────────────────────────────────────────
-# Dépôt GitHub → Settings → Secrets and variables → Actions → New repository secret
+# Dépôt → Settings → Secrets and variables → Actions → New repository secret
 #   CRON_SECRET  = la même valeur que la variable CRON_SECRET sur Vercel
-#   SITE_URL     = https://kodingvillageschool.com   (sans slash final)
+#   SITE_URL     = https://kodingvillageschool.com   (facultatif, valeur par défaut ci-dessous)
 #
-# ─── VÉRIFIER QUE ÇA TOURNE ────────────────────────────────────────────────────
-# Onglet « Actions » du dépôt → « Rappels de cours ». Le bouton « Run workflow »
-# permet un déclenchement manuel immédiat pour tester.
+# ─── VÉRIFIER / FORCER ─────────────────────────────────────────────────────────
+# Onglet « Actions » → « Rappels de cours » → bouton « Run workflow » pour un
+# passage immédiat (utile juste avant un cours si un doute subsiste).
 #
-# ─── DEUX LIMITES À CONNAÎTRE ──────────────────────────────────────────────────
-# 1. Les crons GitHub Actions sont « best effort » : un retard de 5 à 20 min est
-#    courant aux heures de pointe. C'est SANS CONSÉQUENCE ici — /api/reminders
-#    rattrape toute séance démarrant dans les 60 prochaines minutes et non encore
-#    rappelée. Un retard décale le rappel, il ne le perd pas.
-# 2. GitHub DÉSACTIVE les workflows planifiés d'un dépôt sans activité pendant
-#    60 jours. Si les rappels s'arrêtent sans raison, vérifier ce point en premier
-#    (un commit, ou « Enable workflow » dans l'onglet Actions, le réactive).
+# ─── UNE LIMITE À CONNAÎTRE ────────────────────────────────────────────────────
+# GitHub DÉSACTIVE les workflows planifiés d'un dépôt resté 60 jours sans
+# activité. Si les rappels s'arrêtent sans raison, vérifier ce point en premier
+# (un commit, ou « Enable workflow » dans l'onglet Actions, le réactive).
 
 name: Rappels de cours
 
 on:
   schedule:
-    - cron: '*/10 * * * *'   # toutes les 10 minutes (UTC)
-  workflow_dispatch:          # déclenchement manuel depuis l'onglet Actions
+    - cron: '0 * * * *'      # une fois par heure — la boucle interne fait le reste
+  workflow_dispatch:
+    inputs:
+      duree_minutes:
+        description: "Durée de la boucle, en minutes (défaut 350)"
+        required: false
+        default: '350'
 
-# Deux exécutions simultanées enverraient potentiellement des doublons.
+# Une seule boucle à la fois : deux exécutions simultanées pourraient traiter la
+# même séance en parallèle. `remindedAt` protège déjà des doublons côté serveur,
+# mais autant ne pas s'appuyer uniquement là-dessus.
 concurrency:
   group: reminders
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
   ping:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # 6 h est le plafond d'un job GitHub ; on s'arrête un peu avant pour laisser
+    # le passage horaire suivant prendre le relais proprement.
+    timeout-minutes: 355
+
     steps:
-      - name: Appeler /api/reminders
+      - name: Appeler /api/reminders toutes les 5 minutes
         env:
           SITE_URL: ${{ secrets.SITE_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          DUREE: ${{ github.event.inputs.duree_minutes || '350' }}
         run: |
-          set -euo pipefail
+          set -uo pipefail
 
-          if [ -z "${SITE_URL:-}" ] || [ -z "${CRON_SECRET:-}" ]; then
-            echo "::error::Secrets manquants — définis SITE_URL et CRON_SECRET dans Settings → Secrets → Actions."
+          if [ -z "${CRON_SECRET:-}" ]; then
+            echo "::error::Le secret CRON_SECRET n'est pas défini (Settings → Secrets → Actions)."
             exit 1
           fi
 
-          # --fail-with-body : code de sortie non nul sur erreur HTTP, tout en
-          # conservant le corps de la réponse pour le diagnostic.
-          # --max-time : évite qu'un serveur muet bloque le job 5 min.
-          http_code=$(curl -sS --max-time 60 \
-            -o response.json -w '%{http_code}' \
-            -X POST "${SITE_URL%/}/api/reminders" \
-            -H "Authorization: Bearer ${CRON_SECRET}")
+          BASE="${SITE_URL:-https://kodingvillageschool.com}"
+          ENDPOINT="${BASE%/}/api/reminders"
+          INTERVALLE=300                     # 5 minutes entre deux appels
+          FIN=$(( $(date +%s) + DUREE * 60 ))
 
-          echo "HTTP $http_code"
-          cat response.json || true
+          echo "Boucle de rappels — endpoint : $ENDPOINT"
+          echo "Un appel toutes les $((INTERVALLE / 60)) min pendant $DUREE min."
           echo ""
 
-          case "$http_code" in
-            200) echo "::notice::Rappels traités." ;;
-            401) echo "::error::401 — le secret CRON_SECRET de GitHub ne correspond pas à celui de Vercel."; exit 1 ;;
-            500) echo "::error::500 — variable manquante côté Vercel (CRON_SECRET, RESEND_API_KEY ou KV)."; exit 1 ;;
-            *)   echo "::error::Réponse inattendue ($http_code)."; exit 1 ;;
-          esac
+          appels=0 ; ok=0 ; echecs=0 ; rappels=0
 
-      - name: Résumé
-        if: always()
-        run: |
-          if [ -f response.json ]; then
-            echo "### Rappels de cours" >> "$GITHUB_STEP_SUMMARY"
-            echo '```json' >> "$GITHUB_STEP_SUMMARY"
-            cat response.json >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
-          fi
+          while [ "$(date +%s)" -lt "$FIN" ]; do
+            appels=$((appels + 1))
+            # Le secret voyage dans un en-tête : il n'apparaît jamais dans les logs.
+            code=$(curl -sS --max-time 60 -o reponse.json -w '%{http_code}' \
+              -X POST "$ENDPOINT" -H "Authorization: Bearer ${CRON_SECRET}" || echo "000")
+
+            horodatage=$(date -u '+%H:%M:%S')
+
+            case "$code" in
+              200)
+                ok=$((ok + 1))
+                # On ne journalise en détail que les passages ayant réellement
+                # envoyé quelque chose : sinon 70 lignes « 0 rappel » par jour.
+                n=$(node -e "try{const j=require('./reponse.json');process.stdout.write(String(j.remindedSessions||0))}catch(e){process.stdout.write('0')}" 2>/dev/null || echo '0')
+                if [ "$n" != "0" ]; then
+                  rappels=$((rappels + n))
+                  echo "  $horodatage  $n séance(s) rappelée(s) — $(cat reponse.json)"
+                fi
+                ;;
+              401)
+                echo "::error::$horodatage — 401 : le secret CRON_SECRET du dépôt ne correspond pas à celui de Vercel."
+                exit 1
+                ;;
+              500)
+                echo "::error::$horodatage — 500 : variable manquante côté Vercel (CRON_SECRET, RESEND_API_KEY ou KV)."
+                exit 1
+                ;;
+              *)
+                # Une panne réseau ponctuelle ne doit pas tuer la boucle : le
+                # prochain tour réessaiera dans 5 minutes.
+                echecs=$((echecs + 1))
+                echo "::warning::$horodatage — réponse inattendue ($code), nouvel essai au prochain tour."
+                ;;
+            esac
+
+            # Ne jamais dormir au-delà de l'échéance.
+            reste=$(( FIN - $(date +%s) ))
+            if [ "$reste" -le 0 ]; then break; fi
+            if [ "$reste" -lt "$INTERVALLE" ]; then sleep "$reste"; else sleep "$INTERVALLE"; fi
+          done
+
+          echo ""
+          echo "Bilan : $appels appel(s), $ok réussi(s), $echecs en échec, $rappels séance(s) rappelée(s)."
+          {
+            echo "### Rappels de cours"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Appels | $appels |"
+            echo "| Réussis | $ok |"
+            echo "| En échec | $echecs |"
+            echo "| Séances rappelées | $rappels |"
+          } >> "$GITHUB_STEP_SUMMARY"
