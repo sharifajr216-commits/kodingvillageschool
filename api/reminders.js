@@ -41,6 +41,10 @@ const A = require('./_auth');
 const B = require('./_brand');
 const S = require('./_schedule');
 const WA = require('./_whatsapp');
+// `M.button()` — bouton d'appel à l'action compatible e-mail (style inline sur <a> :
+// les clients mail ignorent les feuilles de style et le flex). Même helper que les
+// e-mails de rattrapage, pour que tous les messages de l'école se ressemblent.
+const M = require('./_mail');
 
 const CRON_SECRET = process.env.CRON_SECRET || '';
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
@@ -152,13 +156,13 @@ function studentReminderHtml(user, session) {
       <b>${cours}</b> de <b>${heureDebut}</b> à <b>${heureFin}</b> (${dureeMin} minutes).
     </p>
     ${profLigne}
-    <p style="font-family:Arial,sans-serif;font-size:15px">
-      Pour te connecter, annuler ou reporter ta séance (possible jusqu'à ${CANCEL_LEAD_TEXT} avant le cours),
-      connecte-toi à ton espace élève :<br>
-      <a href="${url}" style="color:#4F46E5">${url}</a>
+    <p style="margin:18px 0 6px">${M.button(B.PUBLIC_URL, 'Accéder à mon espace élève', '#4F46E5')}</p>
+    <p style="font-family:Arial,sans-serif;font-size:13px;color:#666;margin-top:0">
+      ou copie ce lien dans ton navigateur : <a href="${url}" style="color:#4F46E5">${url}</a>
     </p>
     <p style="font-family:Arial,sans-serif;font-size:15px">
-      Une fois connecté, utilise ton calendrier pour gérer tes séances ou clique directement
+      Une fois connecté, utilise ton calendrier pour gérer tes séances (annuler ou reporter
+      reste possible jusqu'à ${CANCEL_LEAD_TEXT} avant le cours), ou clique directement
       sur le lien de cours le moment venu.
     </p>
     <p style="font-family:Arial,sans-serif;font-size:15px">
@@ -192,8 +196,11 @@ function teacherReminderHtml(session, studentNames) {
       <tr><td><b>Cours</b></td><td>${cours} de <b>${heureDebut}</b> à <b>${heureFin}</b> (${dureeMin} minutes)</td></tr>
     </table>
     <p style="font-family:Arial,sans-serif;font-size:15px">
-      Pense à te connecter à ton espace pour lancer la session Zoom avec l'élève :<br>
-      <a href="${url}" style="color:#4F46E5">${url}</a>
+      Pense à te connecter à ton espace pour lancer la session Zoom avec l'élève.
+    </p>
+    <p style="margin:18px 0 6px">${M.button(B.PUBLIC_URL, 'Accéder à mon espace enseignant', '#0F766E')}</p>
+    <p style="font-family:Arial,sans-serif;font-size:13px;color:#666;margin-top:0">
+      ou copie ce lien dans ton navigateur : <a href="${url}" style="color:#4F46E5">${url}</a>
     </p>
     <p style="font-family:Arial,sans-serif;font-size:13px;color:#666">
       <i>L'élève peut encore annuler ou demander un report jusqu'à ${heureLimite}
