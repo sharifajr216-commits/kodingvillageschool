@@ -3,7 +3,7 @@
 //
 // Regroupés ici parce que TROIS points d'entrée doivent envoyer exactement les
 // mêmes messages, et qu'un libellé qui diverge entre eux se voit tout de suite :
-//   - api/session-action.js  l'élève annule       → alerte prof + admin
+//   - api/my-sessions.js     l'élève annule       → alerte prof + admin
 //   - api/reschedule.js      décision par e-mail  → retour à l'élève
 //   - api/admin.js           décision depuis le panneau admin → même retour élève
 //

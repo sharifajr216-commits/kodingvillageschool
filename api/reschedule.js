@@ -1,7 +1,7 @@
 // Fonction serverless Vercel — VALIDATION D'UNE DEMANDE DE RATTRAPAGE.
 //
 // Point d'atterrissage des boutons « Valider / Refuser » de l'e-mail envoyé par
-// api/session-action.js. Renvoie une PAGE HTML autonome (aucun login requis) :
+// api/my-sessions.js. Renvoie une PAGE HTML autonome (aucun login requis) :
 // le professeur ou l'admin décide depuis son téléphone, en deux tapes.
 //
 //   GET  /api/reschedule?t=<jeton>&d=approve|refuse  → page de confirmation
