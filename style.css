@@ -2348,3 +2348,143 @@ img{max-width:100%;display:block}
    ============================================================ */
 :root{--sx-strong:#0F172A;--sx-0d0d16:#F1F5F9;--sx-0f172a:#0f172a;--sx-10b981:#10b981;--sx-11111b:#E2E8F0;--sx-13131f:#FFFFFF;--sx-15151f:#FFFFFF;--sx-181825:#F8FAFC;--sx-1a1a2e:#FFFFFF;--sx-1e1e2e:#F1F5F9;--sx-1f1a10:#FEF3C7;--sx-1f1f30:#F1F5F9;--sx-23233a:#F1F5F9;--sx-2563eb:#2563eb;--sx-26263f:#E2E8F0;--sx-2a1a12:#FFF7ED;--sx-2a2150:#EEF2FF;--sx-2a2a4a:#E2E8F0;--sx-3a2f6e:#E0E7FF;--sx-3a3a5e:#CBD5E1;--sx-3b82f6:#3b82f6;--sx-45475a:#CBD5E1;--sx-475569:#475569;--sx-64748b:#64748b;--sx-6c7086:#94A3B8;--sx-6ee7b7:#059669;--sx-78350f:#78350f;--sx-9399b2:#64748B;--sx-93c5fd:#2563EB;--sx-94a3b8:#94a3b8;--sx-a5b4fc:#4F46E5;--sx-a6e3a1:#059669;--sx-bac2de:#475569;--sx-cdd6f4:#334155;--sx-e2e8f0:#e2e8f0;--sx-ec4899:#ec4899;--sx-ef4444:#ef4444;--sx-f1f5f9:#f1f5f9;--sx-f38ba8:#E11D48;--sx-f97316:#f97316;--sx-fab387:#EA580C;--sx-fca5a5:#DC2626;--sx-fcd34d:#B45309;--sx-fdba74:#C2410C;--sx-fed7aa:#C2410C;--sx-fee2e2:#fee2e2;--sx-fef3c7:#fef3c7;--sx-ffc233:#B45309}
 [data-theme="dark"]{--sx-strong:#fff;--sx-0d0d16:#0d0d16;--sx-0f172a:#0f172a;--sx-10b981:#10b981;--sx-11111b:#11111b;--sx-13131f:#13131f;--sx-15151f:#15151f;--sx-181825:#181825;--sx-1a1a2e:#1a1a2e;--sx-1e1e2e:#1e1e2e;--sx-1f1a10:#1f1a10;--sx-1f1f30:#1f1f30;--sx-23233a:#23233a;--sx-2563eb:#2563eb;--sx-26263f:#26263f;--sx-2a1a12:#2a1a12;--sx-2a2150:#2a2150;--sx-2a2a4a:#2a2a4a;--sx-3a2f6e:#3a2f6e;--sx-3a3a5e:#3a3a5e;--sx-3b82f6:#3b82f6;--sx-45475a:#45475a;--sx-475569:#475569;--sx-64748b:#64748b;--sx-6c7086:#6c7086;--sx-6ee7b7:#6ee7b7;--sx-78350f:#78350f;--sx-9399b2:#9399b2;--sx-93c5fd:#93c5fd;--sx-94a3b8:#94a3b8;--sx-a5b4fc:#a5b4fc;--sx-a6e3a1:#a6e3a1;--sx-bac2de:#bac2de;--sx-cdd6f4:#cdd6f4;--sx-e2e8f0:#e2e8f0;--sx-ec4899:#ec4899;--sx-ef4444:#ef4444;--sx-f1f5f9:#f1f5f9;--sx-f38ba8:#f38ba8;--sx-f97316:#f97316;--sx-fab387:#fab387;--sx-fca5a5:#fca5a5;--sx-fcd34d:#fcd34d;--sx-fdba74:#fdba74;--sx-fed7aa:#fed7aa;--sx-fee2e2:#fee2e2;--sx-fef3c7:#fef3c7;--sx-ffc233:#ffc233}
+
+/* ============================================================
+   PLANNING — CALENDRIER ÉLÈVE, ABSENCES, RATTRAPAGES
+   Ces styles n'utilisent que les tokens sémantiques (--surface, --border,
+   --t1..t3, --indigo, --emerald, --red…) : le thème sombre les suit donc
+   automatiquement via les redéfinitions de [data-theme="dark"].
+   ============================================================ */
+
+/* --- Bascule Liste / Calendrier ---------------------------------------- */
+.mc-switch{display:inline-flex;gap:2px;padding:3px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-full);margin-left:auto}
+.mc-sw-btn{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border:0;border-radius:var(--r-full);background:transparent;color:var(--t3);font:inherit;font-size:.78rem;font-weight:600;cursor:pointer;transition:all var(--dur) var(--ease)}
+.mc-sw-btn:hover{color:var(--t1)}
+.mc-sw-btn.is-on{background:var(--surface);color:var(--indigo);box-shadow:var(--sh-sm)}
+
+/* --- État d'une séance (carte + calendrier) ---------------------------- */
+.cc-badge{display:inline-flex;align-items:center;gap:5px;margin-top:6px;padding:3px 10px;border-radius:var(--r-full);font-size:.7rem;font-weight:700;line-height:1.4}
+.cc-badge.is-absent{background:var(--red-l);color:#B91C1C}
+.cc-badge.is-pending{background:var(--orange-l);color:var(--orange-d)}
+.cc-badge.is-ok{background:var(--emerald-l);color:var(--emerald-d)}
+.cc-badge.is-no{background:var(--red-l);color:#B91C1C}
+.cc-badge.is-makeup{background:var(--indigo-l);color:var(--indigo)}
+[data-theme="dark"] .cc-badge.is-absent,[data-theme="dark"] .cc-badge.is-no{color:#FCA5A5}
+[data-theme="dark"] .cc-badge.is-ok{color:#6EE7B7}
+[data-theme="dark"] .cc-badge.is-makeup{color:#A5B4FC}
+.cc.is-cancelled{opacity:.66}
+.cc.is-cancelled .cc-dt{text-decoration:line-through;text-decoration-thickness:1.5px}
+
+/* --- Bouton « Signaler une absence » ----------------------------------- */
+.cc-manage{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);color:var(--t2);font:inherit;font-size:.76rem;font-weight:600;cursor:pointer;transition:all var(--dur) var(--ease)}
+.cc-manage:hover{border-color:var(--red);color:var(--red);background:var(--red-l)}
+.cc-manage.is-locked,.cc-manage:disabled{opacity:.5;cursor:not-allowed}
+.cc-manage.is-locked:hover{border-color:var(--border);color:var(--t3);background:var(--surface)}
+.cc-bottom{gap:10px;flex-wrap:wrap}
+
+/* --- Calendrier mensuel ------------------------------------------------ */
+.mc-cal{margin-top:6px}
+.mc-head{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:14px}
+.mc-title{font-size:.95rem;font-weight:700;text-transform:capitalize;min-width:11ch;text-align:center}
+.mc-nav{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);color:var(--t2);cursor:pointer;transition:all var(--dur) var(--ease)}
+.mc-nav:hover{border-color:var(--indigo);color:var(--indigo);background:var(--indigo-l)}
+.mc-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.mc-dow{padding:6px 0;text-align:center;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--t3)}
+.mc-day{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:4px;min-height:52px;padding:7px 2px 5px;border:1px solid transparent;border-radius:var(--r-sm);background:var(--bg);color:var(--t2);font:inherit;font-size:.8rem}
+.mc-day.is-void{background:transparent}
+.mc-day.has{cursor:pointer;background:var(--surface);border-color:var(--border);font-weight:700;color:var(--t1);transition:all var(--dur) var(--ease)}
+.mc-day.has:hover{border-color:var(--indigo);box-shadow:var(--sh-sm);transform:translateY(-1px)}
+.mc-day.is-today{outline:2px solid var(--indigo);outline-offset:-2px}
+.mc-day.is-picked{background:var(--indigo-l);border-color:var(--indigo)}
+.mc-num{line-height:1}
+.mc-dots{display:flex;gap:3px;min-height:6px}
+.mc-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--indigo)}
+.mc-dot.o{background:var(--indigo)}
+.mc-dot.r{background:var(--teal)}
+.mc-dot.p{background:var(--orange)}
+.mc-dot.a{background:var(--red)}
+.mc-legend{display:flex;flex-wrap:wrap;gap:14px;margin:12px 0 2px;font-size:.72rem;color:var(--t3)}
+.mc-legend span{display:inline-flex;align-items:center;gap:6px}
+
+/* --- Détail du jour / du mois ------------------------------------------ */
+.mc-detail{margin-top:14px;padding-top:14px;border-top:1px solid var(--border-light)}
+.mc-detail-head{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--t3)}
+.mc-clear{padding:3px 10px;border:1px solid var(--border);border-radius:var(--r-full);background:var(--surface);color:var(--t2);font:inherit;font-size:.7rem;font-weight:600;text-transform:none;letter-spacing:0;cursor:pointer}
+.mc-clear:hover{border-color:var(--indigo);color:var(--indigo)}
+.mc-none{padding:14px 0;font-size:.85rem;color:var(--t3)}
+.mc-row{display:flex;align-items:center;gap:14px;padding:11px 0;border-bottom:1px solid var(--border-light);flex-wrap:wrap}
+.mc-row:last-child{border-bottom:none}
+.mc-row.is-cancelled{opacity:.66}
+.mc-row-h{flex-shrink:0;min-width:78px;font-size:.9rem;font-weight:700;color:var(--t1)}
+.mc-row-h small{display:block;font-size:.7rem;font-weight:500;color:var(--t3)}
+.mc-row-b{flex:1;min-width:160px;display:flex;flex-direction:column;gap:2px;font-size:.85rem}
+.mc-row-b small{font-size:.75rem;color:var(--t3)}
+.mc-row.is-cancelled .mc-row-h{text-decoration:line-through}
+
+/* --- Modale « signaler une absence » ----------------------------------- */
+.ab-check{display:flex;align-items:center;gap:10px;margin:4px 0 14px;padding:11px 14px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);font-size:.85rem;font-weight:600;cursor:pointer}
+.ab-check input{width:17px;height:17px;accent-color:var(--indigo);cursor:pointer}
+
+/* ============================================================
+   ESPACE ENSEIGNANT — alimenté par /api/my-sessions
+   ============================================================ */
+.tch-refresh{margin-left:10px;padding:3px 10px;border:1px solid var(--border);border-radius:var(--r-full);background:var(--surface);color:var(--t2);font:inherit;font-size:.72rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;vertical-align:middle}
+.tch-refresh:hover{border-color:var(--teal);color:var(--teal-d)}
+.tch-focus.is-empty .tch-focus-title{font-size:1.15rem;opacity:.9}
+.tch-focus-btn.is-locked,.tch-focus-btn:disabled{opacity:.55;cursor:not-allowed;display:inline-flex;align-items:center;gap:7px}
+.tch-warn{color:var(--orange-d);font-weight:700}
+.tch-kpi-v.is-alert{color:var(--orange-d)}
+.tch-count.is-alert{background:var(--orange-l);color:var(--orange-d)}
+.tch-class.is-empty{opacity:.6}
+.tch-class-abs{margin-top:3px;font-size:.74rem;color:#B91C1C;display:flex;align-items:center;gap:5px}
+[data-theme="dark"] .tch-class-abs{color:#FCA5A5}
+.tch-none{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:28px 16px;color:var(--t3)}
+.tch-none p{font-size:.85rem;max-width:40ch;line-height:1.6;margin:0}
+.tch-dayblock{margin-bottom:18px}
+.tch-dayblock:last-child{margin-bottom:0}
+.tch-dayhead{margin-bottom:4px;padding-bottom:6px;border-bottom:1.5px solid var(--border);font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--t3)}
+/* Roster : 5 colonnes (l'ancienne grille en comptait 6, dont 2 simulées). */
+.tch-table.is-roster .tch-tr{grid-template-columns:1.7fr 1.4fr 1.4fr .9fr .8fr}
+
+/* --- Demandes de rattrapage côté prof ---------------------------------- */
+.tch-rq{display:flex;align-items:flex-start;gap:14px;padding:14px 0;border-bottom:1px solid var(--border-light);flex-wrap:wrap}
+.tch-rq:last-child{border-bottom:none}
+.tch-rq-b{flex:1;min-width:200px}
+.tch-rq-t{font-size:.9rem;font-weight:700;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tch-rq-tag{padding:2px 9px;border-radius:var(--r-full);background:var(--red-l);color:#B91C1C;font-size:.68rem;font-weight:700}
+[data-theme="dark"] .tch-rq-tag{color:#FCA5A5}
+.tch-rq-m{font-size:.78rem;color:var(--t3);margin-top:2px}
+.tch-rq-d{margin-top:6px;font-size:.82rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tch-rq-d s{color:var(--t3)}
+.tch-rq-d strong{color:var(--emerald-d)}
+[data-theme="dark"] .tch-rq-d strong{color:#6EE7B7}
+.tch-rq-arrow{color:var(--t3)}
+.tch-rq-r{margin-top:5px;font-size:.76rem;color:var(--t3);font-style:italic}
+.tch-rq-a{display:flex;gap:8px;flex-shrink:0}
+.tch-rq-ok,.tch-rq-no{display:inline-flex;align-items:center;gap:6px;padding:8px 15px;border:0;border-radius:var(--r-sm);font:inherit;font-size:.78rem;font-weight:700;cursor:pointer;transition:opacity var(--dur) var(--ease)}
+.tch-rq-ok{background:var(--emerald-d);color:#fff}
+.tch-rq-no{background:var(--surface);border:1px solid var(--border);color:var(--red)}
+.tch-rq-ok:hover,.tch-rq-no:hover{opacity:.85}
+
+/* ============================================================
+   ADMIN — planification récurrente
+   ============================================================ */
+.adm-modes{display:inline-flex;gap:2px;padding:3px;margin-bottom:16px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-full)}
+.adm-mode{padding:7px 18px;border:0;border-radius:var(--r-full);background:transparent;color:var(--t3);font:inherit;font-size:.8rem;font-weight:600;cursor:pointer;transition:all var(--dur) var(--ease)}
+.adm-mode:hover{color:var(--t1)}
+.adm-mode.is-on{background:var(--surface);color:var(--indigo);box-shadow:var(--sh-sm)}
+.adm-dows{display:flex;flex-wrap:wrap;gap:8px}
+.adm-dows label{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);font-size:.82rem;font-weight:600;cursor:pointer;transition:all var(--dur) var(--ease);user-select:none}
+.adm-dows label:hover{border-color:var(--indigo)}
+.adm-dows input{width:15px;height:15px;accent-color:var(--indigo);cursor:pointer}
+.adm-dows label:has(input:checked){border-color:var(--indigo);background:var(--indigo-l);color:var(--indigo)}
+#admRecPreview{margin:2px 0 12px;font-weight:600;color:var(--indigo)}
+
+@media(max-width:640px){
+  .mc-switch{margin-left:0}
+  .mc-day{min-height:46px;font-size:.75rem}
+  .mc-row-h{min-width:66px}
+  .tch-rq-a{width:100%}
+  .tch-rq-ok,.tch-rq-no{flex:1;justify-content:center}
+}
+

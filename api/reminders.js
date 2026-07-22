@@ -178,11 +178,23 @@ module.exports = async (req, res) => {
       if (session.remindedAt) continue;              // déjà traitée
       if (!session.students || !session.students.length) continue;
 
+      // Les élèves ayant signalé leur absence sont écartés : leur rappeler un
+      // cours qu'ils viennent d'annuler est la meilleure façon de les perdre.
+      // Si plus personne n'est attendu, la séance est sautée (le prof n'a pas à
+      // se connecter pour une classe vide) mais reste marquée pour ne pas être
+      // re-balayée à chaque passage du cron.
+      const attendus = S.expectedStudents(session);
+      if (!attendus.length) {
+        session.remindedAt = new Date().toISOString();
+        await S.putSession(session);
+        continue;
+      }
+
       const cours = session.courseLabel || session.courseId || 'cours';
       // Noms complets des élèves de la séance — réutilisés dans l'e-mail du professeur.
       const studentNames = [];
 
-      for (const username of session.students) {
+      for (const username of attendus) {
         const user = await A.getUser(username);
         if (!user) continue;
         studentNames.push(`${user.firstName || ''} ${user.lastName || ''}`.trim() || username);
