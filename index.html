@@ -2813,7 +2813,7 @@ print("Bonne séance de code, Bilal ! 🚀")
     try { token = sessionStorage.getItem('kvs_token'); } catch (_) {}
     if (!token) { toast('Session expirée — reconnecte-toi.', 'err', '🔒'); return; }
     try {
-      const res = await fetch('/api/session-action', {
+      const res = await fetch('/api/my-sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
         body: JSON.stringify({ action: 'resched.decide', requestId, decision })
@@ -5691,7 +5691,7 @@ Laboratoire de Codage Vibe|8|fichiers`;
   // === SIGNALER UNE ABSENCE + DEMANDER UN RATTRAPAGE ==========================
   // Règle métier : possible jusqu'à `_cancelLeadMin` minutes avant le cours.
   // Le contrôle ci-dessous n'est qu'un garde-fou de confort — c'est le SERVEUR
-  // qui refuse pour de bon (api/session-action.js), horloge locale non fiable.
+  // qui refuse pour de bon (api/my-sessions.js), horloge locale non fiable.
   function openAbsence(sessionId) {
     const s = mySessions.find(x => x.id === sessionId);
     if (!s) return;
@@ -5772,7 +5772,7 @@ Laboratoire de Codage Vibe|8|fichiers`;
 
     if (btn) { btn.disabled = true; btn.textContent = 'Envoi…'; }
     try {
-      const res = await fetch('/api/session-action', {
+      const res = await fetch('/api/my-sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
         body: JSON.stringify({
