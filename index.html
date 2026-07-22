@@ -550,6 +550,25 @@
         </table>
       </div>
     </div>
+
+    <!-- Supervision des conversations — lecture seule, annoncée aux participants -->
+    <div class="booking-card adm-card">
+      <div class="booking-head">
+        <div class="booking-step-pill">Supervision</div>
+        <h1>Conversations</h1>
+        <p>Tous les échanges enseignant ↔ famille, en lecture seule. Les participants en sont informés dans le fil.</p>
+      </div>
+      <div class="adm-table-head">
+        <h2>Fils (<span id="admMsgCount">0</span>)</h2>
+        <button class="btn-ghost" onclick="APP.adminMessagesRefresh()"><span class="ui-icon-container is-sm"><i data-lucide="refresh-cw"></i></span> Rafraîchir</button>
+      </div>
+      <div class="adm-table-wrap">
+        <table class="adm-table">
+          <thead><tr><th>Enseignant</th><th>Élève</th><th>Dernier message</th><th>Extrait</th></tr></thead>
+          <tbody id="admMsgTbody"></tbody>
+        </table>
+      </div>
+    </div>
   </section>
 </div>
 
@@ -1811,7 +1830,7 @@ print("Bonne séance de code, Bilal ! 🚀")
     switchView('viewAdmin');
     _admShowTz(); adminSesMode(_admSesMode);
     adminLeadsRefresh(); adminRefresh(); adminTeachersRefresh();
-    adminSessionsRefresh(); adminReschedRefresh();
+    adminSessionsRefresh(); adminReschedRefresh(); adminMessagesRefresh();
   }
   function adminLogout() { _setAdminToken(null); switchView('viewLanding'); }
 
@@ -2211,6 +2230,30 @@ print("Bonne séance de code, Bilal ! 🚀")
     } else {
       toast('Décision impossible. Réessaie.', 'err', '⚠️');
     }
+  }
+
+  // Supervision : passe par /api/messages avec le jeton admin, pas par _adminApi
+  // (ce sont deux points d'entrée distincts).
+  async function adminMessagesRefresh() {
+    let token = adminToken;
+    if (!token) return;
+    let data = {};
+    try {
+      const res = await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ action: 'threads.list' })
+      });
+      data = await res.json().catch(() => ({}));
+    } catch (_) { data = {}; }
+    const rows = (data && data.threads) || [];
+    $('admMsgCount').textContent = rows.length;
+    $('admMsgTbody').innerHTML = rows.map(t => `<tr>
+      <td>${_admEsc(t.teacherName || t.teacherUsername)}</td>
+      <td>${_admEsc(t.studentName || t.studentUsername)}</td>
+      <td>${_admEsc(_admSesFmt(t.lastMessageAt))}</td>
+      <td>${_admEsc(t.lastSnippet || '—')}</td>
+    </tr>`).join('') || '<tr><td colspan="4" class="adm-empty">Aucune conversation.</td></tr>';
   }
 
   async function adminSend(username) {
@@ -7317,6 +7360,7 @@ Laboratoire de Codage Vibe|8|fichiers`;
     adminLeadsRefresh, adminLeadConvert, adminLeadDelete,
     adminSessionCreate, adminSessionsRefresh, adminSessionDelete, adminSeriesDelete,
     adminSesMode, adminReschedRefresh, adminReschedDecide, admRecPreview: _admRecPreview,
+    adminMessagesRefresh,
     goMessages,
     goResources, resSelect, resTab, resSearch,
     goCommunity, comSubjectTab, comFilter, comClearFilters, comLike, comUpvote, comShareEvent, comSharePost,

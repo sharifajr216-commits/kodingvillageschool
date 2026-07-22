@@ -53,8 +53,6 @@
 .ref-banner-emoji .ui-icon-container{width:56px;height:56px;color:rgba(255,255,255,.92)}
 .tch-stars{display:inline-flex;gap:1px}
 .tch-stars .ui-icon-container svg{fill:currentColor}
-.tch-msg-ic{color:var(--indigo)}
-[data-theme="dark"] .tch-msg-ic{color:#A5B4FC}
 /* Communauté */
 .badge-ic .ui-icon-container{width:24px;height:24px}
 .ev-cover .ui-icon-container,.proj-cover .ui-icon-container{width:34px;height:34px;color:#fff}
@@ -2104,15 +2102,6 @@ img{max-width:100%;display:block}
 .tch-sc-cell.booked{background:var(--teal-l);color:var(--teal-d,#0f766e);font-weight:700;border-color:rgba(20,184,166,.3);cursor:pointer}
 .tch-sc-cell:not(.head):not(.time):not(.corner){cursor:pointer;transition:all var(--dur) var(--ease)}
 .tch-sc-cell:not(.head):not(.time):not(.corner):hover{border-color:var(--teal)}
-.tch-msg{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border-light)}
-.tch-msg-ic{width:36px;height:36px;border-radius:50%;background:var(--indigo-l);display:flex;align-items:center;justify-content:center;font-size:1.05rem;flex-shrink:0}
-.tch-msg-b{flex:1;min-width:0}
-.tch-msg-f{font-size:.85rem;font-weight:700}
-.tch-msg-r{font-size:.68rem;font-weight:600;color:var(--indigo);background:var(--indigo-l);padding:1px 7px;border-radius:var(--r-full);margin-left:4px}
-.tch-msg-m{font-size:.8rem;color:var(--t2)}
-.tch-msg-t{font-size:.72rem;color:var(--t3);white-space:nowrap;flex-shrink:0}
-.tch-msg-btn{margin-top:14px;padding:9px 16px;background:var(--indigo);color:#fff;border-radius:var(--r-md);font-size:.82rem;font-weight:700;transition:all var(--dur) var(--ease)}
-.tch-msg-btn:hover{background:var(--indigo-d)}
 @media(max-width:768px){
   .tch-tr{grid-template-columns:1fr;gap:4px;border:1.5px solid var(--border);border-radius:var(--r-md);padding:12px;margin-bottom:8px}
   .tch-tr.head{display:none}
@@ -2327,7 +2316,7 @@ img{max-width:100%;display:block}
 [data-theme="dark"] :is(.tch-spr-pct,.tch-tr.head .srt.on,.tch-tab.active,.tch-tbtn,.tch-count,.brand-teal,.tch-sc-cell.booked){color:#2DD4BF}
 [data-theme="dark"] :is(.ev-time,.comeback-hw,.goal-tag,.fun-card-title,.btn-sm.orange,.btn-quick,.sb-link.active,.sb-link:hover){color:#FB923C}
 [data-theme="dark"] :is(.pstatus.empty,.tch-risk-pill){color:#F87171}
-[data-theme="dark"] :is(.hero-pill,.hero-title .accent,.tch-time,.tch-msg-r,.path-tab.active,.goals-title .cnt,.btn-sm.indigo,.count-badge,.co-success-balance){color:#A5B4FC}
+[data-theme="dark"] :is(.hero-pill,.hero-title .accent,.tch-time,.path-tab.active,.goals-title .cnt,.btn-sm.indigo,.count-badge,.co-success-balance){color:#A5B4FC}
 [data-theme="dark"] .comeback-sub strong{color:#A5B4FC!important}
 [data-theme="dark"] .tch-tab.active{border-bottom-color:#2DD4BF}
 
