@@ -217,6 +217,125 @@ async function deleteSeriesUpcoming(seriesId) {
   return n;
 }
 
+// ── Édition d'une séance existante ──────────────────────────────────────────
+// Champs modifiables : courseId, courseLabel, startsAt, durationMin, students,
+// teacherUsername, teacherName. Une clé absente du patch reste inchangée — une
+// édition partielle (ex: corriger l'heure) ne doit jamais effacer le reste.
+
+// Réconcilie `attendance` avec la NOUVELLE liste d'élèves.
+//
+// Pourquoi : une séance dont on corrige l'heure ou le cours garde ses élèves
+// pour la plupart. Si un élève a déjà signalé une absence (avec sa demande de
+// rattrapage éventuelle), cette information doit SURVIVRE à l'édition — on ne
+// réinitialise donc que les entrées des élèves qui ENTRENT ou SORTENT de la
+// liste, jamais celles de ceux qui restent.
+function reconcileAttendance(session, students) {
+  const list = (Array.isArray(students) ? students : []).map(A.normUsername).filter(Boolean);
+  const prev = session.attendance || {};
+  const attendance = {};
+  for (const u of list) {
+    attendance[u] = prev[u] || { status: 'expected', declaredAt: null, reason: '', requestId: null };
+  }
+  session.students = list;
+  session.attendance = attendance;
+}
+
+// Fixe le nouveau `startsAt` (déjà résolu en epoch ms) et réarme `remindedAt`
+// si besoin.
+//
+// Pourquoi : `remindedAt` est un garde-fou anti-doublon posé À L'ANCIENNE HEURE.
+// Si on la laisse telle quelle après un déplacement vers une heure encore à
+// venir, le cron (api/reminders.js) croira le rappel déjà envoyé et ne
+// préviendra jamais personne pour le nouveau créneau. On ne le réarme que si
+// la nouvelle heure est future — un déplacement dans le passé (rattrapage d'une
+// erreur de saisie sur une séance déjà tenue) n'a pas à redéclencher un rappel.
+function applyStartsAt(session, newMs) {
+  session.startsAt = new Date(newMs).toISOString();
+  if (newMs > Date.now()) session.remindedAt = null;
+}
+
+// Applique les champs non liés à l'horaire — communs à updateSession et
+// updateSeriesFrom, pour que les deux chemins ne puissent pas diverger.
+function applyCommonFields(session, patch) {
+  if (patch.courseId !== undefined) session.courseId = String(patch.courseId || '').slice(0, 60);
+  if (patch.courseLabel !== undefined) session.courseLabel = String(patch.courseLabel || '').slice(0, 120);
+  if (patch.durationMin !== undefined) {
+    const n = Number(patch.durationMin);
+    if (n > 0) session.durationMin = n;
+  }
+  if (patch.teacherUsername !== undefined) session.teacherUsername = A.normUsername(patch.teacherUsername) || '';
+  if (patch.teacherName !== undefined) session.teacherName = String(patch.teacherName || '').slice(0, 120);
+  if (patch.students !== undefined) reconcileAttendance(session, patch.students);
+}
+
+// Modifie UNE séance (portée « cette séance seulement ») et la persiste.
+async function updateSession(id, patch) {
+  const s = await getSession(id);
+  if (!s) return null;
+  applyCommonFields(s, patch);
+  if (patch.startsAt !== undefined) {
+    const ms = parseWhen(patch.startsAt);
+    if (ms === null) throw new Error('startsAt invalide (attendu : ISO 8601)');
+    applyStartsAt(s, ms);
+  }
+  await putSession(s);
+  return s;
+}
+
+// Modifie une séance ET toutes les occurrences ULTÉRIEURES de la même série
+// (startsAt ≥ celui de `sessionId`) — les occurrences plus anciennes ne sont
+// jamais touchées, on ne réécrit pas l'historique d'une série.
+//
+// Si `patch.startsAt` est fourni, on n'en retient QUE l'heure (dans le fuseau
+// de l'école) : la recopier telle quelle collapserait les 24 occurrences d'une
+// récurrence sur une seule date. On extrait donc l'heure/minute voulue une
+// seule fois, puis on la réapplique à la date PROPRE de chaque occurrence via
+// utcToZoned / zonedToUtcMs (les mêmes fonctions qui servent à générer la série).
+//
+// Renvoie { updated:<nombre de séances modifiées>, session:<l'occurrence éditée> }.
+async function updateSeriesFrom(sessionId, patch) {
+  const origin = await getSession(sessionId);
+  if (!origin) return { updated: 0, session: null };
+
+  let timeOfDay = null;
+  if (patch.startsAt !== undefined) {
+    const ms = parseWhen(patch.startsAt);
+    if (ms === null) throw new Error('startsAt invalide (attendu : ISO 8601)');
+    const z = utcToZoned(ms, DEFAULT_TZ);
+    timeOfDay = { h: z.h, mi: z.mi };
+  }
+
+  // Séance hors série : la « portée série » se réduit à une édition simple.
+  if (!origin.seriesId) {
+    applyCommonFields(origin, patch);
+    if (timeOfDay) {
+      const z = utcToZoned(Date.parse(origin.startsAt), DEFAULT_TZ);
+      applyStartsAt(origin, zonedToUtcMs({ y: z.y, mo: z.mo, d: z.d, h: timeOfDay.h, mi: timeOfDay.mi }, DEFAULT_TZ));
+    }
+    await putSession(origin);
+    return { updated: 1, session: origin };
+  }
+
+  const originMs = Date.parse(origin.startsAt);
+  const candidates = await sessionsBetween(originMs, Infinity);
+  let updated = 0;
+  let editedSession = null;
+  for (const s of candidates) {
+    if (s.seriesId !== origin.seriesId) continue;
+    applyCommonFields(s, patch);
+    if (timeOfDay) {
+      // Date CIVILE propre à CETTE occurrence, heure remplacée par la nouvelle
+      // heure-du-jour voulue — jamais la date d'origine.
+      const z = utcToZoned(Date.parse(s.startsAt), DEFAULT_TZ);
+      applyStartsAt(s, zonedToUtcMs({ y: z.y, mo: z.mo, d: z.d, h: timeOfDay.h, mi: timeOfDay.mi }, DEFAULT_TZ));
+    }
+    await putSession(s);
+    updated++;
+    if (s.id === sessionId) editedSession = s;
+  }
+  return { updated, session: editedSession };
+}
+
 // Séances dont le début tombe dans [fromMs, toMs]. Utilisé par le cron.
 // toMs accepte Infinity → borne haute ouverte ('+inf' côté Redis).
 async function sessionsBetween(fromMs, toMs) {
@@ -429,6 +548,7 @@ async function decideReschedule(requestId, decision, by, note) {
 module.exports = {
   // séances
   createSession, buildSession, createWeeklySeries, getSession, putSession, deleteSession, deleteSeriesUpcoming,
+  updateSession, updateSeriesFrom,
   sessionsBetween, sessionsForStudent, sessionsForTeacher, upcomingSessions, purgeOlderThan, parseWhen,
   // fuseaux & récurrence
   tzOffsetMs, zonedToUtcMs, utcToZoned, expandWeekly, DEFAULT_TZ,
