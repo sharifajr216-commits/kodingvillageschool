@@ -579,6 +579,7 @@
       <button class="sb-link" onclick="APP.goCommunity()" title="Communauté"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>COMMUNAUTÉ</button>
       <button class="sb-link" onclick="APP.goParents()" title="Parents"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="7" r="3"/><path d="M2 21v-1a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v1"/><circle cx="17" cy="9" r="2"/><path d="M14.5 21v-.5a3.5 3.5 0 0 1 3.5-3.5h0a3.5 3.5 0 0 1 3.5 3.5v.5"/></svg>PARENTS</button>
       <button class="sb-link" onclick="APP.goReferral()" title="Parrainage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>PARRAINAGE</button>
+      <button class="sb-link" onclick="APP.goMessages()" title="Messages"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H5.5L4 17.5z"/></svg>MESSAGES</button>
       <button class="sb-link" onclick="APP.goProfile()" title="Profil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>PROFIL</button>
       <button class="sb-link" onclick="APP.goLoop()" title="Boucle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>BOUCLE</button>
       <button class="sb-link" onclick="APP.goSandbox()" title="Bac à sable"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.604.852.997 1.51 1H21a2 2 0 0 1 0 4h-.09c-.658.003-1.25.396-1.51 1z"/></svg>BAC À SABLE</button>
@@ -662,6 +663,13 @@
     <div class="sandbox-banner" onclick="APP.goSandbox()"><span>Aller à</span><a href="#">Bac à sable <span class="ui-icon-container is-sm"><i data-lucide="arrow-right"></i></span></a></div>
     <!-- Projects -->
     <section class="project-section"><div class="card" style="padding:26px"><div class="project-header"><h2>Résumé du projet</h2><button class="btn-outline" onclick="APP.openAddProject()"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Ajouter le projet</button></div><div class="project-grid"><div class="pcard"><div class="pcard-h"><span class="ui-icon-container" style="color:var(--indigo)"><i data-lucide="code-2"></i></span><h4>Python Niveau 1</h4></div><div class="stars"><span class="star"><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span></span><span class="star"><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span></span><span class="star"><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span></span></div><div class="pstatus empty"><span class="ui-icon-container is-sm"><i data-lucide="alert-triangle"></i></span> Aucun projet ajouté</div><p class="pdesc">Ajoutez un mini, un projet majeur et un projet final pour gagner des étoiles</p></div><div class="pcard"><div class="pcard-h"><span class="ui-icon-container" style="color:var(--teal)"><i data-lucide="cat"></i></span><h4>Scratch Niveau 1</h4></div><div class="stars"><span class="star"><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span></span><span class="star"><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span></span><span class="star"><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span></span></div><div class="pstatus empty"><span class="ui-icon-container is-sm"><i data-lucide="alert-triangle"></i></span> Aucun projet ajouté</div><p class="pdesc">Ajoutez un mini, un projet majeur et un projet final pour gagner des étoiles</p></div><div class="pcard"><div class="pcard-h"><span class="ui-icon-container" style="color:var(--indigo)"><i data-lucide="code-2"></i></span><h4>Python Niveau 2</h4></div><div class="stars"><span class="star"><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span></span><span class="star"><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span></span><span class="star"><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span></span></div><div class="pstatus empty"><span class="ui-icon-container is-sm"><i data-lucide="alert-triangle"></i></span> Aucun projet ajouté</div><p class="pdesc">Ajoutez un mini, un projet majeur et un projet final pour gagner des étoiles</p></div><div class="pcard"><div class="pcard-h"><span class="ui-icon-container" style="color:var(--purple)"><i data-lucide="gamepad-2"></i></span><h4>Développement de jeux</h4></div><div class="stars"><span class="star filled"><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span></span><span class="star"><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span></span><span class="star"><span class="ui-icon-container is-sm"><i data-lucide="star"></i></span></span></div><div class="pstatus done"><span class="ui-icon-container is-sm"><i data-lucide="check-circle-2"></i></span> 1 projet réalisé</div><div class="pdetail"><span class="ui-icon-container is-sm" style="color:#F59E0B"><i data-lucide="trophy"></i></span> Défi en classe 1 — Livre de recettes de la chef Aanya<br><em>Mini Projet — 10/05/2026</em></div></div></div></div></section>
+  </main>
+</div>
+
+<div class="view" id="viewMessages" style="display:none">
+  <main class="dash-main">
+    <header class="dash-id"><div class="dash-id-main"><h1>Messages</h1></div></header>
+    <section class="card" style="padding:26px" id="stuMsgHost"></section>
   </main>
 </div>
 
@@ -1469,7 +1477,7 @@ print("Bonne séance de code, Bilal ! 🚀")
   // === NAV MOBILE (barre du bas) ===
   // Réservée aux vues applicatives ET aux utilisateurs authentifiés — jamais sur la
   // landing publique (qui garde son propre menu : le hamburger .burger → .lp-nav).
-  const NAV_VIEWS = new Set(['viewDashboard','viewSandbox','viewResources','viewCommunity','viewParents','viewReferral','viewProfile','viewLoop']);
+  const NAV_VIEWS = new Set(['viewDashboard','viewSandbox','viewResources','viewCommunity','viewParents','viewReferral','viewProfile','viewLoop','viewMessages']);
   const isAuthenticated = () => !!currentUser;
   function _syncMobileNav(target) {
     const visible = isAuthenticated() && NAV_VIEWS.has(target);
@@ -1479,7 +1487,7 @@ print("Bonne séance de code, Bilal ! 🚀")
 
   // === VIEW ROUTER ===
   function switchView(target) {
-    ['viewLanding','viewDashboard','viewSandbox','viewResources','viewCommunity','viewParents','viewReferral','viewProfile','viewLoop','viewTeacher','viewBooking','viewAdmin'].forEach(v => hide(v));
+    ['viewLanding','viewDashboard','viewSandbox','viewResources','viewCommunity','viewParents','viewReferral','viewProfile','viewLoop','viewTeacher','viewBooking','viewAdmin','viewMessages'].forEach(v => hide(v));
     show(target);
     _syncMobileNav(target);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1500,6 +1508,7 @@ print("Bonne séance de code, Bilal ! 🚀")
                      target === 'viewReferral' ? 'Parrainage — Kodingvillageschool' :
                      target === 'viewProfile' ? 'Profil — Kodingvillageschool' :
                      target === 'viewLoop' ? 'Boucle — Kodingvillageschool' :
+                     target === 'viewMessages' ? 'Messages — Kodingvillageschool' :
                      target === 'viewTeacher' ? 'Espace Enseignant — KodingvillageSchool' :
                      target === 'viewBooking' ? 'Booking Confirmation — KodingvillageSchool' :
                      target === 'viewAdmin' ? 'Administration — KodingvillageSchool' :
@@ -2461,6 +2470,7 @@ print("Bonne séance de code, Bilal ! 🚀")
         <button class="tch-tab${teacherTabState === 'overview' ? ' active' : ''}" data-tab="overview" onclick="APP.teacherTab('overview')">Vue d’ensemble</button>
         <button class="tch-tab${teacherTabState === 'students' ? ' active' : ''}" data-tab="students" onclick="APP.teacherTab('students')">Mes élèves</button>
         <button class="tch-tab${teacherTabState === 'planning' ? ' active' : ''}" data-tab="planning" onclick="APP.teacherTab('planning')">Planning</button>
+        <button class="tch-tab${teacherTabState === 'messages' ? ' active' : ''}" data-tab="messages" onclick="APP.teacherTab('messages')">Messages</button>
       </div>
       <div id="tchContent"></div>`;
     renderTeacherTab();
@@ -2594,6 +2604,12 @@ print("Bonne séance de code, Bilal ! 🚀")
 
   function renderTeacherTab() {
     const c = $('tchContent'); if (!c) return;
+
+    if (teacherTabState === 'messages') {
+      c.innerHTML = '<section class="card tch-card" id="tchMsgHost"></section>';
+      KVS_Messages.openInbox('tchMsgHost', 'teacher');
+      return;
+    }
 
     if (teacherTabState === 'students') {
       const roster = teacherRoster();
@@ -3074,6 +3090,7 @@ print("Bonne séance de code, Bilal ! 🚀")
   // === VIEWS ===
   function goSandbox() { switchView('viewSandbox'); renderSandbox(); }
   function goDashboard() { switchView('viewDashboard'); }
+  function goMessages() { switchView('viewMessages'); KVS_Messages.openInbox('stuMsgHost', 'student'); }
   function goResources() { switchView('viewResources'); renderResources(); }
 
   // === RESOURCES ===
@@ -6270,6 +6287,153 @@ Laboratoire de Codage Vibe|8|fichiers`;
     }
   }
 
+  // === MESSAGERIE ENSEIGNANT ↔ FAMILLE ========================================
+  // Un seul module pour les deux rôles : le serveur filtre déjà par le jeton, donc
+  // l'écran est le même — seul le vocabulaire diffère. Deux implémentations
+  // parallèles finiraient inévitablement par diverger.
+  const KVS_Messages = {
+    role: 'student', hostId: null, threads: [], current: null, messages: [], contacts: [],
+
+    async api(payload) {
+      let token = null;
+      try { token = sessionStorage.getItem('kvs_token'); } catch (_) {}
+      if (!token) return { ok: false, error: 'unauthorized' };
+      try {
+        const res = await fetch('/api/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json().catch(() => ({}));
+        return Object.assign({ status: res.status }, data);
+      } catch (_) { return { ok: false, error: 'network' }; }
+    },
+
+    unreadTotal() { return this.threads.reduce((n, t) => n + (t.unread || 0), 0); },
+
+    async openInbox(hostId, role) {
+      this.hostId = hostId; this.role = role || 'student';
+      this.current = null;
+      const d = await this.api({ action: 'threads.list' });
+      this.threads = d.ok ? d.threads : [];
+      const c = await this.api({ action: 'contacts.list' });
+      this.contacts = c.ok ? c.contacts : [];
+      this.renderInbox(d.ok ? null : (d.status === 401 ? 'expired' : 'error'));
+    },
+
+    renderInbox(state) {
+      const host = $(this.hostId); if (!host) return;
+      const vide = state === 'expired' ? 'Ta session a expiré — reconnecte-toi.'
+        : state === 'error' ? 'Messagerie indisponible pour le moment.'
+          : this.role === 'teacher'
+            ? 'Aucune conversation. Écris à une famille depuis « Nouveau message ».'
+            : 'Aucune conversation. Tu peux écrire à ton enseignant.';
+
+      host.innerHTML = `
+        <div class="msg-head">
+          <h3>Messages ${this.unreadTotal() ? `<span class="tch-count is-alert">${this.unreadTotal()}</span>` : ''}</h3>
+          ${this.contacts.length ? `<button class="msg-new" onclick="APP.msgNew()">${icon('pen-line', { size: 'sm' })} Nouveau message</button>` : ''}
+        </div>
+        ${!this.threads.length
+          ? `<div class="tch-none">${icon('mail', { size: 'lg', tone: 'muted' })}<p>${vide}</p></div>`
+          : `<div class="msg-list">${this.threads.map(t => `
+              <button class="msg-item${t.unread ? ' is-unread' : ''}" onclick="APP.msgOpenThread('${_admEsc(t.id)}')">
+                <span class="msg-item-w">${_admEsc(t.withName || '—')}</span>
+                <span class="msg-item-s">${_admEsc(t.lastSnippet || 'Conversation ouverte')}</span>
+                <span class="msg-item-d">${_admEsc(_fmtDateTime(new Date(Date.parse(t.lastMessageAt))))}</span>
+                ${t.unread ? `<span class="msg-badge">${t.unread}</span>` : ''}
+              </button>`).join('')}</div>`}
+        <p class="msg-supervise">${icon('eye', { size: 'sm', tone: 'muted' })} L’équipe pédagogique peut consulter ces conversations.</p>`;
+      refreshIcons();
+    },
+
+    async openThread(threadId) {
+      const d = await this.api({ action: 'thread.open', threadId });
+      if (!d.ok) { toast('Conversation inaccessible.', 'err', '⚠️'); return; }
+      this.current = d.thread; this.messages = d.messages || [];
+      // Le compteur local suit le serveur : le fil vient d'être marqué lu.
+      const t = this.threads.find(x => x.id === threadId);
+      if (t) t.unread = 0;
+      this.renderThread();
+    },
+
+    renderThread() {
+      const host = $(this.hostId); if (!host || !this.current) return;
+      const th = this.current;
+      const lu = th.otherReadAt ? Date.parse(th.otherReadAt) : 0;
+      host.innerHTML = `
+        <div class="msg-head">
+          <button class="msg-back" onclick="APP.msgBack()">${icon('arrow-left', { size: 'sm' })} Retour</button>
+          <h3>${_admEsc(th.withName || '')}</h3>
+        </div>
+        <div class="msg-thread" id="msgThread">
+          ${this.messages.map(m => {
+            const moi = m.fromRole === this.role;
+            const vu = moi && lu >= Date.parse(m.sentAt);
+            return `<div class="msg-b${moi ? ' is-me' : ''}">
+              <div class="msg-b-h">${_admEsc(m.fromName)} · ${_admEsc(_fmtDateTime(new Date(Date.parse(m.sentAt))))}</div>
+              <div class="msg-b-t">${_admEsc(m.body)}</div>
+              ${moi ? `<div class="msg-b-r">${vu ? 'Lu' : 'Envoyé'}</div>` : ''}
+            </div>`;
+          }).join('')}
+        </div>
+        ${th.readOnly ? '<p class="msg-supervise">Consultation en lecture seule.</p>' : `
+        <form class="msg-form" onsubmit="return APP.msgSend(event)">
+          <textarea id="msgBody" rows="3" maxlength="2000" placeholder="Écris ton message…" required></textarea>
+          <button type="submit" class="btn-submit" id="msgSend">Envoyer</button>
+        </form>`}`;
+      refreshIcons();
+      const z = $('msgThread'); if (z) z.scrollTop = z.scrollHeight;
+    },
+
+    async send(e) {
+      if (e) e.preventDefault();
+      const zone = $('msgBody'); const btn = $('msgSend');
+      const texte = zone ? zone.value.trim() : '';
+      if (!texte) return false;
+      if (btn) { btn.disabled = true; btn.textContent = 'Envoi…'; }
+      const d = await this.api({ action: 'message.send', threadId: this.current.id, body: texte });
+      if (btn) { btn.disabled = false; btn.textContent = 'Envoyer'; }
+      if (!d.ok) {
+        toast(d.status === 429 ? 'Trop de messages envoyés — patiente quelques minutes.'
+          : (d.message || 'Envoi impossible.'), 'err', '⚠️');
+        return false;
+      }
+      if (zone) zone.value = '';
+      this.messages.push(d.message);
+      this.renderThread();
+      return false;
+    },
+
+    newMessage() {
+      if (!this.contacts.length) { toast('Aucun interlocuteur disponible.', 'info', '📭'); return; }
+      modal('Nouveau message', `
+        <form onsubmit="return APP.msgStart(event)">
+          <div class="form-g">
+            <label for="msgTo">Destinataire</label>
+            <select id="msgTo">${this.contacts.map(c => `<option value="${_admEsc(c.username)}">${_admEsc(c.name)}</option>`).join('')}</select>
+          </div>
+          <div class="form-g">
+            <label for="msgFirst">Message</label>
+            <textarea id="msgFirst" rows="4" maxlength="2000" required placeholder="Écris ton message…"></textarea>
+          </div>
+          <button type="submit" class="btn-submit">Envoyer</button>
+        </form>`);
+    },
+
+    async start(e) {
+      if (e) e.preventDefault();
+      const to = $('msgTo').value, texte = $('msgFirst').value.trim();
+      if (!texte) return false;
+      const d = await this.api({ action: 'message.send', to, body: texte });
+      if (!d.ok) { toast(d.message || 'Envoi impossible.', 'err', '⚠️'); return false; }
+      closeModal();
+      toast('Message envoyé 📩', 'ok', '📩');
+      this.openInbox(this.hostId, this.role);
+      return false;
+    }
+  };
+
   // === BUY CREDITS ===
   // === PAIEMENT — FORFAITS DE CRÉDITS ===
   //
@@ -7146,6 +7310,7 @@ Laboratoire de Codage Vibe|8|fichiers`;
     adminLeadsRefresh, adminLeadConvert, adminLeadDelete,
     adminSessionCreate, adminSessionsRefresh, adminSessionDelete, adminSeriesDelete,
     adminSesMode, adminReschedRefresh, adminReschedDecide, admRecPreview: _admRecPreview,
+    goMessages,
     goResources, resSelect, resTab, resSearch,
     goCommunity, comSubjectTab, comFilter, comClearFilters, comLike, comUpvote, comShareEvent, comSharePost,
     goParents, goReferral, refSubmit, refRedeem, refCopy, refShare, refHowItWorks, refRequestUpdate,
@@ -7161,6 +7326,13 @@ Laboratoire de Codage Vibe|8|fichiers`;
     folderOpen, folderBack, folderNew, fileNew, fileOpen,
     editClass, joinClass, joinZoomMeeting, leaveClass, sendChat,
     mcView, mcShiftMonth, mcPickDay, openAbsence, abToggleMakeup, submitAbsence,
+    msgOpenInbox: (h, r) => KVS_Messages.openInbox(h, r),
+    msgOpenThread: (id) => KVS_Messages.openThread(id),
+    msgSend: (e) => KVS_Messages.send(e),
+    msgStart: (e) => KVS_Messages.start(e),
+    msgNew: () => KVS_Messages.newMessage(),
+    msgBack: () => KVS_Messages.renderInbox(),
+    msgUnreadCount: () => KVS_Messages.unreadTotal(),
     openBuyCredits, buyCredits,
     openAddClass, addClass,
     openAddScore, addScore, openAddExam, addExam,
