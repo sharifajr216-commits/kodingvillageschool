@@ -153,11 +153,25 @@ async function notifyNewMessage(thread, message, side) {
 
   // L'e-mail de contact est partageable par une fratrie : sans le prénom de
   // l'enfant dans l'objet, un parent de deux élèves ne sait pas lequel est concerné.
+  // Côté prof, l'expéditeur EST toujours l'élève nommé dans le fil (fromRole
+  // 'student') : y ajouter « (Nom de l'élève) » ne fait que répéter le même nom.
   const sujet = versFamille
     ? `Message de ${message.fromName} au sujet de ${thread.studentName}`
-    : `Message de ${message.fromName} (${thread.studentName})`;
+    : message.fromRole === 'student'
+      ? `Message de ${message.fromName}`
+      : `Message de ${message.fromName} (${thread.studentName})`;
 
   const bonjour = versFamille ? 'Bonjour,' : `Bonjour ${B.esc(thread.teacherName)},`;
+
+  // Le destinataire du côté famille est le PARENT (compte de contact), pas
+  // l'enfant — d'où le vouvoiement dans cette branche, alors que le prof
+  // continue d'être tutoyé comme partout ailleurs dans le produit.
+  const corpsIntro = versFamille
+    ? `<b>${B.esc(message.fromName)}</b> vous a envoyé un message au sujet de <b>${B.esc(thread.studentName)}</b> sur votre espace ${B.esc(B.BRAND)}.`
+    : `<b>${B.esc(message.fromName)}</b> t'a envoyé un message sur ton espace ${B.esc(B.BRAND)}.`;
+  const rappel = versFamille
+    ? `Vous ne recevrez pas de nouvel e-mail pour cette conversation tant que vous ne l'aurez pas ouverte.`
+    : `Tu ne recevras pas de nouvel e-mail pour cette conversation tant que tu ne l'auras pas ouverte.`;
 
   return M.sendSafe({
     from: `${B.BRAND} <${B.FROM_EMAIL}>`,
@@ -166,17 +180,11 @@ async function notifyNewMessage(thread, message, side) {
     subject: sujet,
     html: `
       <p style="font-family:Arial,sans-serif;font-size:15px">${bonjour}</p>
-      <p style="font-family:Arial,sans-serif;font-size:15px">
-        <b>${B.esc(message.fromName)}</b> t'a envoyé un message
-        ${versFamille ? `au sujet de <b>${B.esc(thread.studentName)}</b>` : ''} sur ton espace
-        ${B.esc(B.BRAND)}.
-      </p>
+      <p style="font-family:Arial,sans-serif;font-size:15px">${corpsIntro}</p>
       <p style="font-family:Arial,sans-serif;font-size:15px">
         <a href="${B.esc(B.PUBLIC_URL)}" style="color:#4F46E5">Ouvrir la conversation</a>
       </p>
-      <p style="font-family:Arial,sans-serif;font-size:13px;color:#666">
-        Tu ne recevras pas de nouvel e-mail pour cette conversation tant que tu ne l'auras pas ouverte.
-      </p>
+      <p style="font-family:Arial,sans-serif;font-size:13px;color:#666">${rappel}</p>
       ${B.emailFooter()}`
   }, `alerte message ${message.id}`);
 }

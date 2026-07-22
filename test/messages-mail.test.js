@@ -39,6 +39,46 @@ test('l alerte enseignant part sur son adresse', async () => {
   assert.deepEqual(H.mails[0].to, ['blaise@kvs.test']);
 });
 
+test('l objet cote prof ne repete pas le nom de l eleve entre parentheses', async () => {
+  H.reset();
+  let th = await fil();
+  // Cote prof, l expediteur EST toujours l eleve du fil (fromRole 'student') :
+  // « Message de Mohamed Junior (Mohamed Junior) » etait un doublon pur.
+  const r = await M.appendMessage(th, {
+    fromRole: 'student', fromUsername: 'mohamedjr', fromName: 'Mohamed Junior', body: 'Une question'
+  });
+  await N.notifyNewMessage(r.thread, r.message, 'teacher');
+  assert.equal(H.mails[0].subject, 'Message de Mohamed Junior');
+});
+
+test('la famille est vouvoyee, le prof reste tutoye', async () => {
+  H.reset();
+  let th = await fil();
+
+  // Prof -> famille : le destinataire est le PARENT, pas l enfant nomme dans l objet.
+  const versFamille = await M.appendMessage(th, {
+    fromRole: 'teacher', fromUsername: 'blaise', fromName: 'Blaise Mentor', body: 'Bonjour !'
+  });
+  await N.notifyNewMessage(versFamille.thread, versFamille.message, 'student');
+  const mailFamille = H.mails[0].html;
+  assert.match(mailFamille, /vous a envoyé un message/);
+  assert.match(mailFamille, /votre espace/);
+  assert.match(mailFamille, /Vous ne recevrez pas/);
+  assert.doesNotMatch(mailFamille, /\bt'a envoyé\b/);
+  assert.doesNotMatch(mailFamille, /\bTu ne recevras\b/);
+
+  // Famille -> prof : le tutoiement en usage partout ailleurs dans le produit.
+  H.reset(); th = await fil();
+  const versProf = await M.appendMessage(th, {
+    fromRole: 'student', fromUsername: 'mohamedjr', fromName: 'Mohamed Junior', body: 'Une question'
+  });
+  await N.notifyNewMessage(versProf.thread, versProf.message, 'teacher');
+  const mailProf = H.mails[0].html;
+  assert.match(mailProf, /t'a envoyé un message/);
+  assert.match(mailProf, /ton espace/);
+  assert.match(mailProf, /Tu ne recevras pas/);
+});
+
 test('l e-mail ne recopie pas le message en entier', async () => {
   H.reset();
   let th = await fil();

@@ -8,11 +8,15 @@
 // POST { action:'threads.list' }                          → { ok, role, threads:[…] }
 // POST { action:'thread.open', threadId, before? }        → { ok, thread, messages:[…] }
 //        `before` = identifiant de message (curseur d'historique), pas un horodatage.
+//        Fil absent OU appelant non participant → 404 not_found (identique dans les
+//        deux cas : les identifiants sont déterministes et devinables, un 403 distinct
+//        en ferait un oracle d'appartenance — voir message.send pour le contraste).
 // POST { action:'message.send', threadId|to, body }       → { ok, message, notified }
 // POST { action:'contacts.list' }                         → { ok, contacts:[…] }
 //
-// Codes : 400 invalid_body · 401 unauthorized · 403 not_allowed / not_a_participant /
-//         read_only · 429 too_many · 500 not_configured / server_error
+// Codes : 400 invalid_body · 401 unauthorized · 403 not_allowed / not_a_participant
+//         (message.send uniquement) / read_only · 404 not_found (thread.open) ·
+//         429 too_many · 500 not_configured / server_error
 //
 // L'ADMIN est en LECTURE SEULE : il lit tous les fils (supervision annoncée aux
 // participants) mais ne peut ni écrire ni marquer un fil comme lu — sa lecture ne
@@ -70,6 +74,10 @@ module.exports = async (req, res) => {
 
   try {
     if (body.action === 'threads.list') {
+      if (await M.rateLimitedRead(me)) {
+        res.status(429).json({ ok: false, error: 'too_many', message: 'Trop de lectures. Réessaie dans quelques minutes.' });
+        return;
+      }
       const fils = await M.listThreads(isAdmin ? 'admin' : role, me, 50);
       res.status(200).json({ ok: true, role, threads: fils.map(t => threadView(t, isAdmin ? 'admin' : role)) });
       return;
@@ -82,9 +90,18 @@ module.exports = async (req, res) => {
     }
 
     if (body.action === 'thread.open') {
+      if (await M.rateLimitedRead(me)) {
+        res.status(429).json({ ok: false, error: 'too_many', message: 'Trop de lectures. Réessaie dans quelques minutes.' });
+        return;
+      }
       const t = await M.getThread(String(body.threadId || '').slice(0, 100));
-      if (!t) { res.status(404).json({ ok: false, error: 'not_found' }); return; }
-      if (!participe(t)) { res.status(403).json({ ok: false, error: 'not_a_participant' }); return; }
+      // Fil inexistant ET fil dont on n'est pas participant renvoient EXACTEMENT
+      // la même réponse : les identifiants de fil sont déterministes et donc
+      // devinables (th_<prof>|<eleve>), un 403 distinct transformerait cette
+      // route en oracle d'appartenance (qui parle à qui). Le chemin d'ÉCRITURE
+      // (message.send) garde 403/not_a_participant : il est déjà limité en
+      // fréquence et la distinction n'y a pas le même coût.
+      if (!t || !participe(t)) { res.status(404).json({ ok: false, error: 'not_found' }); return; }
 
       const messages = await M.getMessages(t.id, { limit: 50, before: body.before || null });
       // La lecture admin ne marque rien : voir l'avertissement en tête de fichier.

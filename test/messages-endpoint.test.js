@@ -46,13 +46,44 @@ test('ecrire a un enseignant sans seance commune est refuse', async () => {
   assert.equal(r.body.error, 'not_allowed');
 });
 
-test('un eleve ne peut pas ouvrir le fil d un autre', async () => {
+test('un eleve ne peut pas ouvrir le fil d un autre : 404, pas 403', async () => {
   H.reset(); await ecole();
+  // Les identifiants de fil sont deterministes et donc devinables
+  // (th_<prof>|<eleve>) : un 403 distinct d un fil inexistant transformerait
+  // thread.open en oracle d appartenance. Les deux cas doivent donc etre
+  // rigoureusement indistinguables cote reponse.
   await appel({ action: 'message.send', to: 'blaise', body: 'a' }, jeton('mohamedjr', 'student'));
   const tid = M.threadId('blaise', 'mohamedjr');
   const r = await appel({ action: 'thread.open', threadId: tid }, jeton('bilal', 'student'));
-  assert.equal(r.statusCode, 403);
-  assert.equal(r.body.error, 'not_a_participant');
+  assert.equal(r.statusCode, 404);
+  assert.equal(r.body.error, 'not_found');
+});
+
+test('fil inexistant et fil dont on n est pas participant rendent la meme reponse', async () => {
+  H.reset(); await ecole();
+  await appel({ action: 'message.send', to: 'blaise', body: 'a' }, jeton('mohamedjr', 'student'));
+  const reelMaisEtranger = await appel(
+    { action: 'thread.open', threadId: M.threadId('blaise', 'mohamedjr') },
+    jeton('bilal', 'student'));
+  const inexistant = await appel(
+    { action: 'thread.open', threadId: 'th_blaise|personne' },
+    jeton('bilal', 'student'));
+  assert.equal(reelMaisEtranger.statusCode, inexistant.statusCode);
+  assert.deepEqual(reelMaisEtranger.body, inexistant.body);
+});
+
+test('le garde-fou de LECTURE renvoie 429, separe de celui d ecriture', async () => {
+  H.reset(); await ecole();
+  const famille = jeton('mohamedjr', 'student');
+  for (let i = 0; i < M.READ_RATE_MAX; i++) {
+    const r = await appel({ action: 'threads.list' }, famille);
+    assert.equal(r.statusCode, 200, `lecture ${i + 1} doit passer`);
+  }
+  const bloque = await appel({ action: 'threads.list' }, famille);
+  assert.equal(bloque.statusCode, 429);
+  // Le quota d ECRITURE est intact : les deux garde-fous ne partagent pas leur budget.
+  const ecrit = await appel({ action: 'message.send', to: 'blaise', body: 'toujours possible' }, famille);
+  assert.equal(ecrit.statusCode, 200);
 });
 
 test('thread.open marque lu pour l appelant', async () => {

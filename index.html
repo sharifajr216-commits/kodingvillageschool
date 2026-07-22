@@ -562,12 +562,15 @@
         <h2>Fils (<span id="admMsgCount">0</span>)</h2>
         <button class="btn-ghost" onclick="APP.adminMessagesRefresh()"><span class="ui-icon-container is-sm"><i data-lucide="refresh-cw"></i></span> Rafraîchir</button>
       </div>
-      <div class="adm-table-wrap">
+      <div class="adm-table-wrap" id="admMsgListWrap">
         <table class="adm-table">
-          <thead><tr><th>Enseignant</th><th>Élève</th><th>Dernier message</th><th>Extrait</th></tr></thead>
+          <thead><tr><th>Enseignant</th><th>Élève</th><th>Dernier message</th><th>Extrait</th><th>Actions</th></tr></thead>
           <tbody id="admMsgTbody"></tbody>
         </table>
       </div>
+      <!-- Détail d'un fil, en lecture seule — rendu par le module partagé
+           KVS_Messages (renderThread, branche th.readOnly), pas une seconde vue. -->
+      <section class="card tch-card" id="admMsgHost" style="display:none"></section>
     </div>
   </section>
 </div>
@@ -686,6 +689,21 @@
 </div>
 
 <div class="view" id="viewMessages" style="display:none">
+  <aside class="sidebar" id="sidebarMsg">
+    <div class="sb-logo"><div class="logo-m"><svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M24 8 4 18l20 10 20-10z" fill="#FFC233"/><path d="M13 23v9c0 3 5 6 11 6s11-3 11-6v-9l-11 5.5z" fill="#4F46E5"/><path d="M44 18v15" stroke="#10B981" stroke-width="2.5" stroke-linecap="round"/><circle cx="44" cy="35" r="3" fill="#10B981"/></svg></div></div>
+    <nav class="sb-nav">
+      <button class="sb-link" onclick="APP.goDashboard()" title="Accueil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>ACCUEIL</button>
+      <button class="sb-link" onclick="APP.goResources()" title="Ressources"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>RESSOURCES</button>
+      <button class="sb-link" onclick="APP.goCommunity()" title="Communauté"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>COMMUNAUTÉ</button>
+      <button class="sb-link" onclick="APP.goParents()" title="Parents"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="7" r="3"/><path d="M2 21v-1a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v1"/><circle cx="17" cy="9" r="2"/><path d="M14.5 21v-.5a3.5 3.5 0 0 1 3.5-3.5h0a3.5 3.5 0 0 1 3.5 3.5v.5"/></svg>PARENTS</button>
+      <button class="sb-link" onclick="APP.goReferral()" title="Parrainage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>PARRAINAGE</button>
+      <button class="sb-link active" onclick="APP.goMessages()" title="Messages"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H5.5L4 17.5z"/></svg>MESSAGES</button>
+      <button class="sb-link" onclick="APP.goProfile()" title="Profil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>PROFIL</button>
+      <button class="sb-link" onclick="APP.goLoop()" title="Boucle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>BOUCLE</button>
+      <button class="sb-link" onclick="APP.goSandbox()" title="Bac à sable"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.604.852.997 1.51 1H21a2 2 0 0 1 0 4h-.09c-.658.003-1.25.396-1.51 1z"/></svg>BAC À SABLE</button>
+    </nav>
+    <div class="sb-bottom"><button class="sb-logout" onclick="APP.confirmLogout()" title="Déconnexion"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg></button></div>
+  </aside>
   <main class="dash-main">
     <header class="dash-id"><div class="dash-id-main"><h1>Messages</h1></div></header>
     <section class="card" style="padding:26px" id="stuMsgHost"></section>
@@ -1495,7 +1513,7 @@ print("Bonne séance de code, Bilal ! 🚀")
 
   // === DOM HELPERS ===
   const $ = id => document.getElementById(id);
-  const FLEX_VIEWS = ['viewDashboard', 'viewSandbox', 'viewResources', 'viewCommunity', 'viewParents', 'viewReferral', 'viewProfile', 'viewLoop'];
+  const FLEX_VIEWS = ['viewDashboard', 'viewSandbox', 'viewResources', 'viewCommunity', 'viewParents', 'viewReferral', 'viewProfile', 'viewLoop', 'viewMessages'];
   const show = (id) => { const el = $(id); const flex = FLEX_VIEWS.includes(id); el.style.display = flex ? 'flex' : 'block'; el.classList.add(flex ? 'flex-active' : 'active'); };
   const hide = (id) => { const el = $(id); el.style.display = 'none'; el.classList.remove('active','flex-active'); };
 
@@ -2247,13 +2265,33 @@ print("Bonne séance de code, Bilal ! 🚀")
       data = await res.json().catch(() => ({}));
     } catch (_) { data = {}; }
     const rows = (data && data.threads) || [];
-    $('admMsgCount').textContent = rows.length;
+    // L'API plafonne threads.list à 50 résultats (api/messages.js) : afficher
+    // "50" tel quel laisserait croire que c'est un TOTAL exact plutôt qu'un cap.
+    $('admMsgCount').textContent = rows.length === 50 ? '50+' : String(rows.length);
     $('admMsgTbody').innerHTML = rows.map(t => `<tr>
       <td>${_admEsc(t.teacherName || t.teacherUsername)}</td>
       <td>${_admEsc(t.studentName || t.studentUsername)}</td>
       <td>${_admEsc(_admSesFmt(t.lastMessageAt))}</td>
       <td>${_admEsc(t.lastSnippet || '—')}</td>
-    </tr>`).join('') || '<tr><td colspan="4" class="adm-empty">Aucune conversation.</td></tr>';
+      <td class="adm-actions"><button class="btn-ghost" onclick="APP.admMsgOpen('${_admEsc(t.id)}')">Ouvrir</button></td>
+    </tr>`).join('') || '<tr><td colspan="5" class="adm-empty">Aucune conversation.</td></tr>';
+  }
+
+  // Ouvre un fil en supervision (lecture seule) via le module partagé
+  // KVS_Messages, qui expose déjà une branche th.readOnly dans renderThread —
+  // jusqu'ici jamais atteinte faute d'appelant. On bascule l'affichage du
+  // tableau vers l'hôte du fil ; admMsgBack() fait le chemin inverse.
+  async function admMsgOpen(threadId) {
+    KVS_Messages.role = 'admin';
+    KVS_Messages.hostId = 'admMsgHost';
+    const wrap = $('admMsgListWrap'); if (wrap) wrap.style.display = 'none';
+    const host = $('admMsgHost'); if (host) host.style.display = '';
+    await KVS_Messages.openThread(threadId);
+  }
+
+  function admMsgBack() {
+    const wrap = $('admMsgListWrap'); if (wrap) wrap.style.display = '';
+    const host = $('admMsgHost'); if (host) { host.style.display = 'none'; host.innerHTML = ''; }
   }
 
   async function adminSend(username) {
@@ -2372,7 +2410,7 @@ print("Bonne séance de code, Bilal ! 🚀")
   async function loadTeacherSessions() {
     let token = null;
     try { token = sessionStorage.getItem('kvs_token'); } catch (_) {}
-    if (!token) { teacherSessions = []; teacherLoadState = 'expired'; renderTeacher(); return; }
+    if (!token) { teacherSessions = []; teacherLoadState = 'expired'; await _tchAfterLoad(); return; }
     teacherLoadState = 'loading';
     try {
       const res = await fetch('/api/my-sessions', {
@@ -2393,6 +2431,29 @@ print("Bonne séance de code, Bilal ! 🚀")
       }
     } catch (_) {
       teacherSessions = []; teacherLoadState = 'error';
+    }
+    await _tchAfterLoad();
+  }
+
+  // Fin d'un cycle de chargement du planning (ouverture de l'espace OU sondage
+  // 120 s — voir switchView). Rafraîchit toujours le compteur de messages non
+  // lus (fix : le badge n'était jamais mis à jour en arrière-plan). Mais un
+  // renderTeacher() COMPLET reconstruit #tchContent depuis zéro, ce qui détruit
+  // #tchMsgHost et le brouillon en cours de saisie dans #msgBody si l'onglet
+  // Messages est actif : le garde-fou dans renderTeacherTab (qui ne remonte la
+  // boîte que si elle est absente) ne suffit donc PAS seul, puisque le hôte est
+  // déjà détruit par renderTeacher() avant même que renderTeacherTab() ne
+  // s'exécute. On évite donc l'appel à renderTeacher() tant que cet onglet est
+  // ouvert, et on se contente de mettre à jour le badge du bouton d'onglet.
+  async function _tchAfterLoad() {
+    await KVS_Messages.refreshUnread();
+    if (teacherTabState === 'messages') {
+      const btn = document.querySelector('.tch-tab[data-tab="messages"]');
+      if (btn) {
+        const n = KVS_Messages.unreadTotal();
+        btn.innerHTML = `Messages${n ? ` <span class="tch-count is-alert">${n}</span>` : ''}`;
+      }
+      return;
     }
     renderTeacher();
   }
@@ -2519,7 +2580,7 @@ print("Bonne séance de code, Bilal ! 🚀")
         <button class="tch-tab${teacherTabState === 'overview' ? ' active' : ''}" data-tab="overview" onclick="APP.teacherTab('overview')">Vue d’ensemble</button>
         <button class="tch-tab${teacherTabState === 'students' ? ' active' : ''}" data-tab="students" onclick="APP.teacherTab('students')">Mes élèves</button>
         <button class="tch-tab${teacherTabState === 'planning' ? ' active' : ''}" data-tab="planning" onclick="APP.teacherTab('planning')">Planning</button>
-        <button class="tch-tab${teacherTabState === 'messages' ? ' active' : ''}" data-tab="messages" onclick="APP.teacherTab('messages')">Messages</button>
+        <button class="tch-tab${teacherTabState === 'messages' ? ' active' : ''}" data-tab="messages" onclick="APP.teacherTab('messages')">Messages${KVS_Messages.unreadTotal() ? ` <span class="tch-count is-alert">${KVS_Messages.unreadTotal()}</span>` : ''}</button>
       </div>
       <div id="tchContent"></div>`;
     renderTeacherTab();
@@ -2655,8 +2716,15 @@ print("Bonne séance de code, Bilal ! 🚀")
     const c = $('tchContent'); if (!c) return;
 
     if (teacherTabState === 'messages') {
-      c.innerHTML = '<section class="card tch-card" id="tchMsgHost"></section>';
-      KVS_Messages.openInbox('tchMsgHost', 'teacher');
+      // Le sondage de 120 s (loadTeacherSessions) repasse par ici via renderTeacher() :
+      // re-monter la boite ecraserait le message en cours de saisie dans #msgBody.
+      // On ne (re)construit donc que si elle est absente. (Le vrai garde-fou est en
+      // amont, dans loadTeacherSessions, qui evite meme d'appeler renderTeacher()
+      // tant que cet onglet est actif — voir _tchAfterLoad.)
+      if (!$('tchMsgHost')) {
+        c.innerHTML = '<section class="card tch-card" id="tchMsgHost"></section>';
+        KVS_Messages.openInbox('tchMsgHost', 'teacher');
+      }
       return;
     }
 
@@ -6345,7 +6413,11 @@ Laboratoire de Codage Vibe|8|fichiers`;
 
     async api(payload) {
       let token = null;
-      try { token = sessionStorage.getItem('kvs_token'); } catch (_) {}
+      // L'admin s'authentifie avec un jeton distinct (kvs_admin_token) — voir
+      // _setAdminToken. Sans ce choix, la supervision (role:'admin') tenterait
+      // d'appeler /api/messages avec le jeton élève/enseignant du navigateur
+      // (souvent absent), et échouerait systématiquement en 401.
+      try { token = sessionStorage.getItem(this.role === 'admin' ? 'kvs_admin_token' : 'kvs_token'); } catch (_) {}
       if (!token) return { ok: false, error: 'unauthorized' };
       try {
         const res = await fetch('/api/messages', {
@@ -6360,13 +6432,23 @@ Laboratoire de Codage Vibe|8|fichiers`;
 
     unreadTotal() { return this.threads.reduce((n, t) => n + (t.unread || 0), 0); },
 
+    // Rafraîchit le compteur de non-lus SANS toucher au DOM : appelée en
+    // arrière-plan (sondage 120 s côté prof), elle ne doit jamais perturber une
+    // conversation ouverte ou un brouillon en cours de saisie.
+    async refreshUnread() {
+      const d = await this.api({ action: 'threads.list' });
+      if (d.ok) this.threads = d.threads;
+    },
+
     async openInbox(hostId, role) {
       this.hostId = hostId; this.role = role || 'student';
       this.current = null;
+      // contacts.list balaie tout l'historique des séances côté serveur : on ne
+      // l'appelle plus ici (sur le chemin chaud de chaque ouverture de la
+      // messagerie) mais paresseusement, seulement quand l'utilisateur clique
+      // sur « Nouveau message » (voir newMessage ci-dessous).
       const d = await this.api({ action: 'threads.list' });
       this.threads = d.ok ? d.threads : [];
-      const c = await this.api({ action: 'contacts.list' });
-      this.contacts = c.ok ? c.contacts : [];
       this.renderInbox(d.ok ? null : (d.status === 401 ? 'expired' : 'error'));
     },
 
@@ -6376,12 +6458,15 @@ Laboratoire de Codage Vibe|8|fichiers`;
         : state === 'error' ? 'Messagerie indisponible pour le moment.'
           : this.role === 'teacher'
             ? 'Aucune conversation. Écris à une famille depuis « Nouveau message ».'
-            : 'Aucune conversation. Tu peux écrire à ton enseignant.';
+            // Le bouton « Nouveau message » est désormais toujours affiché (les
+            // contacts se chargent au clic) : cette copie ne doit donc plus
+            // promettre un enseignant qui n'existe pas encore pour cette famille.
+            : 'Ton enseignant apparaîtra ici dès ta première séance planifiée.';
 
       host.innerHTML = `
         <div class="msg-head">
           <h3>Messages ${this.unreadTotal() ? `<span class="tch-count is-alert">${this.unreadTotal()}</span>` : ''}</h3>
-          ${this.contacts.length ? `<button class="msg-new" onclick="APP.msgNew()">${icon('pen-line', { size: 'sm' })} Nouveau message</button>` : ''}
+          <button class="msg-new" onclick="APP.msgNew()">${icon('pen-line', { size: 'sm' })} Nouveau message</button>
         </div>
         ${!this.threads.length
           ? `<div class="tch-none">${icon('mail', { size: 'lg', tone: 'muted' })}<p>${vide}</p></div>`
@@ -6455,7 +6540,14 @@ Laboratoire de Codage Vibe|8|fichiers`;
       return false;
     },
 
-    newMessage() {
+    async newMessage() {
+      // Chargement paresseux : contacts.list balaie tout l'historique des séances
+      // côté serveur, donc on ne l'appelle plus au chargement de la boîte, mais
+      // seulement ici, au moment où l'utilisateur en a réellement besoin.
+      if (!this.contacts.length) {
+        const c = await this.api({ action: 'contacts.list' });
+        this.contacts = c.ok ? c.contacts : [];
+      }
       if (!this.contacts.length) { toast('Aucun interlocuteur disponible.', 'info', '📭'); return; }
       modal('Nouveau message', `
         <form onsubmit="return APP.msgStart(event)">
@@ -7360,7 +7452,7 @@ Laboratoire de Codage Vibe|8|fichiers`;
     adminLeadsRefresh, adminLeadConvert, adminLeadDelete,
     adminSessionCreate, adminSessionsRefresh, adminSessionDelete, adminSeriesDelete,
     adminSesMode, adminReschedRefresh, adminReschedDecide, admRecPreview: _admRecPreview,
-    adminMessagesRefresh,
+    adminMessagesRefresh, admMsgOpen,
     goMessages,
     goResources, resSelect, resTab, resSearch,
     goCommunity, comSubjectTab, comFilter, comClearFilters, comLike, comUpvote, comShareEvent, comSharePost,
@@ -7382,7 +7474,10 @@ Laboratoire de Codage Vibe|8|fichiers`;
     msgSend: (e) => KVS_Messages.send(e),
     msgStart: (e) => KVS_Messages.start(e),
     msgNew: () => KVS_Messages.newMessage(),
-    msgBack: () => KVS_Messages.renderInbox(),
+    // La supervision admin n'a pas d'« inbox » KVS_Messages : son « retour »
+    // consiste à ré-afficher le tableau des fils (voir admMsgOpen/admMsgBack),
+    // pas à rendre une boîte de réception générique construite pour élève/prof.
+    msgBack: () => KVS_Messages.role === 'admin' ? admMsgBack() : KVS_Messages.renderInbox(),
     msgUnreadCount: () => KVS_Messages.unreadTotal(),
     openBuyCredits, buyCredits,
     openAddClass, addClass,

@@ -71,3 +71,25 @@ test('la toute premiere ecriture pose deja une expiration', async () => {
   assert.ok(H.store.expiries.has('rate:msg:bavard'),
     'la cle de comptage ne doit jamais exister sans expiration');
 });
+
+// ── Garde-fou de LECTURE (fix : thread.open comme oracle d appartenance) ────
+// Prefixe de cle distinct de celui d ecriture : une famille qui rafraichit sa
+// boite plusieurs fois ne doit jamais se retrouver a court de quota pour ENVOYER.
+
+test('le garde-fou de lecture bloque au-dela de la limite, par utilisateur', async () => {
+  H.reset();
+  for (let i = 0; i < M.READ_RATE_MAX; i++) {
+    assert.equal(await M.rateLimitedRead('curieux'), false, `lecture ${i + 1} doit passer`);
+  }
+  assert.equal(await M.rateLimitedRead('curieux'), true, 'la lecture suivante doit etre bloquee');
+  assert.equal(await M.rateLimitedRead('quelqu-un-dautre'), false, 'la limite est par utilisateur');
+});
+
+test('lecture et ecriture ont des budgets separes', async () => {
+  H.reset();
+  for (let i = 0; i < M.READ_RATE_MAX; i++) await M.rateLimitedRead('bavard');
+  assert.equal(await M.rateLimitedRead('bavard'), true);
+  // Le quota d ecriture, cle differente, ne doit pas en avoir souffert.
+  assert.equal(await M.rateLimited('bavard'), false,
+    'les deux garde-fous ne doivent pas partager leur cle');
+});

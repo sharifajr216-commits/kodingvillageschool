@@ -262,10 +262,27 @@ async function rateLimited(username) {
   return n > RATE_MAX;
 }
 
+// Garde-fou de LECTURE — préfixe de clé distinct (`rate:read:`) pour que la
+// consultation ne partage pas son budget avec l'écriture : sans lui, une
+// famille qui rafraîchit sa boîte plusieurs fois se retrouverait à court de
+// quota pour ENVOYER un message. Plafond large (120/5 min) car threads.list et
+// thread.open sont sur le chemin de chaque ouverture de la messagerie — le
+// but ici est de contrer l'énumération de fils, pas l'usage normal.
+const READ_RATE_MAX = 120;
+const READ_RATE_WINDOW_S = 300;
+
+async function rateLimitedRead(username) {
+  const key = `rate:read:${A.normUsername(username)}`;
+  const cree = await A.kv(['SET', key, '1', 'EX', String(READ_RATE_WINDOW_S), 'NX']);
+  const n = cree ? 1 : Number(await A.kv(['INCR', key]));
+  return n > READ_RATE_MAX;
+}
+
 module.exports = {
   threadId, parseThreadId, getThread, putThread, ensureThread,
   appendMessage, getMessages, listThreads,
   markRead, shouldAlert, noteAlerted,
-  sharesSession, canOpen, contactsFor, rateLimited,
-  otherSide, MAX_BODY, SNIPPET_LEN, SIDES, RATE_MAX, RATE_WINDOW_S
+  sharesSession, canOpen, contactsFor, rateLimited, rateLimitedRead,
+  otherSide, MAX_BODY, SNIPPET_LEN, SIDES, RATE_MAX, RATE_WINDOW_S,
+  READ_RATE_MAX, READ_RATE_WINDOW_S
 };
