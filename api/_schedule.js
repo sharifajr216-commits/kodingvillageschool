@@ -2,8 +2,7 @@
 // Stockage des SÉANCES DE COURS planifiées — le socle des plannings et des rappels.
 //
 // Utilisé par : api/admin.js (créer / lister / supprimer), api/reminders.js (cron),
-//               api/my-sessions.js (planning élève & enseignant),
-//               api/session-action.js (absence + demande de report),
+//               api/my-sessions.js (planning élève & enseignant, absence + demande de report),
 //               api/reschedule.js (validation en un clic par le prof / l'admin)
 //
 // Modèle d'une séance :

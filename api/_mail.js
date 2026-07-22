@@ -1,7 +1,7 @@
 // Bibliothèque PARTAGÉE (préfixe `_` → non routée par Vercel).
 // Envoi d'e-mails via Resend + mise en forme des dates dans le fuseau de l'école.
 //
-// Utilisé par : api/session-action.js (notification d'absence / demande de report),
+// Utilisé par : api/my-sessions.js (notification d'absence / demande de report),
 //               api/reschedule.js    (confirmation de la décision)
 //
 // Variables d'environnement :
