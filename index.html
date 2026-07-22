@@ -6115,8 +6115,8 @@ Laboratoire de Codage Vibe|8|fichiers`;
 
     async _generateSignature() {
       // OPTION B — signature JWT du Meeting SDK générée côté serveur
-      // (/api/zoom/signature signe avec ZOOM_SDK_SECRET, jamais exposé au client).
-      const res = await fetch('/api/zoom/signature', {
+      // (/api/zoom?action=signature signe avec ZOOM_SDK_SECRET, jamais exposé au client).
+      const res = await fetch('/api/zoom?action=signature', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ meetingNumber: this.config.meetingNumber, role: this.config.role })
@@ -6327,7 +6327,7 @@ Laboratoire de Codage Vibe|8|fichiers`;
   async function joinZoomMeeting(courseId) {
     toast('Connexion à ta classe Zoom…', 'info', '🎥');
     try {
-      const res = await fetch(`/api/zoom/meeting?courseId=${encodeURIComponent(courseId || '')}`);
+      const res = await fetch(`/api/zoom?action=meeting&courseId=${encodeURIComponent(courseId || '')}`);
 
       // Backend absent / non configuré → mode démo
       if (res.status === 404 || res.status === 501) {
